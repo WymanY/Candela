@@ -1,0 +1,4 @@
+module CandelaPrivateIO {
+    header "CandelaPrivateIO.h"
+    export *
+}
