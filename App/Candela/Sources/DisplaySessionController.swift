@@ -18,6 +18,7 @@ final class DisplaySessionController {
     private var restoreTasks: [String: Task<Void, Never>] = [:]
     private var applyGeneration = 0
     private var lastAppliedKeys: Set<String> = []
+    private var probedKeys: Set<String> = []
     private var pendingRotationByKey: [String: DisplayRotation] = [:]
 
     var snapshots: [DisplaySnapshot] = []
@@ -355,9 +356,8 @@ final class DisplaySessionController {
         boxes = kept
         snapshots = preserveProbedState(next)
         refreshRotationSupport()
-        let previousKeys = lastAppliedKeys
-        let identitiesChanged = displayIdentitiesChanged(previous: previousKeys, next: nextKeys)
         lastAppliedKeys = nextKeys
+        probedKeys = probedKeys.intersection(nextKeys)
         pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
         refreshAudioBindings()
         syncSoftwareVolumeSessions()
@@ -365,35 +365,43 @@ final class DisplaySessionController {
 
         Task {
             if fake { return }
-            // Rotation/mode reconfigs keep the same identities. Re-probing DDC
-            // and restoring last values here is what snaps the panel back.
-            if !identitiesChanged {
-                for (snapshot, box) in work {
-                    guard generation == self.applyGeneration else { return }
-                    await box.recreateHandles(sessionDisplayID: snapshot.sessionDisplayID)
-                }
-                return
-            }
+            var freshlyProbed: [String] = []
             for (snapshot, box) in work {
                 guard generation == self.applyGeneration else { return }
+                let key = snapshot.id.persistentKey
+                if shouldSkipFullCapabilityProbe(key: key, probedKeys: self.probedKeys) {
+                    // Rotation/mode reconfigs keep the same identity. Recapture
+                    // gamma only; a full DDC/DS probe is what snaps rotation back.
+                    await box.recreateHandles(sessionDisplayID: snapshot.sessionDisplayID)
+                    continue
+                }
                 let context = self.makeProbeContext(for: snapshot)
                 await box.recreateHandles(sessionDisplayID: snapshot.sessionDisplayID)
                 let caps = await box.probeBrightness(kind: snapshot.kind, context: context)
                 guard generation == self.applyGeneration else { return }
-                self.mergeBrightness(key: snapshot.id.persistentKey, capabilities: caps, isBuiltin: snapshot.isBuiltin)
-                box.useDDCMute = self.persistence.record(for: snapshot.id.persistentKey)?.useDDCMute ?? false
+                self.mergeBrightness(key: key, capabilities: caps, isBuiltin: snapshot.isBuiltin)
+                self.probedKeys.insert(key)
+                freshlyProbed.append(key)
+                box.useDDCMute = self.persistence.record(for: key)?.useDDCMute ?? false
                 let volumeCaps = await box.probeDDCVolume()
                 guard generation == self.applyGeneration else { return }
-                self.mergeVolume(key: snapshot.id.persistentKey, capabilities: volumeCaps)
+                self.mergeVolume(key: key, capabilities: volumeCaps)
                 let extras = await box.probeDDCExtras()
                 guard generation == self.applyGeneration else { return }
-                self.mergeExtras(key: snapshot.id.persistentKey, contrast: extras.0, input: extras.1)
+                self.mergeExtras(key: key, contrast: extras.0, input: extras.1)
             }
             guard generation == self.applyGeneration else { return }
-            self.refreshAudioBindings()
-            self.syncSoftwareVolumeSessions()
-            self.onChange?()
-            self.scheduleRestores(for: next, previousKeys: previousKeys)
+            if !freshlyProbed.isEmpty {
+                self.refreshAudioBindings()
+                self.syncSoftwareVolumeSessions()
+                self.onChange?()
+                // Startup applies the catalog twice with the same identities.
+                // Restore from the keys we just probed, not from lastAppliedKeys.
+                self.scheduleRestores(
+                    for: next.filter { freshlyProbed.contains($0.id.persistentKey) },
+                    previousKeys: []
+                )
+            }
         }
     }
 
@@ -425,7 +433,9 @@ final class DisplaySessionController {
             )
             guard let old = previous[snapshot.id.persistentKey] else { return merged }
             merged.brightness = old.brightness
-            merged.brightness.current = snapshot.brightness.current
+            if old.brightness.backend == .none {
+                merged.brightness.current = snapshot.brightness.current
+            }
             merged.volume = old.volume
             merged.contrast = old.contrast
             merged.input = old.input

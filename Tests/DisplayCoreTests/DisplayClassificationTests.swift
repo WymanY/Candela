@@ -57,6 +57,12 @@ final class DisplayClassificationTests: XCTestCase {
         XCTAssertTrue(displayIdentitiesChanged(previous: [], next: keys))
     }
 
+    func testSameIdentityStillProbesUntilBackendIsCommitted() {
+        XCTAssertFalse(shouldSkipFullCapabilityProbe(key: "v1:dell", probedKeys: []))
+        XCTAssertTrue(shouldSkipFullCapabilityProbe(key: "v1:dell", probedKeys: ["v1:dell"]))
+        XCTAssertFalse(shouldSkipFullCapabilityProbe(key: "v1:lcd", probedKeys: ["v1:dell"]))
+    }
+
     func testConnectionKindBuiltinFirst() {
         XCTAssertEqual(
             connectionKind(

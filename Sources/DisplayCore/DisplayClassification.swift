@@ -86,6 +86,12 @@ public func displayIdentitiesChanged(previous: Set<String>, next: Set<String>) -
     previous != next
 }
 
+/// Rotation/mode reconfigs keep identities. Skip a full DDC/DS probe only after
+/// that identity already has a committed brightness backend.
+public func shouldSkipFullCapabilityProbe(key: String, probedKeys: Set<String>) -> Bool {
+    probedKeys.contains(key)
+}
+
 public func connectionKind(
     isBuiltin: Bool,
     transportDownstream: String?,
