@@ -345,9 +345,12 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         clickThroughButton.state = placement.clickThrough ? .on : .off
         clickThroughButton.contentTintColor = placement.clickThrough ? CandelaChrome.accent : .secondaryLabelColor
         clickThroughButton.toolTip = placement.clickThrough
-            ? String(localized: "Click through is on. Hover the title bar to adjust.")
+            ? String(localized: "Click through is on. Hover the title bar to adjust. Scroll still zooms.")
             : String(localized: "Click Through")
         clickThroughButton.setAccessibilityLabel(clickThroughButton.toolTip)
+        if let root = window?.contentView as? PictureInPictureRootView {
+            root.clickThroughEnabled = placement.clickThrough
+        }
         updateClickThroughIgnoring()
         if placement.clickThrough {
             if clickThroughTimer == nil {
@@ -371,8 +374,15 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             window?.ignoresMouseEvents = false
             return
         }
-        let chromeScreen = window.convertToScreen(chrome.convert(chrome.bounds, to: nil)).insetBy(dx: -10, dy: -10)
-        window.ignoresMouseEvents = !chromeScreen.contains(NSEvent.mouseLocation)
+        let hoveringChrome = window.convertToScreen(chrome.convert(chrome.bounds, to: nil))
+            .insetBy(dx: -10, dy: -10)
+            .contains(NSEvent.mouseLocation)
+        // Stay live over the preview so scroll/pinch still zoom. The root view
+        // forwards clicks that miss chrome controls.
+        window.ignoresMouseEvents = !hoveringChrome && !PictureInPictureLayout.isMouseOverWindow(
+            mouse: NSEvent.mouseLocation,
+            windowFrame: window.frame
+        )
     }
 
     private func syncPinPopup() {
@@ -505,8 +515,41 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 final class PictureInPictureRootView: NSView {
     var onScrollWheel: ((NSEvent) -> Void)?
     var onMagnify: ((NSEvent) -> Void)?
+    var clickThroughEnabled = false
 
     override var acceptsFirstResponder: Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        if clickThroughEnabled, hit is PictureInPicturePreviewView || hit is NSTextField {
+            return self
+        }
+        return hit
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if clickThroughEnabled, shouldPassClick(event) {
+            passClicksTemporarily()
+            return
+        }
+        super.mouseDown(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        if clickThroughEnabled, shouldPassClick(event) {
+            passClicksTemporarily()
+            return
+        }
+        super.rightMouseDown(with: event)
+    }
+
+    override func otherMouseDown(with event: NSEvent) {
+        if clickThroughEnabled, shouldPassClick(event) {
+            passClicksTemporarily()
+            return
+        }
+        super.otherMouseDown(with: event)
+    }
 
     override func scrollWheel(with event: NSEvent) {
         onScrollWheel?(event)
@@ -514,6 +557,20 @@ final class PictureInPictureRootView: NSView {
 
     override func magnify(with event: NSEvent) {
         onMagnify?(event)
+    }
+
+    private func shouldPassClick(_ event: NSEvent) -> Bool {
+        let point = convert(event.locationInWindow, from: nil)
+        let hit = super.hitTest(point)
+        return hit == nil || hit is PictureInPicturePreviewView || hit is NSTextField
+    }
+
+    private func passClicksTemporarily() {
+        guard let window else { return }
+        window.ignoresMouseEvents = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            window.ignoresMouseEvents = false
+        }
     }
 }
 

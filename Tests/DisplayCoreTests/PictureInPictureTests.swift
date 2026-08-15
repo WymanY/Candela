@@ -155,4 +155,11 @@ final class PictureInPictureTests: XCTestCase {
         )
         XCTAssertEqual(huge.width, PictureInPictureLayout.maxWidth, accuracy: 0.001)
     }
+
+    func testMouseOverWindowDetectsHoverForClickThroughZoom() {
+        let frame = CGRect(x: 200, y: 120, width: 400, height: 260)
+        XCTAssertTrue(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 250, y: 180), windowFrame: frame))
+        XCTAssertFalse(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 20, y: 20), windowFrame: frame))
+        XCTAssertTrue(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 198, y: 180), windowFrame: frame, inset: 4))
+    }
 }

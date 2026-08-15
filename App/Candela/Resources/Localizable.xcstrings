@@ -1068,13 +1068,13 @@
         }
       }
     },
-    "Click through is on. Hover the title bar to adjust.": {
+    "Click through is on. Hover the title bar to adjust. Scroll still zooms.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click through is on. Hover the title bar to adjust."
+            "value": "Click through is on. Hover the title bar to adjust. Scroll still zooms."
           }
         }
       }

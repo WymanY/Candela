@@ -241,6 +241,14 @@ public enum PictureInPictureLayout {
         return deltaY > 0 ? zoomStep : 1 / zoomStep
     }
 
+    public static func isMouseOverWindow(
+        mouse: CGPoint,
+        windowFrame: CGRect,
+        inset: CGFloat = 0
+    ) -> Bool {
+        windowFrame.insetBy(dx: -inset, dy: -inset).contains(mouse)
+    }
+
     public static func zoomedFrame(
         current: CGRect,
         factor: CGFloat,
