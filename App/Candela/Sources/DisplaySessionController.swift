@@ -190,8 +190,12 @@ final class DisplaySessionController {
             displayID: snapshot.sessionDisplayID,
             pixelWidth: snapshot.pixelWidth,
             pixelHeight: snapshot.pixelHeight,
-            usePlaceholder: Self.shouldUseFakeHardware
+            usePlaceholder: Self.shouldUseFakeHardware,
+            placement: persistence.record(for: key)?.pictureInPicture ?? .default
         )
+        controller.onPlacementChange = { [weak self] placement in
+            self?.savePictureInPicturePlacement(key: key, placement: placement)
+        }
         controller.onClose = { [weak self] in
             guard let self else { return }
             self.pictureInPictureWindows.removeValue(forKey: key)
@@ -200,6 +204,7 @@ final class DisplaySessionController {
         }
         pictureInPictureWindows[key] = controller
         controller.showWindow(nil)
+        controller.capturePlacement()
         stampPictureInPictureState()
         onChange?()
         return true
@@ -492,7 +497,14 @@ final class DisplaySessionController {
                 continue
             }
             pictureInPictureWindows[key]?.updateTitle(snapshot.name)
+            pictureInPictureWindows[key]?.updateSourceDisplay(snapshot.sessionDisplayID)
         }
+    }
+
+    private func savePictureInPicturePlacement(key: String, placement: PictureInPicturePlacement) {
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.pictureInPicture = placement
+        persistence.save(record)
     }
 
     private func refreshRotationSupport() {

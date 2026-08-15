@@ -49,6 +49,7 @@ public struct DisplayRecord: Codable, Equatable, Sendable {
     public var audioDeviceUIDOverride: String?
     public var useDDCMute: Bool
     public var customName: String?
+    public var pictureInPicture: PictureInPicturePlacement?
 
     public init(
         persistentKey: String,
@@ -65,7 +66,8 @@ public struct DisplayRecord: Codable, Equatable, Sendable {
         softwareDimmingDisabled: Bool = false,
         audioDeviceUIDOverride: String? = nil,
         useDDCMute: Bool = false,
-        customName: String? = nil
+        customName: String? = nil,
+        pictureInPicture: PictureInPicturePlacement? = nil
     ) {
         self.persistentKey = persistentKey
         self.portLocation = portLocation
@@ -82,6 +84,7 @@ public struct DisplayRecord: Codable, Equatable, Sendable {
         self.audioDeviceUIDOverride = audioDeviceUIDOverride
         self.useDDCMute = useDDCMute
         self.customName = customName
+        self.pictureInPicture = pictureInPicture
     }
 }
 

@@ -23,7 +23,7 @@ final class PictureInPictureTests: XCTestCase {
     func testWindowAddsChromeAndPrefersAnotherScreen() {
         let content = CGSize(width: 420, height: 236)
         let window = PictureInPictureLayout.windowSize(forContent: content)
-        XCTAssertEqual(window.height, 264, accuracy: 0.001)
+        XCTAssertEqual(window.height, content.height + PictureInPictureLayout.chromeHeight, accuracy: 0.001)
 
         let origin = PictureInPictureLayout.origin(
             windowSize: window,
@@ -45,5 +45,65 @@ final class PictureInPictureTests: XCTestCase {
         let missing = PictureInPictureLayout.captureSize(pixelWidth: 0, pixelHeight: 0)
         XCTAssertEqual(missing.width, PictureInPictureLayout.minimumCaptureWidth)
         XCTAssertEqual(missing.height, PictureInPictureLayout.minimumCaptureHeight)
+    }
+
+    func testOpacityClampsAndPinnedCornersSnap() {
+        XCTAssertEqual(PictureInPictureLayout.clampedOpacity(0.01), 0.25, accuracy: 0.0001)
+        XCTAssertEqual(PictureInPictureLayout.clampedOpacity(1.4), 1, accuracy: 0.0001)
+
+        let visible = CGRect(x: 1920, y: 0, width: 1512, height: 982)
+        let size = CGSize(width: 420, height: 264)
+        let topLeft = PictureInPictureLayout.snapOrigin(windowSize: size, corner: .topLeft, visible: visible)
+        XCTAssertEqual(topLeft.x, 1944, accuracy: 0.001)
+        XCTAssertEqual(topLeft.y, 982 - 264 - 24, accuracy: 0.001)
+
+        let screens: [(id: UInt32, visible: CGRect)] = [
+            (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1080)),
+            (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 982)),
+        ]
+        let pinned = PictureInPictureLayout.windowFrame(
+            windowSize: size,
+            sourceDisplayID: 2,
+            screens: screens,
+            placement: PictureInPicturePlacement(corner: .topRight, hostDisplayID: 1)
+        )
+        XCTAssertEqual(pinned.origin.x, 1920 + 1512 - size.width - 24, accuracy: 0.001)
+        XCTAssertEqual(pinned.origin.y, 982 - size.height - 24, accuracy: 0.001)
+    }
+
+    func testSavedFrameRestoresOnTheSameScreenAndClamps() {
+        let screens: [(id: UInt32, visible: CGRect)] = [
+            (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1080)),
+            (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 982)),
+        ]
+        let saved = PictureInPictureFrame(x: 2100, y: 120, width: 480, height: 300)
+        let frame = PictureInPictureLayout.windowFrame(
+            windowSize: CGSize(width: 480, height: 300),
+            sourceDisplayID: 2,
+            screens: screens,
+            placement: PictureInPicturePlacement(frame: saved)
+        )
+        XCTAssertEqual(frame.origin.x, 2100, accuracy: 0.001)
+        XCTAssertEqual(frame.origin.y, 120, accuracy: 0.001)
+
+        let overflow = PictureInPictureLayout.windowFrame(
+            windowSize: CGSize(width: 480, height: 300),
+            sourceDisplayID: 2,
+            screens: screens,
+            placement: PictureInPicturePlacement(frame: PictureInPictureFrame(x: 3400, y: 900, width: 480, height: 300))
+        )
+        XCTAssertEqual(overflow.maxX, 1920 + 1512, accuracy: 0.001)
+        XCTAssertEqual(overflow.maxY, 982, accuracy: 0.001)
+    }
+
+    func testDraggingOffAPinnedCornerUnpins() {
+        let visible = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let size = CGSize(width: 400, height: 250)
+        let pinned = CGRect(origin: PictureInPictureLayout.snapOrigin(windowSize: size, corner: .bottomRight, visible: visible), size: size)
+        XCTAssertFalse(PictureInPictureLayout.movedOffPinnedCorner(frame: pinned, corner: .bottomRight, visible: visible))
+
+        var dragged = pinned
+        dragged.origin.x -= 40
+        XCTAssertTrue(PictureInPictureLayout.movedOffPinnedCorner(frame: dragged, corner: .bottomRight, visible: visible))
     }
 }
