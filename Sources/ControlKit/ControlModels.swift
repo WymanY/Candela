@@ -14,6 +14,11 @@ public enum ControlAction: String, Codable, Sendable {
     case rename
     case preset
     case matchAll
+    case listScenes
+    case applyScene
+    case saveScene
+    case renameScene
+    case deleteScene
     case dump
 }
 
@@ -27,6 +32,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
     public var pictureInPicture: Bool?
     public var name: String?
     public var preset: String?
+    public var scene: String?
     public var redact: Bool?
 
     public init(
@@ -39,6 +45,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         pictureInPicture: Bool? = nil,
         name: String? = nil,
         preset: String? = nil,
+        scene: String? = nil,
         redact: Bool? = nil
     ) {
         self.action = action
@@ -50,6 +57,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         self.pictureInPicture = pictureInPicture
         self.name = name
         self.preset = preset
+        self.scene = scene
         self.redact = redact
     }
 }
@@ -110,16 +118,44 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
     }
 }
 
+public struct ControlSceneDTO: Codable, Equatable, Sendable {
+    public var id: String
+    public var name: String
+    public var displayCount: Int
+    public var missingCount: Int
+    public var active: Bool
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(scene: DisplayScene, snapshots: [DisplaySnapshot] = []) {
+        id = scene.id
+        name = scene.displayName
+        displayCount = scene.targets.count
+        missingCount = DisplayScenePlanner.plan(scene: scene, snapshots: snapshots).missingKeys.count
+        active = DisplayScenePlanner.matches(scene, snapshots: snapshots)
+        createdAt = scene.createdAt
+        updatedAt = scene.updatedAt
+    }
+}
+
 public struct ControlResponse: Codable, Equatable, Sendable {
     public var ok: Bool
     public var error: String?
     public var displays: [ControlDisplayDTO]?
+    public var scenes: [ControlSceneDTO]?
     public var dump: String?
 
-    public init(ok: Bool, error: String? = nil, displays: [ControlDisplayDTO]? = nil, dump: String? = nil) {
+    public init(
+        ok: Bool,
+        error: String? = nil,
+        displays: [ControlDisplayDTO]? = nil,
+        scenes: [ControlSceneDTO]? = nil,
+        dump: String? = nil
+    ) {
         self.ok = ok
         self.error = error
         self.displays = displays
+        self.scenes = scenes
         self.dump = dump
     }
 
@@ -127,8 +163,12 @@ public struct ControlResponse: Codable, Equatable, Sendable {
         ControlResponse(ok: false, error: message)
     }
 
-    public static func success(displays: [ControlDisplayDTO]) -> ControlResponse {
-        ControlResponse(ok: true, displays: displays)
+    public static func success(displays: [ControlDisplayDTO], scenes: [ControlSceneDTO]? = nil) -> ControlResponse {
+        ControlResponse(ok: true, displays: displays, scenes: scenes)
+    }
+
+    public static func success(scenes: [ControlSceneDTO], displays: [ControlDisplayDTO]? = nil) -> ControlResponse {
+        ControlResponse(ok: true, displays: displays, scenes: scenes)
     }
 }
 

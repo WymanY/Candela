@@ -11,6 +11,7 @@ public final class PersistenceStore: PersistenceStoring {
         static let global = "global"
         static let displays = "displays"
         static let aliases = "aliases"
+        static let scenes = "scenes"
     }
 
     public init() {
@@ -68,6 +69,16 @@ public final class PersistenceStore: PersistenceStoring {
         return loadAliases()
     }
 
+    public func allScenes() -> [DisplayScene] {
+        guard hasSchema else { return [] }
+        return loadScenes()
+    }
+
+    public func saveScenes(_ scenes: [DisplayScene]) {
+        ensureSchema()
+        saveSceneList(scenes)
+    }
+
     private var hasSchema: Bool {
         defaults.object(forKey: Key.schemaVersion) != nil
     }
@@ -105,6 +116,21 @@ public final class PersistenceStore: PersistenceStoring {
     private func saveAliases(_ aliases: [String: String]) {
         if let data = try? encoder.encode(aliases) {
             defaults.set(data, forKey: Key.aliases)
+        }
+    }
+
+    private func loadScenes() -> [DisplayScene] {
+        guard let data = defaults.data(forKey: Key.scenes),
+              let scenes = try? decoder.decode([DisplayScene].self, from: data)
+        else {
+            return []
+        }
+        return scenes
+    }
+
+    private func saveSceneList(_ scenes: [DisplayScene]) {
+        if let data = try? encoder.encode(scenes) {
+            defaults.set(data, forKey: Key.scenes)
         }
     }
 }
