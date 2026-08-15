@@ -41,6 +41,8 @@ enum CandelaCLI {
             return ControlRequest(action: .setInput, display: try requiredDisplay(rest), input: try requiredToken(rest, name: "input"))
         case "set-rotation":
             return ControlRequest(action: .setRotation, display: try requiredDisplay(rest), rotation: try requiredToken(rest, name: "rotation"))
+        case "set-pip":
+            return ControlRequest(action: .setPictureInPicture, display: try requiredDisplay(rest), pictureInPicture: try requiredBool(rest, names: ["--enabled", "--value", "--pip"]))
         case "rename":
             return ControlRequest(action: .rename, display: try requiredDisplay(rest), name: optionalName(rest))
         case "preset":
@@ -78,8 +80,8 @@ enum CandelaCLI {
         throw CLIError.usage
     }
 
-    static func requiredBool(_ args: [String]) throws -> Bool {
-        if let raw = named(args, names: ["--muted", "--value"]) ?? args.dropFirst().first(where: { ["true", "false", "1", "0", "on", "off"].contains($0.lowercased()) }) {
+    static func requiredBool(_ args: [String], names: [String] = ["--muted", "--value"]) throws -> Bool {
+        if let raw = named(args, names: names) ?? args.dropFirst().first(where: { ["true", "false", "1", "0", "on", "off"].contains($0.lowercased()) }) {
             switch raw.lowercased() {
             case "true", "1", "on": return true
             case "false", "0", "off": return false
@@ -132,7 +134,7 @@ enum CLIError: LocalizedError {
         case .usage:
             return """
             candela-cli <command> [options]
-            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation rename preset match-all dump
+            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip rename preset match-all dump
             display queries: name, persistentKey, main, builtin, external
             """
         case .unknown(let command):

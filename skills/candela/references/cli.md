@@ -18,6 +18,7 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 | `rename --display Q --name Desk` | `rename` | Empty name clears custom name |
 | `preset night` | `preset` | night/desk/max; optional `--display` |
 | `match-all --display Q` | `matchAll` | Copy source brightness/volume/contrast |
+| `set-pip --display Q --enabled true` | `setPictureInPicture` | Floating display mirror |
 | `dump` | `dump` | Redacted unless `--no-redact` |
 
 ## MCP tools
@@ -34,6 +35,7 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 - `candela_rename_display`
 - `candela_apply_preset`
 - `candela_match_all`
+- `candela_set_picture_in_picture`
 - `candela_debug_dump`
 
 stdio JSON-RPC, protocol `2024-11-05`.

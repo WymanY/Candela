@@ -152,6 +152,9 @@ final class StatusPanelView: NSView {
             row.onRotation = { [weak self] rotation in
                 self?.session.setRotation(key: key, rotation: rotation)
             }
+            row.onPictureInPicture = { [weak self] in
+                self?.session.togglePictureInPicture(key: key)
+            }
             row.onPreset = { [weak self] preset in
                 self?.session.applyPreset(preset, key: key)
             }

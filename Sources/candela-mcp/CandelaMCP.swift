@@ -116,6 +116,8 @@ final class MCPStdioTransport {
             return ControlRequest(action: .setInput, display: try required(object, "display"), input: try required(object, "input"))
         case "candela_set_rotation":
             return ControlRequest(action: .setRotation, display: try required(object, "display"), rotation: try required(object, "rotation"))
+        case "candela_set_picture_in_picture":
+            return ControlRequest(action: .setPictureInPicture, display: try required(object, "display"), pictureInPicture: try requiredBool(object, "enabled"))
         case "candela_rename_display":
             return ControlRequest(action: .rename, display: try required(object, "display"), name: object["name"]?.stringValue)
         case "candela_apply_preset":
@@ -176,6 +178,10 @@ final class MCPStdioTransport {
             "display": schema("string", "Display query"),
             "rotation": schema("string", "0, 90, 180, 270, landscape, or portrait"),
         ], ["display", "rotation"]),
+        tool("candela_set_picture_in_picture", "Open or close a floating Picture in Picture window for a display.", [
+            "display": schema("string", "Display query"),
+            "enabled": schema("boolean", "true to open, false to close"),
+        ], ["display", "enabled"]),
         tool("candela_rename_display", "Set or clear a custom display name.", [
             "display": schema("string", "Display query"),
             "name": schema("string", "Custom name; omit or empty to reset"),

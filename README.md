@@ -46,7 +46,7 @@ CANDELA_FAKE_HARDWARE=1
 
 ## Everyday controls
 
-The menu-bar panel now has Night / Desk / Max brightness presets, Match All, DDC contrast, input select, and per-display rotation (0/90/180/270) on external monitors that can rotate. Built-in panels never expose rotation. Settings covers Launch at Login, restore on reconnect, percent labels, dim-to-black, and per-display custom names.
+The menu-bar panel now has Night / Desk / Max brightness presets, Match All, DDC contrast, input select, per-display rotation (0/90/180/270) on external monitors that can rotate, and Picture in Picture for a chosen display. Built-in panels never expose rotation. Settings covers Launch at Login, restore on reconnect, percent labels, dim-to-black, and per-display custom names.
 
 ## Agent interface
 
@@ -60,7 +60,7 @@ swift run --package-path . candela-cli preset night
 
 `candela-mcp` is a local stdio MCP server with the same operations. The Codex skill lives in `skills/candela`.
 
-BetterDisplay-style virtual screens, EDID overrides, XDR unlock, PiP, and resolution/HiDPI forcing are intentionally out of scope.
+BetterDisplay-style virtual screens, EDID overrides, XDR unlock, and resolution/HiDPI forcing are intentionally out of scope.
 
 ## Tests
 

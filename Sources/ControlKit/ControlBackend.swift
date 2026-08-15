@@ -9,6 +9,7 @@ public struct ControlBackend {
     public var setContrast: (String, Double) -> Void
     public var setInput: (String, DisplayInputSource) -> Void
     public var setRotation: (String, DisplayRotation) -> Void
+    public var setPictureInPicture: (String, Bool) -> Bool
     public var rename: (String, String?) -> Bool
     public var applyPreset: (BrightnessPreset, String?) -> Void
     public var matchAll: (String) -> Void
@@ -22,6 +23,7 @@ public struct ControlBackend {
         setContrast: @escaping (String, Double) -> Void,
         setInput: @escaping (String, DisplayInputSource) -> Void,
         setRotation: @escaping (String, DisplayRotation) -> Void,
+        setPictureInPicture: @escaping (String, Bool) -> Bool,
         rename: @escaping (String, String?) -> Bool,
         applyPreset: @escaping (BrightnessPreset, String?) -> Void,
         matchAll: @escaping (String) -> Void,
@@ -34,6 +36,7 @@ public struct ControlBackend {
         self.setContrast = setContrast
         self.setInput = setInput
         self.setRotation = setRotation
+        self.setPictureInPicture = setPictureInPicture
         self.rename = rename
         self.applyPreset = applyPreset
         self.matchAll = matchAll
@@ -49,7 +52,7 @@ public enum ControlRouter {
             return .success(displays: all.map(ControlDisplayDTO.init(snapshot:)))
         case .dump:
             return ControlResponse(ok: true, dump: backend.dump(request.redact ?? true))
-        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .rename, .preset, .matchAll:
+        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .rename, .preset, .matchAll:
             break
         }
 
@@ -112,6 +115,16 @@ public enum ControlRouter {
                 return .failure("\(resolved!.name) cannot rotate.")
             }
             backend.setRotation(resolved!.id.persistentKey, rotation)
+        case .setPictureInPicture:
+            guard let enabled = request.pictureInPicture else {
+                return .failure("pictureInPicture true/false is required.")
+            }
+            guard PictureInPictureLayout.supports(kind: resolved!.kind) else {
+                return .failure("\(resolved!.name) cannot open Picture in Picture.")
+            }
+            guard backend.setPictureInPicture(resolved!.id.persistentKey, enabled) else {
+                return .failure("Could not update Picture in Picture for \(resolved!.name).")
+            }
         case .rename:
             guard backend.rename(resolved!.id.persistentKey, request.name) else {
                 return .failure("Could not rename \(resolved!.name).")

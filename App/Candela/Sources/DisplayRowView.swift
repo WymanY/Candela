@@ -7,6 +7,7 @@ final class DisplayRowView: NSView {
     var onContrast: ((Double) -> Void)?
     var onInput: ((DisplayInputSource) -> Void)?
     var onRotation: ((DisplayRotation) -> Void)?
+    var onPictureInPicture: (() -> Void)?
     var onPreset: ((BrightnessPreset) -> Void)?
     var onMatchAll: (() -> Void)?
 
@@ -14,6 +15,7 @@ final class DisplayRowView: NSView {
     private let nameLabel = CandelaChrome.makeTitle("")
     private let metaLabel = CandelaChrome.makeMeta()
     private let matchButton: NSButton
+    private let pipButton: NSButton
     private let inputPopup = NSPopUpButton()
     private let rotationControl = RotationSegmentControl()
 
@@ -37,6 +39,7 @@ final class DisplayRowView: NSView {
 
     override init(frame frameRect: NSRect) {
         matchButton = CandelaChrome.makeQuietButton(title: String(localized: "Match All"), symbolName: "square.on.square")
+        pipButton = CandelaChrome.makeQuietButton(title: String(localized: "PiP"), symbolName: "rectangle.on.rectangle")
         brightnessSlider = CandelaChrome.makeSlider()
         contrastSlider = CandelaChrome.makeSlider()
         super.init(frame: frameRect)
@@ -48,6 +51,8 @@ final class DisplayRowView: NSView {
         contrastSlider.action = #selector(contrastChanged(_:))
         matchButton.target = self
         matchButton.action = #selector(matchAll)
+        pipButton.target = self
+        pipButton.action = #selector(togglePictureInPicture)
 
         inputPopup.controlSize = .small
         inputPopup.font = .systemFont(ofSize: 11, weight: .medium)
@@ -66,6 +71,7 @@ final class DisplayRowView: NSView {
         rotationControl.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         matchButton.setContentHuggingPriority(.required, for: .horizontal)
+        pipButton.setContentHuggingPriority(.required, for: .horizontal)
 
         nameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         nameLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -76,7 +82,7 @@ final class DisplayRowView: NSView {
         identity.spacing = 2
         identity.setHuggingPriority(.defaultLow, for: .horizontal)
         identity.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let actions = NSStackView(views: [matchButton, inputPopup])
+        let actions = NSStackView(views: [pipButton, matchButton, inputPopup])
         actions.orientation = .horizontal
         actions.alignment = .centerY
         actions.spacing = 6
@@ -185,6 +191,16 @@ final class DisplayRowView: NSView {
             rotationControl.setAccessibilityLabel("\(String(localized: "Rotation")), \(snapshot.name)")
         }
         matchButton.isHidden = unsupported || !showMatchAll
+        let showsPip = PictureInPictureLayout.supports(kind: snapshot.kind)
+        pipButton.isHidden = !showsPip
+        if showsPip {
+            pipButton.title = snapshot.pictureInPictureActive ? String(localized: "Close PiP") : String(localized: "PiP")
+            pipButton.toolTip = snapshot.pictureInPictureActive
+                ? String(localized: "Close Picture in Picture")
+                : String(localized: "Open Picture in Picture")
+            pipButton.setAccessibilityLabel(pipButton.toolTip)
+            pipButton.contentTintColor = snapshot.pictureInPictureActive ? CandelaChrome.accent : .secondaryLabelColor
+        }
         isApplying = false
         invalidateIntrinsicContentSize()
     }
@@ -233,6 +249,8 @@ final class DisplayRowView: NSView {
     }
 
     @objc private func matchAll() { onMatchAll?() }
+
+    @objc private func togglePictureInPicture() { onPictureInPicture?() }
 
     private func updateContrastPercent(_ value: Double) {
         contrastPercent.isHidden = !showPercent

@@ -10,6 +10,7 @@ public enum ControlAction: String, Codable, Sendable {
     case setContrast
     case setInput
     case setRotation
+    case setPictureInPicture
     case rename
     case preset
     case matchAll
@@ -23,6 +24,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
     public var muted: Bool?
     public var input: String?
     public var rotation: String?
+    public var pictureInPicture: Bool?
     public var name: String?
     public var preset: String?
     public var redact: Bool?
@@ -34,6 +36,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         muted: Bool? = nil,
         input: String? = nil,
         rotation: String? = nil,
+        pictureInPicture: Bool? = nil,
         name: String? = nil,
         preset: String? = nil,
         redact: Bool? = nil
@@ -44,6 +47,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         self.muted = muted
         self.input = input
         self.rotation = rotation
+        self.pictureInPicture = pictureInPicture
         self.name = name
         self.preset = preset
         self.redact = redact
@@ -71,6 +75,8 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
     public var supportsInput: Bool
     public var rotation: String?
     public var supportsRotation: Bool
+    public var supportsPictureInPicture: Bool
+    public var pictureInPicture: Bool
     public var resolution: String?
     public var refreshHz: Double?
     public var scale: Double?
@@ -96,6 +102,8 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
         input = snapshot.input.current?.rawValue ?? snapshot.input.currentCode.map { String(format: "0x%02X", $0) }
         supportsRotation = snapshot.rotation.supportsRotation
         rotation = supportsRotation ? snapshot.rotation.current.rawValue.description : nil
+        supportsPictureInPicture = PictureInPictureLayout.supports(kind: snapshot.kind)
+        pictureInPicture = snapshot.pictureInPictureActive
         resolution = DisplayPresentation.modeTitle(for: snapshot)
         refreshHz = snapshot.refreshHz > 0.5 ? snapshot.refreshHz : nil
         scale = snapshot.hasMode ? snapshot.scaleFactor : nil

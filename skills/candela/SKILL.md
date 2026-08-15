@@ -36,6 +36,7 @@ candela-cli rename --display DELL --name "Desk"
 candela-cli preset night
 candela-cli preset --display external desk
 candela-cli match-all --display main
+candela-cli set-pip --display DELL --enabled true
 candela-cli dump
 ```
 
@@ -49,4 +50,4 @@ Every command prints one JSON object. `ok: false` means stop and report `error`.
 
 ## Limits
 
-Candela does not create virtual screens, override EDID, unlock XDR nits, change resolution, or take over media keys. Built-in panels do not support rotation. Sidecar/AirPlay rows are listed but not controllable.
+Candela does not create virtual screens, override EDID, unlock XDR nits, change resolution, or take over media keys. Built-in panels do not support rotation. Picture in Picture mirrors a chosen display and needs Screen Recording. Sidecar/AirPlay rows are listed but not controllable.

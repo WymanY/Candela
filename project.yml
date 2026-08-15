@@ -51,7 +51,7 @@ targets:
         NSSupportsSuddenTermination: false
         NSPrincipalClass: NSApplication
         NSAudioCaptureUsageDescription: Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.
-        NSScreenCaptureUsageDescription: Candela needs Screen Recording to apply software volume to HDMI and DisplayPort monitor speakers.
+        NSScreenCaptureUsageDescription: Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.
         CFBundleDisplayName: Candela
         CFBundleName: Candela
         LSMinimumSystemVersion: "14.0"

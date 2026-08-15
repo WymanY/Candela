@@ -20,8 +20,12 @@ final class DisplaySessionController {
     private var lastAppliedKeys: Set<String> = []
     private var probedKeys: Set<String> = []
     private var pendingRotationByKey: [String: DisplayRotation] = [:]
+    private var pictureInPictureWindows: [String: PictureInPictureWindowController] = [:]
 
     var snapshots: [DisplaySnapshot] = []
+    var pictureInPictureKeys: Set<String> {
+        Set(pictureInPictureWindows.keys)
+    }
     var speaker: SpeakerOutput?
     var speakerChoices: [SpeakerChoice] = []
     var onChange: (() -> Void)?
@@ -89,6 +93,7 @@ final class DisplaySessionController {
             task.cancel()
         }
         restoreTasks.removeAll()
+        closeAllPictureInPicture()
         catalog.stop()
         if !Self.shouldUseFakeHardware {
             for box in boxes.values {
@@ -155,6 +160,65 @@ final class DisplaySessionController {
         var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
         record.lastInputCode = source.code
         persistence.save(record)
+    }
+
+    func isPictureInPictureOpen(key: String) -> Bool {
+        pictureInPictureWindows[key] != nil
+    }
+
+    @discardableResult
+    func togglePictureInPicture(key: String) -> Bool {
+        if isPictureInPictureOpen(key: key) {
+            closePictureInPicture(key: key)
+            return false
+        }
+        return openPictureInPicture(key: key)
+    }
+
+    @discardableResult
+    func openPictureInPicture(key: String) -> Bool {
+        guard let snapshot = snapshots.first(where: { $0.id.persistentKey == key }) else { return false }
+        guard PictureInPictureLayout.supports(kind: snapshot.kind) else { return false }
+        if let existing = pictureInPictureWindows[key] {
+            existing.updateTitle(snapshot.name)
+            existing.window?.makeKeyAndOrderFront(nil)
+            return true
+        }
+        let controller = PictureInPictureWindowController(
+            key: key,
+            title: snapshot.name,
+            displayID: snapshot.sessionDisplayID,
+            pixelWidth: snapshot.pixelWidth,
+            pixelHeight: snapshot.pixelHeight,
+            usePlaceholder: Self.shouldUseFakeHardware
+        )
+        controller.onClose = { [weak self] in
+            guard let self else { return }
+            self.pictureInPictureWindows.removeValue(forKey: key)
+            self.stampPictureInPictureState()
+            self.onChange?()
+        }
+        pictureInPictureWindows[key] = controller
+        controller.showWindow(nil)
+        stampPictureInPictureState()
+        onChange?()
+        return true
+    }
+
+    func closePictureInPicture(key: String) {
+        guard let controller = pictureInPictureWindows.removeValue(forKey: key) else { return }
+        controller.onClose = nil
+        controller.stop()
+        stampPictureInPictureState()
+        onChange?()
+    }
+
+    private func closeAllPictureInPicture() {
+        for controller in pictureInPictureWindows.values {
+            controller.onClose = nil
+            controller.stop()
+        }
+        pictureInPictureWindows.removeAll()
     }
 
     func setRotation(key: String, rotation: DisplayRotation) {
@@ -269,6 +333,13 @@ final class DisplaySessionController {
             setContrast: { self.setContrast(key: $0, value: $1) },
             setInput: { self.setInput(key: $0, source: $1) },
             setRotation: { self.setRotation(key: $0, rotation: $1) },
+            setPictureInPicture: { key, enabled in
+                if enabled {
+                    return self.openPictureInPicture(key: key)
+                }
+                self.closePictureInPicture(key: key)
+                return true
+            },
             rename: { self.renameDisplay(key: $0, customName: $1) },
             applyPreset: { self.applyPreset($0, key: $1) },
             matchAll: { self.matchAll(to: $0) },
@@ -356,6 +427,8 @@ final class DisplaySessionController {
         boxes = kept
         snapshots = preserveProbedState(next)
         refreshRotationSupport()
+        syncPictureInPictureWindows()
+        stampPictureInPictureState()
         lastAppliedKeys = nextKeys
         probedKeys = probedKeys.intersection(nextKeys)
         pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
@@ -402,6 +475,23 @@ final class DisplaySessionController {
                     previousKeys: []
                 )
             }
+        }
+    }
+
+    private func stampPictureInPictureState() {
+        for index in snapshots.indices {
+            snapshots[index].pictureInPictureActive = pictureInPictureWindows[snapshots[index].id.persistentKey] != nil
+        }
+    }
+
+    private func syncPictureInPictureWindows() {
+        let live = Dictionary(uniqueKeysWithValues: snapshots.map { ($0.id.persistentKey, $0) })
+        for key in Array(pictureInPictureWindows.keys) {
+            guard let snapshot = live[key], PictureInPictureLayout.supports(kind: snapshot.kind) else {
+                closePictureInPicture(key: key)
+                continue
+            }
+            pictureInPictureWindows[key]?.updateTitle(snapshot.name)
         }
     }
 

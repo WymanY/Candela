@@ -169,6 +169,10 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         if snapshot.rotation.supportsRotation {
             rows.append(factRow(String(localized: "Rotation"), DisplayPresentation.rotationTitle(for: snapshot)))
         }
+        if PictureInPictureLayout.supports(kind: snapshot.kind) {
+            let value = snapshot.pictureInPictureActive ? String(localized: "Open") : String(localized: "Available")
+            rows.append(factRow(String(localized: "Picture in Picture"), value))
+        }
         if let vendor = DisplayPresentation.vendorTitle(for: snapshot) {
             rows.append(factRow(String(localized: "Vendor"), vendor))
         }

@@ -19,6 +19,7 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
     public var pixelHeight: UInt32
     public var refreshHz: Double
     public var scaleFactor: Double
+    public var pictureInPictureActive: Bool
 
     public init(
         id: DisplayIdentity,
@@ -37,7 +38,8 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
         pixelWidth: UInt32 = 0,
         pixelHeight: UInt32 = 0,
         refreshHz: Double = 0,
-        scaleFactor: Double = 1
+        scaleFactor: Double = 1,
+        pictureInPictureActive: Bool = false
     ) {
         self.id = id
         self.sessionDisplayID = sessionDisplayID
@@ -56,6 +58,7 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
         self.pixelHeight = pixelHeight
         self.refreshHz = refreshHz
         self.scaleFactor = scaleFactor
+        self.pictureInPictureActive = pictureInPictureActive
     }
 
     public var displayName: String { name }

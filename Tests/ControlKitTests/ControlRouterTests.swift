@@ -18,6 +18,7 @@ final class ControlRouterTests: XCTestCase {
             setContrast: { _, _ in },
             setInput: { _, _ in },
             setRotation: { _, _ in },
+            setPictureInPicture: { _, _ in true },
             rename: { _, _ in true },
             applyPreset: { preset, key in
                 for index in snapshots.indices where key == nil || snapshots[index].id.persistentKey == key {
@@ -66,6 +67,7 @@ final class ControlRouterTests: XCTestCase {
             setContrast: { _, _ in },
             setInput: { _, _ in },
             setRotation: { _, _ in },
+            setPictureInPicture: { _, _ in true },
             rename: { _, _ in true },
             applyPreset: { _, _ in },
             matchAll: { _ in },
@@ -92,6 +94,12 @@ final class ControlRouterTests: XCTestCase {
                     snapshots[index].rotation.current = rotation
                 }
             },
+            setPictureInPicture: { key, enabled in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].pictureInPictureActive = enabled
+                }
+                return PictureInPictureLayout.supports(kind: snapshots.first(where: { $0.id.persistentKey == key })?.kind ?? .genericExternal)
+            },
             rename: { _, _ in true },
             applyPreset: { _, _ in },
             matchAll: { _ in },
@@ -117,6 +125,43 @@ final class ControlRouterTests: XCTestCase {
             backend: backend
         )
         XCTAssertFalse(sidecar.ok)
+    }
+
+    func testSetPictureInPicture() {
+        var snapshots = FakeSnapshots.standard()
+        let backend = ControlBackend(
+            snapshots: { snapshots },
+            setBrightness: { _, _ in },
+            setVolume: { _, _ in },
+            setMuted: { _, _ in },
+            setContrast: { _, _ in },
+            setInput: { _, _ in },
+            setRotation: { _, _ in },
+            setPictureInPicture: { key, enabled in
+                guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return false }
+                guard PictureInPictureLayout.supports(kind: snapshots[index].kind) else { return false }
+                snapshots[index].pictureInPictureActive = enabled
+                return true
+            },
+            rename: { _, _ in true },
+            applyPreset: { _, _ in },
+            matchAll: { _ in },
+            dump: { _ in "" }
+        )
+        let opened = ControlRouter.apply(
+            ControlRequest(action: .setPictureInPicture, display: FakeSnapshots.dellName, pictureInPicture: true),
+            backend: backend
+        )
+        XCTAssertTrue(opened.ok)
+        XCTAssertEqual(opened.displays?.first?.pictureInPicture, true)
+        XCTAssertTrue(snapshots[1].pictureInPictureActive)
+
+        let sidecar = ControlRouter.apply(
+            ControlRequest(action: .setPictureInPicture, display: "Sidecar", pictureInPicture: true),
+            backend: backend
+        )
+        XCTAssertFalse(sidecar.ok)
+        XCTAssertFalse(snapshots[3].pictureInPictureActive)
     }
 }
 

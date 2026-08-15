@@ -39,6 +39,6 @@
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Candela needs Screen Recording to apply software volume to HDMI and DisplayPort monitor speakers.</string>
+	<string>Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.</string>
 </dict>
 </plist>
