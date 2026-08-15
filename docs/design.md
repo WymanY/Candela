@@ -972,7 +972,7 @@ public enum BrightnessBackendKind: String, Codable, Sendable {
     case displayServices, ddc, softwareGamma, none
 }
 public enum VolumeBackendKind: String, Codable, Sendable {
-    case coreAudio, ddc, none
+    case coreAudio, ddc, software, none
 }
 
 public struct BrightnessCapabilities: Equatable, Sendable {
@@ -1104,7 +1104,7 @@ First attach of an unknown display (`lastBrightness == nil`): do not write; show
 | --- | --- |
 | Built-in | **Never** |
 | Apple external (DisplayServices success, not builtin) — Studio, XDR, UltraFine | HAL; USB/TB **allowed** for auto-match |
-| genericExternal | HAL if a **HDMI / DP / Thunderbolt** device matches; else DDC `0x62` |
+| genericExternal | HAL if a **HDMI / DP / Thunderbolt** device matches and has volume; else DDC `0x62`; else **software attenuation** on the matched device |
 | virtualUnsupported | Never |
 
 #### 9.2 Enumerate HAL devices
@@ -1216,6 +1216,8 @@ Only if HAL did not bind or HAL has no settable volume/mute.
 Goes through the **same** `DDCClient` as brightness (`0x62` / `0x8D`). Probe `0x62` after brightness probe on the same queue.
 
 Mute: default off for `0x8D`. Volume 0 + remembered previous is the mute path.
+
+If a HDMI / DP / Thunderbolt device matches but neither HAL nor DDC can set volume, Candela uses software attenuation: a private process tap mutes the dry path and this process plays the same stream back onto the matched device. 100% unmuted tears the tap down. The default output is never changed.
 
 ### 10. UI (AppKit)
 

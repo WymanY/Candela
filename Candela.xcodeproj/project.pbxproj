@@ -1,0 +1,505 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 236871E20297EA15E8B19C30 /* SettingsAboutView.swift */; };
+		1794505AFB46B3BFB9F7F4D3 /* HotPlugObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */; };
+		28544AC3C17324B984A50B02 /* SpeakerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */; };
+		38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */; };
+		3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5705532336236260D9C43BA /* StatusItemController.swift */; };
+		479649E80C10E3EEAEC137BA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */; };
+		5D26A0F4FE898DAEBFFAD35B /* ControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = AE981E167F2C87818BFE05A1 /* ControlKit */; };
+		637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */; };
+		692330B621E06F8B7B3C0916 /* StatusPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE08E062782DE20F87A30B88 /* StatusPanelView.swift */; };
+		69A43BA8D4A1E133A1EDB4EA /* DisplayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF47ABA59743DE249AC5488F /* DisplayRowView.swift */; };
+		6E3D061424AB3C7C2BFF4532 /* TestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 5F6245109EDD65BFC9C59AAF /* TestSupport */; };
+		733383736CF5E7E902876333 /* BrightnessKit in Frameworks */ = {isa = PBXBuildFile; productRef = 75B34A6470F248E2DA5598B7 /* BrightnessKit */; };
+		74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
+		8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
+		87FAFF8076EE924CA5893831 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
+		93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */; };
+		9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */; };
+		99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */; };
+		ACD5F998D2F9CEFAAFEFE68B /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = D0CD76F44137A01270AA98F8 /* AudioKit */; };
+		AE38CB5DB255A317F0F09C79 /* PersistenceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A3433947766DA220FA1639C /* PersistenceKit */; };
+		CAF5FD8F9BE2B3C3943E408F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD764C727BD56351F6A07A8 /* AppDelegate.swift */; };
+		E571621392FF6E664F9851C6 /* SettingsGeneralView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */; };
+		E983F4CF1ED46D18F9A2BCDB /* DisplaySessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */; };
+		F2E0057792E18EAAA8FBFD04 /* DisplayCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2CD3413AF063E87EA5861281 /* DisplayCore */; };
+		F828F475CF94725A8FEABE29 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A699CD75329BE53EC461E7A5 /* Assets.xcassets */; };
+		F999A81BF392E44AABEF45BD /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotPlugObserver.swift; sourceTree = "<group>"; };
+		0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRowView.swift; sourceTree = "<group>"; };
+		12F94F0FAF4B5E54894482FE /* Candela.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Candela.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsGeneralView.swift; sourceTree = "<group>"; };
+		236871E20297EA15E8B19C30 /* SettingsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAboutView.swift; sourceTree = "<group>"; };
+		27A22C1F71B3784803149C67 /* Candela.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Candela.entitlements; sourceTree = "<group>"; };
+		2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarGuide.swift; sourceTree = "<group>"; };
+		2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		2E916555AC134A6FD1608068 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelController.swift; sourceTree = "<group>"; };
+		84C65B68A38C3CFB42408055 /* CandelaChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandelaChrome.swift; sourceTree = "<group>"; };
+		86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWindowController.swift; sourceTree = "<group>"; };
+		8D5455D272FE6AB3D2C088B2 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Candela.swift"; sourceTree = "<group>"; };
+		A699CD75329BE53EC461E7A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		BF47ABA59743DE249AC5488F /* DisplayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowView.swift; sourceTree = "<group>"; };
+		CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySessionController.swift; sourceTree = "<group>"; };
+		D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDisplaysView.swift; sourceTree = "<group>"; };
+		E5705532336236260D9C43BA /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
+		EBD764C727BD56351F6A07A8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DisplaySessionController+Audio.swift"; sourceTree = "<group>"; };
+		EE08E062782DE20F87A30B88 /* StatusPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelView.swift; sourceTree = "<group>"; };
+		FC86E6BCBA869D8AC1D3E059 /* betterDisplay */ = {isa = PBXFileReference; lastKnownFileType = folder; name = betterDisplay; path = .; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		237C9438866CE60DB588F05E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2E0057792E18EAAA8FBFD04 /* DisplayCore in Frameworks */,
+				733383736CF5E7E902876333 /* BrightnessKit in Frameworks */,
+				ACD5F998D2F9CEFAAFEFE68B /* AudioKit in Frameworks */,
+				AE38CB5DB255A317F0F09C79 /* PersistenceKit in Frameworks */,
+				5D26A0F4FE898DAEBFFAD35B /* ControlKit in Frameworks */,
+				6E3D061424AB3C7C2BFF4532 /* TestSupport in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		18D69D77857BA9FAC74EAA96 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				EBD764C727BD56351F6A07A8 /* AppDelegate.swift */,
+				84C65B68A38C3CFB42408055 /* CandelaChrome.swift */,
+				BF47ABA59743DE249AC5488F /* DisplayRowView.swift */,
+				CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */,
+				EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */,
+				052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */,
+				8D5455D272FE6AB3D2C088B2 /* main.swift */,
+				2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */,
+				97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */,
+				86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */,
+				236871E20297EA15E8B19C30 /* SettingsAboutView.swift */,
+				D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */,
+				1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */,
+				2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */,
+				0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */,
+				E5705532336236260D9C43BA /* StatusItemController.swift */,
+				4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */,
+				EE08E062782DE20F87A30B88 /* StatusPanelView.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		395EB6D1246D7D977AE7261B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A699CD75329BE53EC461E7A5 /* Assets.xcassets */,
+				2E916555AC134A6FD1608068 /* Info.plist */,
+				ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		6BF0E466E4C6829697A8D9B2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				12F94F0FAF4B5E54894482FE /* Candela.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		733082A526BC3D97881E2EBB = {
+			isa = PBXGroup;
+			children = (
+				BBD7D8313BB7ED84F015AEF0 /* App */,
+				A36B3454BC4467585648D1B3 /* Packages */,
+				6BF0E466E4C6829697A8D9B2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9246B52E55039D9BD92C27AA /* Supporting */ = {
+			isa = PBXGroup;
+			children = (
+				27A22C1F71B3784803149C67 /* Candela.entitlements */,
+			);
+			path = Supporting;
+			sourceTree = "<group>";
+		};
+		A36B3454BC4467585648D1B3 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				FC86E6BCBA869D8AC1D3E059 /* betterDisplay */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		BBD7D8313BB7ED84F015AEF0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				EDFB4CA27A9E5566BC7C4D7A /* Candela */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		EDFB4CA27A9E5566BC7C4D7A /* Candela */ = {
+			isa = PBXGroup;
+			children = (
+				395EB6D1246D7D977AE7261B /* Resources */,
+				18D69D77857BA9FAC74EAA96 /* Sources */,
+				9246B52E55039D9BD92C27AA /* Supporting */,
+			);
+			path = Candela;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		686E42A1F84772C015147CB2 /* Candela */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7AB17156E6FA994878A15BC1 /* Build configuration list for PBXNativeTarget "Candela" */;
+			buildPhases = (
+				04013C9F9893B349D3C957B3 /* Sources */,
+				E85A3429B77E1E67E503A765 /* Resources */,
+				237C9438866CE60DB588F05E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Candela;
+			packageProductDependencies = (
+				2CD3413AF063E87EA5861281 /* DisplayCore */,
+				75B34A6470F248E2DA5598B7 /* BrightnessKit */,
+				D0CD76F44137A01270AA98F8 /* AudioKit */,
+				1A3433947766DA220FA1639C /* PersistenceKit */,
+				AE981E167F2C87818BFE05A1 /* ControlKit */,
+				5F6245109EDD65BFC9C59AAF /* TestSupport */,
+			);
+			productName = Candela;
+			productReference = 12F94F0FAF4B5E54894482FE /* Candela.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		69491F33175AE2A8988C1F40 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					686E42A1F84772C015147CB2 = {
+						DevelopmentTeam = A594W68DE5;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = A66936183ADA568B49B88AFB /* Build configuration list for PBXProject "Candela" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 733082A526BC3D97881E2EBB;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FF95D4BC953A19D56E826B6D /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				686E42A1F84772C015147CB2 /* Candela */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E85A3429B77E1E67E503A765 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F828F475CF94725A8FEABE29 /* Assets.xcassets in Resources */,
+				479649E80C10E3EEAEC137BA /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		04013C9F9893B349D3C957B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CAF5FD8F9BE2B3C3943E408F /* AppDelegate.swift in Sources */,
+				8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */,
+				69A43BA8D4A1E133A1EDB4EA /* DisplayRowView.swift in Sources */,
+				99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */,
+				E983F4CF1ED46D18F9A2BCDB /* DisplaySessionController.swift in Sources */,
+				1794505AFB46B3BFB9F7F4D3 /* HotPlugObserver.swift in Sources */,
+				9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */,
+				93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */,
+				38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */,
+				148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */,
+				637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */,
+				E571621392FF6E664F9851C6 /* SettingsGeneralView.swift in Sources */,
+				F999A81BF392E44AABEF45BD /* SettingsWindowController.swift in Sources */,
+				28544AC3C17324B984A50B02 /* SpeakerRowView.swift in Sources */,
+				3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */,
+				74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */,
+				692330B621E06F8B7B3C0916 /* StatusPanelView.swift in Sources */,
+				87FAFF8076EE924CA5893831 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		32F106DC6BD99EF45EC666C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = A594W68DE5;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		856339AFBB6F60FD23C32D00 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Candela/Supporting/Candela.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Candela/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_NAME = Candela;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		9B01DC230B10EA9EC9BFA685 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = A594W68DE5;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		A3FEF82BE15E00DCE0C431D9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Candela/Supporting/Candela.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Candela/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_NAME = Candela;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7AB17156E6FA994878A15BC1 /* Build configuration list for PBXNativeTarget "Candela" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A3FEF82BE15E00DCE0C431D9 /* Debug */,
+				856339AFBB6F60FD23C32D00 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A66936183ADA568B49B88AFB /* Build configuration list for PBXProject "Candela" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9B01DC230B10EA9EC9BFA685 /* Debug */,
+				32F106DC6BD99EF45EC666C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		FF95D4BC953A19D56E826B6D /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A3433947766DA220FA1639C /* PersistenceKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PersistenceKit;
+		};
+		2CD3413AF063E87EA5861281 /* DisplayCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DisplayCore;
+		};
+		5F6245109EDD65BFC9C59AAF /* TestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TestSupport;
+		};
+		75B34A6470F248E2DA5598B7 /* BrightnessKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BrightnessKit;
+		};
+		AE981E167F2C87818BFE05A1 /* ControlKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ControlKit;
+		};
+		D0CD76F44137A01270AA98F8 /* AudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AudioKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 69491F33175AE2A8988C1F40 /* Project object */;
+}

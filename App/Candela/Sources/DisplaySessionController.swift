@@ -1,0 +1,715 @@
+import AppKit
+import AudioKit
+import BrightnessKit
+import ControlKit
+import DisplayCore
+import Foundation
+import PersistenceKit
+import ServiceManagement
+import TestSupport
+
+@MainActor
+final class DisplaySessionController {
+    private let catalog: DisplayCataloging
+    let persistence: PersistenceStoring
+    var boxes: [String: DisplayIOBox] = [:]
+    private var updatesTask: Task<Void, Never>?
+    private var hotPlugObserver: HotPlugObserver?
+    private var restoreTasks: [String: Task<Void, Never>] = [:]
+    private var applyGeneration = 0
+    private var lastAppliedKeys: Set<String> = []
+    private var probedKeys: Set<String> = []
+    private var pendingRotationByKey: [String: DisplayRotation] = [:]
+    private var pictureInPictureWindows: [String: PictureInPictureWindowController] = [:]
+
+    var snapshots: [DisplaySnapshot] = []
+    var pictureInPictureKeys: Set<String> {
+        Set(pictureInPictureWindows.keys)
+    }
+    var speaker: SpeakerOutput?
+    var speakerChoices: [SpeakerChoice] = []
+    var onChange: (() -> Void)?
+    var launchAtLoginError: String?
+    private var audioRouteObserver: HALAudioRouteObserver?
+
+    var settings: GlobalSettings {
+        persistence.global()
+    }
+
+    init(catalog: DisplayCataloging, persistence: PersistenceStoring) {
+        self.catalog = catalog
+        self.persistence = persistence
+    }
+
+    static func makeDefault() -> DisplaySessionController {
+        let persistence = PersistenceStore()
+        let catalog: DisplayCataloging
+        if shouldUseFakeHardware {
+            catalog = FakeCatalog()
+        } else {
+            catalog = SystemDisplayCatalog(
+                persistence: persistence,
+                fallbackNameProvider: { NSScreen.candelaLocalizedName(for: $0) }
+            )
+        }
+        return DisplaySessionController(catalog: catalog, persistence: persistence)
+    }
+
+    static var shouldUseFakeHardware: Bool {
+        ProcessInfo.processInfo.arguments.contains("--fake-hardware")
+            || ProcessInfo.processInfo.environment["CANDELA_FAKE_HARDWARE"] == "1"
+    }
+
+    func start() {
+        syncLaunchAtLoginFromSystem()
+        catalog.start()
+        apply(catalog.snapshots)
+        updatesTask = Task { [weak self] in
+            guard let self else { return }
+            for await next in self.catalog.updates {
+                self.apply(next)
+            }
+        }
+        if !Self.shouldUseFakeHardware {
+            hotPlugObserver = HotPlugObserver { [weak self] in
+                self?.catalog.requestRescan()
+            }
+            audioRouteObserver = HALAudioRouteObserver { [weak self] in
+                Task { @MainActor in
+                    self?.handleAudioRouteChange()
+                }
+            }
+        }
+    }
+
+    func prepareToQuit() {
+        hotPlugObserver?.invalidate()
+        hotPlugObserver = nil
+        audioRouteObserver?.invalidate()
+        audioRouteObserver = nil
+        updatesTask?.cancel()
+        updatesTask = nil
+        for task in restoreTasks.values {
+            task.cancel()
+        }
+        restoreTasks.removeAll()
+        closeAllPictureInPicture()
+        catalog.stop()
+        if !Self.shouldUseFakeHardware {
+            for box in boxes.values {
+                box.restoreSoftwareOnQuitNow()
+            }
+            SoftwareVolumeControl.shared.stopAll()
+        }
+    }
+
+    func setBrightness(key: String, value: Double) {
+        let clamped = min(1, max(0, value))
+        boxes[key]?.setBrightness(clamped)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].brightness.current = clamped
+        }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastBrightness = clamped
+        persistence.save(record)
+        onChange?()
+    }
+
+    func setVolume(key: String, value: Double) {
+        let clamped = min(1, max(0, value))
+        boxes[key]?.setVolume(clamped)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].volume.current = clamped
+            applyLiveVolume(snapshots[index])
+        }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastVolume = clamped
+        persistence.save(record)
+        refreshSpeaker()
+    }
+
+    func setMuted(key: String, muted: Bool) {
+        boxes[key]?.setMuted(muted)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].volume.isMuted = muted
+            applyLiveVolume(snapshots[index])
+        }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastMuted = muted
+        persistence.save(record)
+        refreshSpeaker()
+    }
+
+    func setContrast(key: String, value: Double) {
+        let clamped = min(1, max(0, value))
+        boxes[key]?.setContrast(clamped)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].contrast.current = clamped
+        }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastContrast = clamped
+        persistence.save(record)
+    }
+
+    func setInput(key: String, source: DisplayInputSource) {
+        boxes[key]?.setInput(source)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].input.current = source
+            snapshots[index].input.currentCode = source.code
+        }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastInputCode = source.code
+        persistence.save(record)
+    }
+
+    func isPictureInPictureOpen(key: String) -> Bool {
+        pictureInPictureWindows[key] != nil
+    }
+
+    @discardableResult
+    func togglePictureInPicture(key: String) -> Bool {
+        if isPictureInPictureOpen(key: key) {
+            closePictureInPicture(key: key)
+            return false
+        }
+        return openPictureInPicture(key: key)
+    }
+
+    @discardableResult
+    func openPictureInPicture(key: String) -> Bool {
+        guard let snapshot = snapshots.first(where: { $0.id.persistentKey == key }) else { return false }
+        guard PictureInPictureLayout.supports(kind: snapshot.kind) else { return false }
+        if let existing = pictureInPictureWindows[key] {
+            existing.updateTitle(snapshot.name)
+            existing.window?.makeKeyAndOrderFront(nil)
+            return true
+        }
+        let controller = PictureInPictureWindowController(
+            key: key,
+            title: snapshot.name,
+            displayID: snapshot.sessionDisplayID,
+            pixelWidth: snapshot.pixelWidth,
+            pixelHeight: snapshot.pixelHeight,
+            usePlaceholder: Self.shouldUseFakeHardware
+        )
+        controller.onClose = { [weak self] in
+            guard let self else { return }
+            self.pictureInPictureWindows.removeValue(forKey: key)
+            self.stampPictureInPictureState()
+            self.onChange?()
+        }
+        pictureInPictureWindows[key] = controller
+        controller.showWindow(nil)
+        stampPictureInPictureState()
+        onChange?()
+        return true
+    }
+
+    func closePictureInPicture(key: String) {
+        guard let controller = pictureInPictureWindows.removeValue(forKey: key) else { return }
+        controller.onClose = nil
+        controller.stop()
+        stampPictureInPictureState()
+        onChange?()
+    }
+
+    private func closeAllPictureInPicture() {
+        for controller in pictureInPictureWindows.values {
+            controller.onClose = nil
+            controller.stop()
+        }
+        pictureInPictureWindows.removeAll()
+    }
+
+    func setRotation(key: String, rotation: DisplayRotation) {
+        guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
+        guard !snapshots[index].isBuiltin, snapshots[index].rotation.supportsRotation else { return }
+        let displayID = snapshots[index].sessionDisplayID
+        if !Self.shouldUseFakeHardware {
+            guard DisplayRotationControl.set(rotation, displayID: displayID) else { return }
+        }
+        pendingRotationByKey[key] = rotation
+        snapshots[index].rotation.current = rotation
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastRotationDegrees = rotation.degrees
+        persistence.save(record)
+        onChange?()
+    }
+
+    @discardableResult
+    func renameDisplay(key: String, customName: String?) -> Bool {
+        guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else {
+            return false
+        }
+        let trimmed = customName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.customName = (trimmed?.isEmpty == false) ? trimmed : nil
+        persistence.save(record)
+        snapshots[index].name = DisplayNameResolver.displayName(
+            hardwareName: snapshots[index].hardwareName,
+            customName: record.customName
+        )
+        onChange?()
+        return true
+    }
+
+    func applyPreset(_ preset: BrightnessPreset, key: String? = nil) {
+        let targets: [String]
+        if let key {
+            targets = [key]
+        } else {
+            targets = snapshots.compactMap { snapshot in
+                snapshot.kind == .virtualUnsupported ? nil : snapshot.id.persistentKey
+            }
+        }
+        for target in targets {
+            guard let snapshot = snapshots.first(where: { $0.id.persistentKey == target }) else { continue }
+            if snapshot.brightness.showsBrightnessSlider {
+                setBrightness(key: target, value: preset.value)
+            }
+        }
+        onChange?()
+    }
+
+    func matchAll(to key: String) {
+        guard let source = snapshots.first(where: { $0.id.persistentKey == key }) else { return }
+        for snapshot in snapshots where snapshot.id.persistentKey != key && snapshot.kind != .virtualUnsupported {
+            if snapshot.brightness.showsBrightnessSlider && source.brightness.showsBrightnessSlider {
+                setBrightness(key: snapshot.id.persistentKey, value: source.brightness.current)
+            }
+            if snapshot.volume.supportsVolume && source.volume.supportsVolume {
+                setVolume(key: snapshot.id.persistentKey, value: source.volume.current)
+                if snapshot.volume.supportsMute {
+                    setMuted(key: snapshot.id.persistentKey, muted: source.volume.isMuted)
+                }
+            }
+            if snapshot.contrast.supportsContrast && source.contrast.supportsContrast {
+                setContrast(key: snapshot.id.persistentKey, value: source.contrast.current)
+            }
+        }
+        onChange?()
+    }
+
+    func applyLaunchAtLogin(_ enabled: Bool) -> String? {
+        #if canImport(ServiceManagement)
+        if #available(macOS 13.0, *) {
+            do {
+                if enabled {
+                    try SMAppService.mainApp.register()
+                } else {
+                    try SMAppService.mainApp.unregister()
+                }
+                return nil
+            } catch {
+                return error.localizedDescription
+            }
+        }
+        #endif
+        return enabled ? "Launch at Login requires macOS 13 or later." : nil
+    }
+
+    func syncLaunchAtLoginFromSystem() {
+        #if canImport(ServiceManagement)
+        if #available(macOS 13.0, *) {
+            var next = settings
+            next.launchAtLogin = SMAppService.mainApp.status == .enabled
+            if next != settings {
+                persistence.saveGlobal(next)
+            }
+        }
+        #endif
+    }
+
+    func display(matching query: String) -> DisplaySnapshot? {
+        DisplayQuery.resolve(query, in: snapshots)
+    }
+
+    func handleControl(_ request: ControlRequest) -> ControlResponse {
+        ControlRouter.apply(request, backend: ControlBackend(
+            snapshots: { self.snapshots },
+            setBrightness: { self.setBrightness(key: $0, value: $1) },
+            setVolume: { self.setVolume(key: $0, value: $1) },
+            setMuted: { self.setMuted(key: $0, muted: $1) },
+            setContrast: { self.setContrast(key: $0, value: $1) },
+            setInput: { self.setInput(key: $0, source: $1) },
+            setRotation: { self.setRotation(key: $0, rotation: $1) },
+            setPictureInPicture: { key, enabled in
+                if enabled {
+                    return self.openPictureInPicture(key: key)
+                }
+                self.closePictureInPicture(key: key)
+                return true
+            },
+            rename: { self.renameDisplay(key: $0, customName: $1) },
+            applyPreset: { self.applyPreset($0, key: $1) },
+            matchAll: { self.matchAll(to: $0) },
+            dump: { self.debugDump(redact: $0) }
+        ))
+    }
+
+    func markPanelOpenedOnce() {
+        var next = settings
+        next.hasOpenedPanelOnce = true
+        persistence.saveGlobal(next)
+    }
+
+    func saveSettings(_ settings: GlobalSettings) {
+        var next = settings
+        if next.launchAtLogin != persistence.global().launchAtLogin {
+            if let error = applyLaunchAtLogin(next.launchAtLogin) {
+                next.launchAtLogin = persistence.global().launchAtLogin
+                launchAtLoginError = error
+            } else {
+                launchAtLoginError = nil
+            }
+        }
+        persistence.saveGlobal(next)
+        onChange?()
+        if !Self.shouldUseFakeHardware {
+            reprobeAll()
+        }
+    }
+
+    func debugDump(redact: Bool) -> String {
+        var lines: [String] = [
+            "Candela debug dump",
+            "fakeHardware=\(Self.shouldUseFakeHardware)",
+            "displays=\(snapshots.count)",
+        ]
+        for snapshot in snapshots {
+            var key = snapshot.id.persistentKey
+            if redact {
+                key = key.replacingOccurrences(
+                    of: #"s[0-9A-Fa-f]{8}"#,
+                    with: "s********",
+                    options: .regularExpression
+                )
+            }
+            lines.append(
+                "\(snapshot.name) key=\(key) kind=\(snapshot.kind.rawValue) conn=\(snapshot.connection.rawValue) mode=\(DisplayPresentation.modeTitle(for: snapshot) ?? "-") \(DisplayPresentation.refreshTitle(for: snapshot) ?? "") br=\(snapshot.brightness.backend.rawValue) vol=\(snapshot.volume.backend.rawValue)"
+            )
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func apply(_ next: [DisplaySnapshot]) {
+        applyGeneration += 1
+        let generation = applyGeneration
+        let fake = Self.shouldUseFakeHardware
+        let nextKeys = Set(next.map(\.id.persistentKey))
+
+        for (key, box) in boxes where !nextKeys.contains(key) {
+            restoreTasks[key]?.cancel()
+            restoreTasks[key] = nil
+            if !fake {
+                if let uid = snapshots.first(where: { $0.id.persistentKey == key })?.volume.audioDeviceUID {
+                    SoftwareVolumeControl.shared.stop(uid: uid)
+                }
+                box.restoreSoftwareOnQuitNow()
+            }
+        }
+
+        var kept: [String: DisplayIOBox] = [:]
+        var work: [(DisplaySnapshot, DisplayIOBox)] = []
+        for snapshot in next {
+            let key = snapshot.id.persistentKey
+            if let existing = boxes[key] {
+                existing.sessionDisplayID = snapshot.sessionDisplayID
+                kept[key] = existing
+                work.append((snapshot, existing))
+            } else {
+                let box = DisplayIOBox(snapshot: snapshot, enablesHardware: !fake)
+                bindLiveFailure(box, key: key, isBuiltin: snapshot.isBuiltin)
+                kept[key] = box
+                work.append((snapshot, box))
+            }
+        }
+        boxes = kept
+        snapshots = preserveProbedState(next)
+        refreshRotationSupport()
+        syncPictureInPictureWindows()
+        stampPictureInPictureState()
+        lastAppliedKeys = nextKeys
+        probedKeys = probedKeys.intersection(nextKeys)
+        pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
+        refreshAudioBindings()
+        syncSoftwareVolumeSessions()
+        onChange?()
+
+        Task {
+            if fake { return }
+            var freshlyProbed: [String] = []
+            for (snapshot, box) in work {
+                guard generation == self.applyGeneration else { return }
+                let key = snapshot.id.persistentKey
+                if shouldSkipFullCapabilityProbe(key: key, probedKeys: self.probedKeys) {
+                    // Rotation/mode reconfigs keep the same identity. Recapture
+                    // gamma only; a full DDC/DS probe is what snaps rotation back.
+                    await box.recreateHandles(sessionDisplayID: snapshot.sessionDisplayID)
+                    continue
+                }
+                let context = self.makeProbeContext(for: snapshot)
+                await box.recreateHandles(sessionDisplayID: snapshot.sessionDisplayID)
+                let caps = await box.probeBrightness(kind: snapshot.kind, context: context)
+                guard generation == self.applyGeneration else { return }
+                self.mergeBrightness(key: key, capabilities: caps, isBuiltin: snapshot.isBuiltin)
+                self.probedKeys.insert(key)
+                freshlyProbed.append(key)
+                box.useDDCMute = self.persistence.record(for: key)?.useDDCMute ?? false
+                let volumeCaps = await box.probeDDCVolume()
+                guard generation == self.applyGeneration else { return }
+                self.mergeVolume(key: key, capabilities: volumeCaps)
+                let extras = await box.probeDDCExtras()
+                guard generation == self.applyGeneration else { return }
+                self.mergeExtras(key: key, contrast: extras.0, input: extras.1)
+            }
+            guard generation == self.applyGeneration else { return }
+            if !freshlyProbed.isEmpty {
+                self.refreshAudioBindings()
+                self.syncSoftwareVolumeSessions()
+                self.onChange?()
+                // Startup applies the catalog twice with the same identities.
+                // Restore from the keys we just probed, not from lastAppliedKeys.
+                self.scheduleRestores(
+                    for: next.filter { freshlyProbed.contains($0.id.persistentKey) },
+                    previousKeys: []
+                )
+            }
+        }
+    }
+
+    private func stampPictureInPictureState() {
+        for index in snapshots.indices {
+            snapshots[index].pictureInPictureActive = pictureInPictureWindows[snapshots[index].id.persistentKey] != nil
+        }
+    }
+
+    private func syncPictureInPictureWindows() {
+        let live = Dictionary(uniqueKeysWithValues: snapshots.map { ($0.id.persistentKey, $0) })
+        for key in Array(pictureInPictureWindows.keys) {
+            guard let snapshot = live[key], PictureInPictureLayout.supports(kind: snapshot.kind) else {
+                closePictureInPicture(key: key)
+                continue
+            }
+            pictureInPictureWindows[key]?.updateTitle(snapshot.name)
+        }
+    }
+
+    private func refreshRotationSupport() {
+        guard !Self.shouldUseFakeHardware else { return }
+        for index in snapshots.indices {
+            let key = snapshots[index].id.persistentKey
+            let displayID = snapshots[index].sessionDisplayID
+            let hardware = DisplayRotationControl.current(for: displayID)
+            if pendingRotationByKey[key] == hardware {
+                pendingRotationByKey.removeValue(forKey: key)
+            }
+            let current = pendingRotationByKey[key] ?? hardware
+            let supports = !snapshots[index].isBuiltin
+                && snapshots[index].kind != .virtualUnsupported
+                && DisplayRotationControl.canRotate(displayID)
+            snapshots[index].rotation = supports ? .supported(current) : .unsupported
+        }
+    }
+
+    private func preserveProbedState(_ next: [DisplaySnapshot]) -> [DisplaySnapshot] {
+        let previous = Dictionary(uniqueKeysWithValues: snapshots.map { ($0.id.persistentKey, $0) })
+        return next.map { snapshot in
+            var merged = snapshot
+            let record = persistence.record(for: snapshot.id.persistentKey)
+            merged.name = DisplayNameResolver.displayName(
+                hardwareName: snapshot.hardwareName,
+                customName: record?.customName
+            )
+            guard let old = previous[snapshot.id.persistentKey] else { return merged }
+            merged.brightness = old.brightness
+            if old.brightness.backend == .none {
+                merged.brightness.current = snapshot.brightness.current
+            }
+            merged.volume = old.volume
+            merged.contrast = old.contrast
+            merged.input = old.input
+            if snapshot.isBuiltin || snapshot.kind == .virtualUnsupported {
+                merged.rotation = .unsupported
+            } else if let pending = pendingRotationByKey[snapshot.id.persistentKey] {
+                merged.rotation = .supported(pending)
+            } else if snapshot.rotation.supportsRotation {
+                merged.rotation = snapshot.rotation
+            } else {
+                merged.rotation = old.rotation
+            }
+            if old.kind == .appleExternal {
+                merged.kind = .appleExternal
+            }
+            return merged
+        }
+    }
+
+    private func bindLiveFailure(_ box: DisplayIOBox, key: String, isBuiltin: Bool) {
+        box.onBrightnessCapabilitiesChange = { [weak self] caps in
+            Task { @MainActor in
+                self?.mergeBrightness(key: key, capabilities: caps, isBuiltin: isBuiltin)
+            }
+        }
+    }
+
+    private func makeProbeContext(for snapshot: DisplaySnapshot) -> BrightnessProbeContext {
+        let key = snapshot.id.persistentKey
+        let record = persistence.record(for: key)
+        let global = persistence.global()
+        let debugForce = UserDefaults.standard.bool(forKey: "debug.forceDDC.\(key)")
+        return BrightnessProbeContext(
+            vendorID: snapshot.id.fields.inputs.vendorID,
+            isBuiltin: snapshot.isBuiltin,
+            softwareDimmingEnabled: global.softwareDimmingEnabled,
+            softwareDimmingDisabled: record?.softwareDimmingDisabled ?? false,
+            allowDimToBlack: global.allowDimToBlack,
+            lastBrightness: record?.lastBrightness,
+            restoreOnReconnect: global.restoreOnReconnect,
+            forceDDC: (record?.forceDDC ?? false) || debugForce
+        )
+    }
+
+    private func applyLiveVolume(_ snapshot: DisplaySnapshot) {
+        guard let uid = snapshot.volume.audioDeviceUID else { return }
+        switch snapshot.volume.backend {
+        case .coreAudio:
+            HALVolumeControl.setVolume(uid: uid, value: snapshot.volume.current)
+            if snapshot.volume.supportsMute {
+                HALVolumeControl.setMuted(uid: uid, muted: snapshot.volume.isMuted)
+            }
+        case .software:
+            SoftwareVolumeControl.shared.apply(
+                uid: uid,
+                volume: snapshot.volume.current,
+                muted: snapshot.volume.isMuted
+            )
+        case .ddc, .none:
+            break
+        }
+    }
+
+    private func syncSoftwareVolumeSessions() {
+        guard !Self.shouldUseFakeHardware else { return }
+        let defaultUID = HALDeviceEnumerator.defaultOutputUID()
+        let uids = Set(snapshots.compactMap { snapshot -> String? in
+            guard snapshot.volume.backend == .software,
+                  let uid = snapshot.volume.audioDeviceUID,
+                  uid == defaultUID
+            else { return nil }
+            return uid
+        })
+        SoftwareVolumeControl.shared.retain(uids: uids)
+        for snapshot in snapshots where snapshot.volume.backend == .software {
+            guard snapshot.volume.audioDeviceUID == defaultUID else { continue }
+            applyLiveVolume(snapshot)
+        }
+    }
+
+    private func mergeVolume(key: String, capabilities: VolumeCapabilities) {
+        guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
+        if capabilities.supportsVolume {
+            snapshots[index].volume = capabilities
+        } else if snapshots[index].volume.supportsVolume {
+            return
+        } else {
+            snapshots[index].volume = capabilities
+        }
+        refreshSpeaker()
+        onChange?()
+    }
+
+    private func mergeExtras(key: String, contrast: ContrastCapabilities, input: InputCapabilities) {
+        guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
+        snapshots[index].contrast = contrast
+        snapshots[index].input = input
+        onChange?()
+    }
+
+    private func mergeBrightness(key: String, capabilities: BrightnessCapabilities, isBuiltin: Bool) {
+        guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
+        snapshots[index].brightness = capabilities
+        if capabilities.backend == .displayServices && !isBuiltin {
+            snapshots[index].kind = .appleExternal
+        }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.brightnessBackend = capabilities.backend
+        persistence.save(record)
+        onChange?()
+    }
+
+    private func scheduleRestores(for snapshots: [DisplaySnapshot], previousKeys: Set<String> = []) {
+        let restore = settings.restoreOnReconnect
+        let attached = newlyAttachedDisplayKeys(
+            previous: previousKeys,
+            next: Set(snapshots.map(\.id.persistentKey))
+        )
+        for snapshot in snapshots {
+            let key = snapshot.id.persistentKey
+            restoreTasks[key]?.cancel()
+            let record = persistence.record(for: key)
+            guard restore, record != nil, attached.contains(key) else {
+                restoreTasks[key] = nil
+                continue
+            }
+            restoreTasks[key] = Task { [weak self] in
+                let delay = UInt64(BrightnessTiming.restoreDelayAfterAttachMilliseconds) * 1_000_000
+                try? await Task.sleep(nanoseconds: delay)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard let self, !Task.isCancelled, let record = self.persistence.record(for: key) else { return }
+                    if let last = record.lastBrightness {
+                        self.setBrightness(key: key, value: last)
+                    }
+                    if let last = record.lastVolume,
+                       let snapshot = self.snapshots.first(where: { $0.id.persistentKey == key }),
+                       snapshot.volume.supportsVolume
+                    {
+                        self.setVolume(key: key, value: last)
+                    }
+                    if let last = record.lastMuted,
+                       let snapshot = self.snapshots.first(where: { $0.id.persistentKey == key }),
+                       snapshot.volume.supportsMute || snapshot.volume.supportsVolume
+                    {
+                        self.setMuted(key: key, muted: last)
+                    }
+                    if let last = record.lastContrast {
+                        self.setContrast(key: key, value: last)
+                    }
+                    if let code = record.lastInputCode, let source = DisplayInputSource.from(code: code) {
+                        self.setInput(key: key, source: source)
+                    }
+                    if let degrees = record.lastRotationDegrees,
+                       let rotation = DisplayRotation(rawValue: degrees),
+                       let snapshot = self.snapshots.first(where: { $0.id.persistentKey == key }),
+                       snapshot.rotation.supportsRotation,
+                       snapshot.rotation.current != rotation
+                    {
+                        self.setRotation(key: key, rotation: rotation)
+                    }
+                }
+            }
+        }
+    }
+
+    func handleAudioRouteChange() {
+        refreshAudioBindings()
+        syncSoftwareVolumeSessions()
+        onChange?()
+    }
+
+    private func reprobeAll() {
+        applyGeneration += 1
+        let generation = applyGeneration
+        let current = snapshots
+        Task {
+            for snapshot in current {
+                guard generation == self.applyGeneration else { return }
+                guard let box = self.boxes[snapshot.id.persistentKey] else { continue }
+                let caps = await box.probeBrightness(kind: snapshot.kind, context: self.makeProbeContext(for: snapshot))
+                guard generation == self.applyGeneration else { return }
+                self.mergeBrightness(key: snapshot.id.persistentKey, capabilities: caps, isBuiltin: snapshot.isBuiltin)
+            }
+        }
+    }
+}

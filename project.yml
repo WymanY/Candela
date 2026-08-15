@@ -1,0 +1,83 @@
+name: Candela
+options:
+  bundleIdPrefix: app.candela
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  defaultConfig: Debug
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    PRODUCT_BUNDLE_IDENTIFIER: app.candela.macos
+    DEVELOPMENT_TEAM: A594W68DE5
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    ENABLE_APP_SANDBOX: NO
+    COMBINE_HIDPI_IMAGES: YES
+    DEAD_CODE_STRIPPING: YES
+  configs:
+    Debug:
+      ONLY_ACTIVE_ARCH: YES
+      SWIFT_STRICT_CONCURRENCY: targeted
+      # leave CODE_SIGN_INJECT_BASE_ENTITLEMENTS at Xcode default (YES)
+    Release:
+      ONLY_ACTIVE_ARCH: NO
+      CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+      SWIFT_STRICT_CONCURRENCY: targeted
+packages:
+  CandelaKit:
+    path: .
+targets:
+  Candela:
+    type: application
+    platform: macOS
+    sources:
+      - path: App/Candela/Sources
+      - path: App/Candela/Resources
+      - path: App/Candela/Supporting
+    resources:
+      - path: App/Candela/Resources/Assets.xcassets
+      - path: App/Candela/Resources/Localizable.xcstrings
+    info:
+      path: App/Candela/Resources/Info.plist
+      properties:
+        LSUIElement: false
+        LSRequiresNativeExecution: true
+        LSApplicationCategoryType: public.app-category.utilities
+        NSHighResolutionCapable: true
+        NSSupportsAutomaticTermination: false
+        NSSupportsSuddenTermination: false
+        NSPrincipalClass: NSApplication
+        NSAudioCaptureUsageDescription: Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.
+        NSScreenCaptureUsageDescription: Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.
+        CFBundleDisplayName: Candela
+        CFBundleName: Candela
+        LSMinimumSystemVersion: "14.0"
+    entitlements:
+      path: App/Candela/Supporting/Candela.entitlements
+    settings:
+      base:
+        PRODUCT_NAME: Candela
+        PRODUCT_BUNDLE_IDENTIFIER: app.candela.macos
+        INFOPLIST_FILE: App/Candela/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: App/Candela/Supporting/Candela.entitlements
+        LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/../Frameworks"]
+        # no SWIFT_OBJC_BRIDGING_HEADER
+    dependencies:
+      - package: CandelaKit
+        product: DisplayCore
+      - package: CandelaKit
+        product: BrightnessKit
+      - package: CandelaKit
+        product: AudioKit
+      - package: CandelaKit
+        product: PersistenceKit
+      - package: CandelaKit
+        product: ControlKit
+      - package: CandelaKit
+        product: TestSupport
+    scheme:
+      testTargets: []

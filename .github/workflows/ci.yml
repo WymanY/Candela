@@ -1,0 +1,11 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew list xcodegen || brew install xcodegen
+      - run: xcodegen generate --spec project.yml
+      - run: swift test --package-path .
+      - run: xcodebuild -scheme Candela -destination 'platform=macOS' ONLY_ACTIVE_ARCH=NO build

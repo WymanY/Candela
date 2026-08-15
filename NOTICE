@@ -1,0 +1,14 @@
+Candela
+Copyright 2026 Candela maintainers
+
+Candela is an independent open-source project. It is not affiliated with,
+endorsed by, or derived from BetterDisplay.
+
+BetterDisplay is a proprietary product cited only as a UX reference. Do not
+treat BetterDisplay source, assets, or trademark as part of this project.
+Do not distribute this software under the name “BetterDisplay”.
+
+Private macOS symbols (DisplayServices, IOAVService, and related) are loaded
+at runtime via dlsym. Prior-art projects (MonitorControl, AppleSiliconDDC,
+ddcctl) are historical confirmation that those symbols exist; their source is
+not vendored and is not the specification.
