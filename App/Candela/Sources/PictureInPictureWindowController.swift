@@ -17,8 +17,13 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private var aspect: CGFloat = 16 / 9
     var onClose: (() -> Void)?
 
+    private let sourcePixelWidth: UInt32
+    private let sourcePixelHeight: UInt32
+
     init(key: String, title: String, displayID: CGDirectDisplayID, pixelWidth: UInt32, pixelHeight: UInt32, usePlaceholder: Bool) {
         self.persistentKey = key
+        self.sourcePixelWidth = pixelWidth
+        self.sourcePixelHeight = pixelHeight
         let content = PictureInPictureLayout.contentSize(pixelWidth: pixelWidth, pixelHeight: pixelHeight)
         aspect = max(content.width / max(content.height, 1), 0.2)
         let windowSize = PictureInPictureLayout.windowSize(forContent: content)
@@ -52,7 +57,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         if usePlaceholder {
             showPlaceholder(String(localized: "Preview only in fake-hardware mode."))
         } else {
-            Task { await self.startCapture(displayID: displayID, content: content) }
+            Task { await self.startCapture(displayID: displayID) }
         }
     }
 
@@ -109,6 +114,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
         preview.translatesAutoresizingMaskIntoConstraints = false
         preview.wantsLayer = true
+        preview.layerContentsRedrawPolicy = .onSetNeedsDisplay
+        preview.layer?.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
         preview.layer?.backgroundColor = NSColor.black.cgColor
         preview.layer?.cornerRadius = 8
         preview.layer?.masksToBounds = true
@@ -142,7 +149,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         placeholder.isHidden = false
     }
 
-    private func startCapture(displayID: CGDirectDisplayID, content: CGSize) async {
+    private func startCapture(displayID: CGDirectDisplayID) async {
         guard displayID != 0 else {
             showPlaceholder(String(localized: "This display is not available."))
             return
@@ -160,13 +167,22 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 $0.owningApplication?.bundleIdentifier == "app.candela.macos"
             }
             let filter = SCContentFilter(display: display, excludingWindows: ownWindows)
+            let capture = PictureInPictureLayout.captureSize(
+                pixelWidth: sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width),
+                pixelHeight: sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height)
+            )
             let configuration = SCStreamConfiguration()
-            configuration.width = Int(content.width * 2)
-            configuration.height = Int(content.height * 2)
+            configuration.width = capture.width
+            configuration.height = capture.height
+            configuration.scalesToFit = false
             configuration.minimumFrameInterval = CMTime(value: 1, timescale: 30)
-            configuration.queueDepth = 4
+            configuration.queueDepth = 8
             configuration.showsCursor = true
             configuration.capturesAudio = false
+            configuration.pixelFormat = kCVPixelFormatType_32BGRA
+            if #available(macOS 14.0, *) {
+                configuration.captureResolution = .best
+            }
             let stream = SCStream(filter: filter, configuration: configuration, delegate: preview)
             try stream.addStreamOutput(preview, type: .screen, sampleHandlerQueue: streamQueue)
             try await stream.startCapture()
@@ -187,6 +203,10 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         layer = displayLayer
         displayLayer.videoGravity = .resizeAspect
         displayLayer.backgroundColor = NSColor.black.cgColor
+        displayLayer.contentsGravity = .resizeAspect
+        displayLayer.magnificationFilter = .linear
+        displayLayer.minificationFilter = .trilinear
+        displayLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
     }
 
     @available(*, unavailable)

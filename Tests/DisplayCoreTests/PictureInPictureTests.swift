@@ -9,9 +9,9 @@ final class PictureInPictureTests: XCTestCase {
     }
 
     func testContentKeepsAspectAndClampsWidth() {
-        let size = PictureInPictureLayout.contentSize(pixelWidth: 3840, pixelHeight: 2160, preferredWidth: 420)
-        XCTAssertEqual(size.width, 420, accuracy: 0.001)
-        XCTAssertEqual(size.height, 236.25, accuracy: 0.01)
+        let size = PictureInPictureLayout.contentSize(pixelWidth: 3840, pixelHeight: 2160, preferredWidth: 640)
+        XCTAssertEqual(size.width, 640, accuracy: 0.001)
+        XCTAssertEqual(size.height, 360, accuracy: 0.01)
 
         let narrow = PictureInPictureLayout.contentSize(pixelWidth: 1920, pixelHeight: 1080, preferredWidth: 100)
         XCTAssertEqual(narrow.width, PictureInPictureLayout.minWidth, accuracy: 0.001)
@@ -35,5 +35,15 @@ final class PictureInPictureTests: XCTestCase {
         )
         XCTAssertEqual(origin.x, 1920 + 1512 - window.width - 24, accuracy: 0.001)
         XCTAssertEqual(origin.y, 24, accuracy: 0.001)
+    }
+
+    func testCaptureUsesSourcePixels() {
+        let fourK = PictureInPictureLayout.captureSize(pixelWidth: 3840, pixelHeight: 2160)
+        XCTAssertEqual(fourK.width, 3840)
+        XCTAssertEqual(fourK.height, 2160)
+
+        let missing = PictureInPictureLayout.captureSize(pixelWidth: 0, pixelHeight: 0)
+        XCTAssertEqual(missing.width, PictureInPictureLayout.minimumCaptureWidth)
+        XCTAssertEqual(missing.height, PictureInPictureLayout.minimumCaptureHeight)
     }
 }
