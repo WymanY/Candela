@@ -64,6 +64,25 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertEqual(loaded?.lastRotationDegrees, 90)
     }
 
+    func testSavesPictureInPicturePlacement() {
+        let store = PersistenceStore()
+        var record = DisplayRecord(persistentKey: "v1:tv")
+        record.pictureInPicture = PictureInPicturePlacement(
+            opacity: 0.55,
+            clickThrough: true,
+            corner: .topLeft,
+            frame: PictureInPictureFrame(x: 80, y: 40, width: 480, height: 300),
+            hostDisplayID: 7
+        )
+        store.save(record)
+        let loaded = store.record(for: "v1:tv")?.pictureInPicture
+        XCTAssertEqual(loaded?.opacity ?? -1, 0.55, accuracy: 0.0001)
+        XCTAssertEqual(loaded?.clickThrough, true)
+        XCTAssertEqual(loaded?.corner, .topLeft)
+        XCTAssertEqual(loaded?.frame?.x ?? -1, 80, accuracy: 0.0001)
+        XCTAssertEqual(loaded?.hostDisplayID, 7)
+    }
+
     private func clearStore() {
         let defaults = UserDefaults.standard
         for key in keys {

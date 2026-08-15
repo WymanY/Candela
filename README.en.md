@@ -1,6 +1,6 @@
 # Candela
 
-Candela is a native macOS menu-bar app for controlling every attached display. It can dim Apple panels and third-party monitors, adjust HDMI/DP speaker volume when the hardware exposes it, rotate external screens, switch DDC inputs, and mirror a chosen display in a floating Picture in Picture window.
+Candela is a native macOS menu-bar app for controlling every attached display. It can dim Apple panels and third-party monitors, adjust HDMI/DP speaker volume when the hardware exposes it, rotate external screens, switch DDC inputs, and mirror a chosen display in a floating Picture in Picture window. 1.1 adds opacity, click-through, pinned corners, and remembered placement for that window.
 
 It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 
@@ -41,6 +41,10 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 
 - Each real display has a PiP button in the menu-bar panel.
 - Opens a floating, resizable mirror of that screen, preferably on another display.
+- Scroll or pinch to zoom. Width stays between 280 and 1280. A pinned window grows from that corner.
+- The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel.
+- Pin it to top-left, top-right, bottom-left, or bottom-right. Dragging it off that corner unpins it.
+- Each display remembers the last place, size, opacity, click-through, and pin. Closing and opening the window brings that layout back.
 - Captures at the source display's pixel size so text stays readable.
 - Requires Screen Recording permission.
 - Virtual screens such as Sidecar are not supported.
@@ -167,6 +171,13 @@ swift test --package-path .
 ```
 
 CI also builds the Candela app on macOS 14.
+
+## 1.1
+
+- Picture in Picture now has opacity, click-through, and pinned corners.
+- Scroll or pinch to zoom the floating window. A pinned window grows from that corner.
+- Each display remembers the last PiP place, size, and window state.
+- With click-through on, clicks still reach the work underneath. Hovering the window still zooms it with the scroll wheel.
 
 ## License
 
