@@ -30,6 +30,12 @@ public enum VolumeResolution {
             volume.backend = .coreAudio
             volume.supportsVolume = true
             volume.supportsMute = device.hasMute || volume.supportsMute
+            if let lastVolume {
+                volume.current = lastVolume
+            }
+            if let lastMuted {
+                volume.isMuted = lastMuted
+            }
             return volume
         }
 

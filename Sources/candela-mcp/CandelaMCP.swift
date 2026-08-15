@@ -124,6 +124,16 @@ final class MCPStdioTransport {
             return ControlRequest(action: .preset, display: object["display"]?.stringValue, preset: try required(object, "preset"))
         case "candela_match_all":
             return ControlRequest(action: .matchAll, display: try required(object, "display"))
+        case "candela_list_scenes":
+            return ControlRequest(action: .listScenes)
+        case "candela_apply_scene":
+            return ControlRequest(action: .applyScene, scene: try required(object, "scene"))
+        case "candela_save_scene":
+            return ControlRequest(action: .saveScene, name: try required(object, "name"))
+        case "candela_rename_scene":
+            return ControlRequest(action: .renameScene, name: try required(object, "name"), scene: try required(object, "scene"))
+        case "candela_delete_scene":
+            return ControlRequest(action: .deleteScene, scene: try required(object, "scene"))
         case "candela_debug_dump":
             return ControlRequest(action: .dump, redact: object["redact"]?.boolValue ?? true)
         default:
@@ -193,6 +203,20 @@ final class MCPStdioTransport {
         tool("candela_match_all", "Copy this display's brightness, volume, and contrast onto the others.", [
             "display": schema("string", "Source display query"),
         ], ["display"]),
+        tool("candela_list_scenes", "List saved display scenes."),
+        tool("candela_apply_scene", "Apply a saved scene by name or id.", [
+            "scene": schema("string", "Scene name or id"),
+        ], ["scene"]),
+        tool("candela_save_scene", "Save the current display state as a named scene. Reuses a scene with the same name.", [
+            "name": schema("string", "Scene name"),
+        ], ["name"]),
+        tool("candela_rename_scene", "Rename a saved scene.", [
+            "scene": schema("string", "Existing scene name or id"),
+            "name": schema("string", "New scene name"),
+        ], ["scene", "name"]),
+        tool("candela_delete_scene", "Delete a saved scene.", [
+            "scene": schema("string", "Scene name or id"),
+        ], ["scene"]),
         tool("candela_debug_dump", "Copy a redacted debug dump of the live catalog.", [
             "redact": schema("boolean", "Redact serials"),
         ], []),

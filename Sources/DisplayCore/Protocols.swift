@@ -33,9 +33,13 @@ public protocol PersistenceStoring: AnyObject {
     func saveGlobal(_ settings: GlobalSettings)
     func allRecords() -> [String: DisplayRecord]
     func allAliases() -> [String: String]
+    func allScenes() -> [DisplayScene]
+    func saveScenes(_ scenes: [DisplayScene])
 }
 
 public extension PersistenceStoring {
     func allRecords() -> [String: DisplayRecord] { [:] }
     func allAliases() -> [String: String] { [:] }
+    func allScenes() -> [DisplayScene] { [] }
+    func saveScenes(_ scenes: [DisplayScene]) {}
 }

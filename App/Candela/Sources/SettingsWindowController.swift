@@ -7,10 +7,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
     private let tabView = NSTabView()
     private var generalView: SettingsGeneralView?
     private var displaysView: SettingsDisplaysView?
+    private var scenesView: SettingsScenesView?
 
     private enum Tab: String {
         case general
         case displays
+        case scenes
         case about
     }
 
@@ -46,12 +48,19 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         displays.label = String(localized: "Displays")
         displays.view = displaysView
 
+        let scenesView = SettingsScenesView(session: session)
+        self.scenesView = scenesView
+        let scenes = NSTabViewItem(identifier: Tab.scenes.rawValue)
+        scenes.label = String(localized: "Scenes")
+        scenes.view = scenesView
+
         let about = NSTabViewItem(identifier: Tab.about.rawValue)
         about.label = String(localized: "About")
         about.view = SettingsAboutView(session: session)
 
         tabView.addTabViewItem(general)
         tabView.addTabViewItem(displays)
+        tabView.addTabViewItem(scenes)
         tabView.addTabViewItem(about)
 
         let root = NSView()
@@ -88,6 +97,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
     func reload() {
         generalView?.reload()
         displaysView?.reload()
+        scenesView?.reload()
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -98,6 +108,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         [
             NSToolbarItem.Identifier(Tab.general.rawValue),
             NSToolbarItem.Identifier(Tab.displays.rawValue),
+            NSToolbarItem.Identifier(Tab.scenes.rawValue),
             NSToolbarItem.Identifier(Tab.about.rawValue),
         ]
     }
@@ -117,6 +128,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         case Tab.displays.rawValue:
             item.label = String(localized: "Displays")
             item.image = CandelaChrome.symbol("display", size: 16)
+        case Tab.scenes.rawValue:
+            item.label = String(localized: "Scenes")
+            item.image = CandelaChrome.symbol("square.stack.3d.up", size: 16)
         case Tab.about.rawValue:
             item.label = String(localized: "About")
             item.image = CandelaChrome.symbol("info.circle", size: 16)

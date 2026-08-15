@@ -20,6 +20,8 @@ final class VolumeResolutionTests: XCTestCase {
         XCTAssertEqual(bound.backend, .coreAudio)
         XCTAssertTrue(bound.supportsVolume)
         XCTAssertEqual(bound.audioDeviceUID, "hdmi-1")
+        XCTAssertEqual(bound.current, 0.4, accuracy: 0.0001)
+        XCTAssertFalse(bound.isMuted)
     }
 
     func testMatchedDeviceWithoutHALUsesSoftware() {

@@ -21,6 +21,7 @@ English: [README.en.md](README.en.md)
 - 第三方 HDMI / DisplayPort / USB-C 显示器在 Apple Silicon 上走 DDC/CI VCP `0x10`。
 - 硬件控制不可用或失败时，回退到软件 gamma 调光，并保持 LUT，避免被 WindowServer 冲掉。
 - Night / Desk / Max 预设：20%、50%、100%。
+- 场景会记住每块屏当时的亮度、音量、静音、对比度、输入、旋转和画中画状态，之后一键还原。
 - Match All 会把一块屏的亮度（以及可用的音量/对比度）同步到其他屏。
 - 显示器重新接入时，可以恢复上次亮度。
 
@@ -49,6 +50,13 @@ English: [README.en.md](README.en.md)
 - 需要「屏幕录制」权限。
 - Sidecar 等虚拟屏不支持。
 
+### 场景
+
+- 菜单栏可保存当前显示器状态，并一键应用最近用过的场景。
+- 设置里的 Scenes 页可以重命名、更新或删除场景。
+- 同名保存会覆盖旧场景，不会另外复制一份。
+- 某块屏当前没接上时会跳过，接回来后再应用即可。
+
 ### 设置
 
 - 登录时启动
@@ -57,6 +65,7 @@ English: [README.en.md](README.en.md)
 - 允许调到全黑
 - 滑条旁显示百分比
 - 为每块屏设置自定义名称
+- 保存和应用显示器场景
 
 ### 命令行 / Agent
 
@@ -75,6 +84,9 @@ swift run --package-path . candela-cli set-pip --display DELL --enabled true
 swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
+swift run --package-path . candela-cli scenes
+swift run --package-path . candela-cli save-scene --name Night
+swift run --package-path . candela-cli apply-scene Night
 swift run --package-path . candela-cli dump
 ```
 

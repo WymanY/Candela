@@ -117,26 +117,28 @@ final class DisplaySessionController {
 
     func setVolume(key: String, value: Double) {
         let clamped = min(1, max(0, value))
-        boxes[key]?.setVolume(clamped)
-        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
-            snapshots[index].volume.current = clamped
-            applyLiveVolume(snapshots[index])
-        }
         var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
         record.lastVolume = clamped
         persistence.save(record)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].volume.current = clamped
+            boxes[key]?.setVolume(clamped)
+            applyLiveVolume(snapshots[index])
+        } else {
+            boxes[key]?.setVolume(clamped)
+        }
         refreshSpeaker()
     }
 
     func setMuted(key: String, muted: Bool) {
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        record.lastMuted = muted
+        persistence.save(record)
         boxes[key]?.setMuted(muted)
         if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
             snapshots[index].volume.isMuted = muted
             applyLiveVolume(snapshots[index])
         }
-        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
-        record.lastMuted = muted
-        persistence.save(record)
         refreshSpeaker()
     }
 
@@ -295,6 +297,159 @@ final class DisplaySessionController {
         onChange?()
     }
 
+    var scenes: [DisplayScene] {
+        persistence.allScenes().sorted { lhs, rhs in
+            if lhs.updatedAt != rhs.updatedAt {
+                return lhs.updatedAt > rhs.updatedAt
+            }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    func scene(matching query: String) -> DisplayScene? {
+        DisplaySceneQuery.resolve(query, in: persistence.allScenes())
+    }
+
+    @discardableResult
+    func applyScene(_ query: String) -> DisplayScene? {
+        guard let scene = scene(matching: query) else { return nil }
+        let plan = DisplayScenePlanner.plan(
+            scene: scene,
+            snapshots: snapshots,
+            aliases: persistence.allAliases()
+        )
+        for command in plan.commands {
+            apply(command)
+        }
+        applySpeaker(from: scene, commands: plan.commands)
+        reconcileAppliedScene(plan)
+        refreshSpeaker()
+        onChange?()
+        return scene
+    }
+
+    @discardableResult
+    func saveScene(named rawName: String) -> DisplayScene? {
+        let name = DisplaySceneName.normalized(rawName)
+        guard !name.isEmpty else { return nil }
+        var scenes = persistence.allScenes()
+        let captured = DisplaySceneCapture.scene(name: name, from: snapshots, speaker: speaker)
+        guard !captured.targets.isEmpty else { return nil }
+        if let index = scenes.firstIndex(where: { DisplaySceneName.slug($0.name) == DisplaySceneName.slug(name) }) {
+            scenes[index].name = name
+            scenes[index].targets = captured.targets
+            scenes[index].speakerUID = captured.speakerUID
+            scenes[index].speakerVolume = captured.speakerVolume
+            scenes[index].speakerMuted = captured.speakerMuted
+            scenes[index].updatedAt = Date()
+            persistence.saveScenes(scenes)
+            onChange?()
+            return scenes[index]
+        }
+        scenes.append(captured)
+        persistence.saveScenes(scenes)
+        onChange?()
+        return captured
+    }
+
+    @discardableResult
+    func renameScene(_ query: String, to rawName: String) -> DisplayScene? {
+        let name = DisplaySceneName.normalized(rawName)
+        guard !name.isEmpty else { return nil }
+        guard let current = scene(matching: query) else { return nil }
+        var scenes = persistence.allScenes()
+        guard let index = scenes.firstIndex(where: { $0.id == current.id }) else { return nil }
+        scenes[index].name = name
+        scenes[index].updatedAt = Date()
+        persistence.saveScenes(scenes)
+        onChange?()
+        return scenes[index]
+    }
+
+    @discardableResult
+    func deleteScene(_ query: String) -> Bool {
+        guard let current = scene(matching: query) else { return false }
+        var scenes = persistence.allScenes()
+        guard let index = scenes.firstIndex(where: { $0.id == current.id }) else { return false }
+        scenes.remove(at: index)
+        persistence.saveScenes(scenes)
+        onChange?()
+        return true
+    }
+
+    private func reconcileAppliedScene(_ plan: DisplaySceneApplication) {
+        for command in plan.commands {
+            guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) else {
+                continue
+            }
+            if let brightness = command.brightness {
+                snapshots[index].brightness.current = brightness
+            }
+            if let volume = command.volume {
+                snapshots[index].volume.current = volume
+            }
+            if let muted = command.muted {
+                snapshots[index].volume.isMuted = muted
+            }
+            if let contrast = command.contrast {
+                snapshots[index].contrast.current = contrast
+            }
+            if let input = command.input {
+                snapshots[index].input.current = input
+                snapshots[index].input.currentCode = input.code
+            }
+            if let rotation = command.rotation {
+                snapshots[index].rotation.current = rotation
+            }
+            if let pictureInPicture = command.pictureInPicture {
+                snapshots[index].pictureInPictureActive = pictureInPicture
+            }
+        }
+    }
+
+    private func applySpeaker(from scene: DisplayScene, commands: [DisplaySceneCommand]) {
+        guard let restore = DisplaySceneSpeakerRestore.resolve(scene: scene, speaker: speaker, commands: commands) else {
+            return
+        }
+        if let uid = restore.uid, speaker?.uid != uid {
+            _ = setDefaultSpeaker(uid: uid)
+        }
+        if let volume = restore.volume {
+            setSpeakerVolume(volume)
+        }
+        if let muted = restore.muted {
+            setSpeakerMuted(muted)
+        }
+    }
+
+    private func apply(_ command: DisplaySceneCommand) {
+        if let brightness = command.brightness {
+            setBrightness(key: command.persistentKey, value: brightness)
+        }
+        if let volume = command.volume {
+            setVolume(key: command.persistentKey, value: volume)
+        }
+        if let muted = command.muted {
+            setMuted(key: command.persistentKey, muted: muted)
+        }
+        if let contrast = command.contrast {
+            setContrast(key: command.persistentKey, value: contrast)
+        }
+        if let input = command.input {
+            setInput(key: command.persistentKey, source: input)
+        }
+        if let rotation = command.rotation {
+            setRotation(key: command.persistentKey, rotation: rotation)
+        }
+        if let pictureInPicture = command.pictureInPicture {
+            if pictureInPicture {
+                _ = openPictureInPicture(key: command.persistentKey)
+            } else {
+                closePictureInPicture(key: command.persistentKey)
+            }
+        }
+    }
+
     func applyLaunchAtLogin(_ enabled: Bool) -> String? {
         #if canImport(ServiceManagement)
         if #available(macOS 13.0, *) {
@@ -348,6 +503,11 @@ final class DisplaySessionController {
             rename: { self.renameDisplay(key: $0, customName: $1) },
             applyPreset: { self.applyPreset($0, key: $1) },
             matchAll: { self.matchAll(to: $0) },
+            scenes: { self.scenes },
+            applyScene: { self.applyScene($0) },
+            saveScene: { self.saveScene(named: $0) },
+            renameScene: { self.renameScene($0, to: $1) },
+            deleteScene: { self.deleteScene($0) },
             dump: { self.debugDump(redact: $0) }
         ))
     }
@@ -380,6 +540,7 @@ final class DisplaySessionController {
             "Candela debug dump",
             "fakeHardware=\(Self.shouldUseFakeHardware)",
             "displays=\(snapshots.count)",
+            "scenes=\(scenes.count)",
         ]
         for snapshot in snapshots {
             var key = snapshot.id.persistentKey
@@ -535,7 +696,7 @@ final class DisplaySessionController {
             )
             guard let old = previous[snapshot.id.persistentKey] else { return merged }
             merged.brightness = old.brightness
-            if old.brightness.backend == .none {
+            if old.brightness.backend == .none, old.brightness.current == 1, snapshot.brightness.current != 1 {
                 merged.brightness.current = snapshot.brightness.current
             }
             merged.volume = old.volume
@@ -620,12 +781,28 @@ final class DisplaySessionController {
 
     private func mergeVolume(key: String, capabilities: VolumeCapabilities) {
         guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
-        if capabilities.supportsVolume {
-            snapshots[index].volume = capabilities
+        var next = capabilities
+        let record = persistence.record(for: key)
+        if let last = record?.lastVolume,
+           next.supportsVolume,
+           abs(next.current - last) > 0.02,
+           abs(snapshots[index].volume.current - last) <= 0.02
+        {
+            next.current = last
+        }
+        if let lastMuted = record?.lastMuted,
+           (next.supportsMute || next.supportsVolume),
+           next.isMuted != lastMuted,
+           snapshots[index].volume.isMuted == lastMuted
+        {
+            next.isMuted = lastMuted
+        }
+        if next.supportsVolume {
+            snapshots[index].volume = next
         } else if snapshots[index].volume.supportsVolume {
             return
         } else {
-            snapshots[index].volume = capabilities
+            snapshots[index].volume = next
         }
         refreshSpeaker()
         onChange?()
@@ -633,19 +810,44 @@ final class DisplaySessionController {
 
     private func mergeExtras(key: String, contrast: ContrastCapabilities, input: InputCapabilities) {
         guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
-        snapshots[index].contrast = contrast
-        snapshots[index].input = input
+        var nextContrast = contrast
+        var nextInput = input
+        let record = persistence.record(for: key)
+        if let last = record?.lastContrast,
+           nextContrast.supportsContrast,
+           abs(nextContrast.current - last) > 0.02,
+           abs(snapshots[index].contrast.current - last) <= 0.02
+        {
+            nextContrast.current = last
+        }
+        if let lastCode = record?.lastInputCode,
+           nextInput.supportsInputSelect,
+           nextInput.currentCode != lastCode,
+           snapshots[index].input.currentCode == lastCode || snapshots[index].input.current?.code == lastCode
+        {
+            nextInput.currentCode = lastCode
+            nextInput.current = DisplayInputSource.from(code: lastCode)
+        }
+        snapshots[index].contrast = nextContrast
+        snapshots[index].input = nextInput
         onChange?()
     }
 
     private func mergeBrightness(key: String, capabilities: BrightnessCapabilities, isBuiltin: Bool) {
         guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
-        snapshots[index].brightness = capabilities
-        if capabilities.backend == .displayServices && !isBuiltin {
+        var next = capabilities
+        if let last = persistence.record(for: key)?.lastBrightness,
+           abs(next.current - last) > 0.02,
+           abs(snapshots[index].brightness.current - last) <= 0.02
+        {
+            next.current = last
+        }
+        snapshots[index].brightness = next
+        if next.backend == .displayServices && !isBuiltin {
             snapshots[index].kind = .appleExternal
         }
         var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
-        record.brightnessBackend = capabilities.backend
+        record.brightnessBackend = next.backend
         persistence.save(record)
         onChange?()
     }

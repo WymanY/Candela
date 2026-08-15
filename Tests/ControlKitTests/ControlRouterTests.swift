@@ -163,6 +163,154 @@ final class ControlRouterTests: XCTestCase {
         XCTAssertFalse(sidecar.ok)
         XCTAssertFalse(snapshots[3].pictureInPictureActive)
     }
+
+    func testSaveAndApplyScene() {
+        var snapshots = FakeSnapshots.standard()
+        var scenes: [DisplayScene] = []
+        let backend = ControlBackend(
+            snapshots: { snapshots },
+            setBrightness: { key, value in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].brightness.current = value
+                }
+            },
+            setVolume: { key, value in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].volume.current = value
+                }
+            },
+            setMuted: { key, muted in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].volume.isMuted = muted
+                }
+            },
+            setContrast: { key, value in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].contrast.current = value
+                }
+            },
+            setInput: { key, source in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].input.current = source
+                    snapshots[index].input.currentCode = source.code
+                }
+            },
+            setRotation: { key, rotation in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].rotation.current = rotation
+                }
+            },
+            setPictureInPicture: { key, enabled in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].pictureInPictureActive = enabled
+                }
+                return true
+            },
+            rename: { _, _ in true },
+            applyPreset: { _, _ in },
+            matchAll: { _ in },
+            scenes: { scenes },
+            applyScene: { query in
+                guard let scene = DisplaySceneQuery.resolve(query, in: scenes) else { return nil }
+                let plan = DisplayScenePlanner.plan(scene: scene, snapshots: snapshots)
+                for command in plan.commands {
+                    if let brightness = command.brightness,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].brightness.current = brightness
+                    }
+                    if let volume = command.volume,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].volume.current = volume
+                    }
+                    if let muted = command.muted,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].volume.isMuted = muted
+                    }
+                    if let contrast = command.contrast,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].contrast.current = contrast
+                    }
+                    if let input = command.input,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].input.current = input
+                        snapshots[index].input.currentCode = input.code
+                    }
+                    if let rotation = command.rotation,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].rotation.current = rotation
+                    }
+                    if let pictureInPicture = command.pictureInPicture,
+                       let index = snapshots.firstIndex(where: { $0.id.persistentKey == command.persistentKey }) {
+                        snapshots[index].pictureInPictureActive = pictureInPicture
+                    }
+                }
+                return scene
+            },
+            saveScene: { name in
+                let scene = DisplaySceneCapture.scene(name: name, from: snapshots)
+                if let index = scenes.firstIndex(where: { DisplaySceneName.slug($0.name) == DisplaySceneName.slug(name) }) {
+                    scenes[index] = DisplayScene(
+                        id: scenes[index].id,
+                        name: name,
+                        createdAt: scenes[index].createdAt,
+                        targets: scene.targets,
+                        speakerUID: scene.speakerUID,
+                        speakerVolume: scene.speakerVolume,
+                        speakerMuted: scene.speakerMuted
+                    )
+                    return scenes[index]
+                }
+                scenes.append(scene)
+                return scene
+            },
+            renameScene: { query, name in
+                guard let current = DisplaySceneQuery.resolve(query, in: scenes),
+                      let index = scenes.firstIndex(where: { $0.id == current.id }) else {
+                    return nil
+                }
+                scenes[index].name = name
+                return scenes[index]
+            },
+            deleteScene: { query in
+                guard let current = DisplaySceneQuery.resolve(query, in: scenes),
+                      let index = scenes.firstIndex(where: { $0.id == current.id }) else {
+                    return false
+                }
+                scenes.remove(at: index)
+                return true
+            },
+            dump: { _ in "" }
+        )
+
+        let saved = ControlRouter.apply(ControlRequest(action: .saveScene, name: "Night"), backend: backend)
+        XCTAssertTrue(saved.ok)
+        XCTAssertEqual(saved.scenes?.first?.name, "Night")
+        XCTAssertEqual(scenes.count, 1)
+
+        snapshots[0].brightness.current = 1
+        snapshots[1].brightness.current = 1
+        snapshots[1].volume.current = 1
+        snapshots[1].rotation.current = .deg90
+
+        let applied = ControlRouter.apply(ControlRequest(action: .applyScene, scene: "night"), backend: backend)
+        XCTAssertTrue(applied.ok)
+        XCTAssertEqual(snapshots[0].brightness.current, 0.80, accuracy: 0.0001)
+        XCTAssertEqual(snapshots[1].brightness.current, 0.50, accuracy: 0.0001)
+        XCTAssertEqual(snapshots[1].volume.current, 0.25, accuracy: 0.0001)
+        XCTAssertEqual(snapshots[1].rotation.current, .deg0)
+
+        let listed = ControlRouter.apply(ControlRequest(action: .listScenes), backend: backend)
+        XCTAssertEqual(listed.scenes?.count, 1)
+        XCTAssertEqual(listed.scenes?.first?.active, true)
+
+        let renamed = ControlRouter.apply(ControlRequest(action: .renameScene, name: "Late", scene: "Night"), backend: backend)
+        XCTAssertTrue(renamed.ok)
+        XCTAssertEqual(scenes.first?.name, "Late")
+
+        let deleted = ControlRouter.apply(ControlRequest(action: .deleteScene, scene: "Late"), backend: backend)
+        XCTAssertTrue(deleted.ok)
+        XCTAssertTrue(scenes.isEmpty)
+    }
 }
 
 final class DisplayQueryTests: XCTestCase {

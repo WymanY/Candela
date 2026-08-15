@@ -20,6 +20,7 @@ final class StatusPanelView: NSView {
         target: nil,
         action: nil
     )
+    private let scenesStack = NSStackView()
     private let rowsStack = NSStackView()
     private let speakerRow = SpeakerRowView()
     private let speakerTop: NSLayoutConstraint
@@ -49,6 +50,7 @@ final class StatusPanelView: NSView {
 
         configureHeader()
         configurePresets()
+        configureScenes()
         configureRows()
         configureFooter()
 
@@ -72,9 +74,12 @@ final class StatusPanelView: NSView {
             presets.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             presets.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             presets.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
+            scenesStack.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            scenesStack.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            scenesStack.topAnchor.constraint(equalTo: presets.bottomAnchor, constant: 8),
             rowsStack.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             rowsStack.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            rowsStack.topAnchor.constraint(equalTo: presets.bottomAnchor, constant: 8),
+            rowsStack.topAnchor.constraint(equalTo: scenesStack.bottomAnchor, constant: 8),
             speakerRow.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             speakerRow.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             speakerTop,
@@ -98,11 +103,13 @@ final class StatusPanelView: NSView {
     private var measuredHeight: CGFloat {
         let rowsHeight = max(rowsStack.fittingSize.height, rows.isEmpty ? 20 : 56)
         let speakerHeight = speakerRow.isHidden ? 0 : max(speakerRow.fittingSize.height, 56) + 8
+        let scenesHeight = scenesStack.isHidden ? 0 : max(scenesStack.fittingSize.height, 28) + 8
         return 3
             + CandelaChrome.contentInsets.top
             + 20
             + 8
             + 28
+            + scenesHeight
             + 8
             + rowsHeight
             + speakerHeight
@@ -119,6 +126,7 @@ final class StatusPanelView: NSView {
             }
             applySpeaker()
             syncPresetSelection(with: snapshots)
+            reloadScenes()
             return
         }
         rowKeys = keys
@@ -132,6 +140,7 @@ final class StatusPanelView: NSView {
             rowsStack.addArrangedSubview(empty)
             applySpeaker()
             syncPresetSelection(with: snapshots)
+            reloadScenes()
             return
         }
 
@@ -171,6 +180,7 @@ final class StatusPanelView: NSView {
         }
         applySpeaker()
         syncPresetSelection(with: snapshots)
+        reloadScenes()
     }
 
     private func applySpeaker() {
@@ -218,6 +228,78 @@ final class StatusPanelView: NSView {
         }
         content.addSubview(presets)
         presets.heightAnchor.constraint(equalToConstant: 28).isActive = true
+    }
+
+    private func configureScenes() {
+        scenesStack.orientation = .horizontal
+        scenesStack.alignment = .centerY
+        scenesStack.distribution = .fill
+        scenesStack.spacing = 6
+        scenesStack.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(scenesStack)
+        scenesStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 28).isActive = true
+    }
+
+    private func reloadScenes() {
+        scenesStack.arrangedSubviews.forEach { scenesStack.removeArrangedSubview($0); $0.removeFromSuperview() }
+        scenesStack.isHidden = false
+        let scenes = Array(session.scenes.prefix(3))
+        if scenes.isEmpty {
+            let caption = CandelaChrome.makeCaption(String(localized: "No Scenes"))
+            caption.font = .systemFont(ofSize: 11, weight: .medium)
+            scenesStack.addArrangedSubview(caption)
+        } else {
+            for scene in scenes {
+                let button = CandelaChrome.makeQuietButton(title: scene.displayName, symbolName: "square.stack.3d.up")
+                button.toolTip = String(localized: "Apply Scene")
+                button.identifier = NSUserInterfaceItemIdentifier(scene.id)
+                button.target = self
+                button.action = #selector(sceneClicked(_:))
+                if DisplayScenePlanner.matches(scene, snapshots: session.snapshots, aliases: [:], speaker: session.speaker) {
+                    button.contentTintColor = CandelaChrome.accent
+                }
+                scenesStack.addArrangedSubview(button)
+            }
+        }
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        scenesStack.addArrangedSubview(spacer)
+        let save = CandelaChrome.makeIconButton(symbolName: "plus", help: String(localized: "Save Scene"))
+        save.target = self
+        save.action = #selector(saveSceneClicked)
+        scenesStack.addArrangedSubview(save)
+    }
+
+    @objc private func sceneClicked(_ sender: NSButton) {
+        guard let id = sender.identifier?.rawValue else { return }
+        _ = session.applyScene(id)
+        reload(session.snapshots)
+    }
+
+    @objc private func saveSceneClicked() {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Save Scene")
+        alert.informativeText = String(localized: "Capture brightness, volume, input, rotation, and Picture in Picture for the current displays.")
+        alert.addButton(withTitle: String(localized: "Save"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        let field = NSTextField(string: suggestedSceneName())
+        field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        _ = session.saveScene(named: field.stringValue)
+        reload(session.snapshots)
+    }
+
+    private func suggestedSceneName() -> String {
+        let existing = Set(session.scenes.map { DisplaySceneName.slug($0.name) })
+        if !existing.contains("desk") { return String(localized: "Desk") }
+        if !existing.contains("night") { return String(localized: "Night") }
+        var index = session.scenes.count + 1
+        while existing.contains(DisplaySceneName.slug("Scene \(index)")) {
+            index += 1
+        }
+        return String(localized: "Scene \(index)")
     }
 
     private func configureRows() {
