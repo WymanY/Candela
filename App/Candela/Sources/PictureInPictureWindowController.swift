@@ -22,6 +22,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private var placement: PictureInPicturePlacement
     private var isApplying = false
     private var clickThroughTimer: Timer?
+    private var clickThroughScrollTap: PictureInPictureScrollTap?
+    private var clickThroughWindowFrame = CGRect.zero
     private var sourceDisplayID: CGDirectDisplayID
     var onClose: (() -> Void)?
     var onPlacementChange: ((PictureInPicturePlacement) -> Void)?
@@ -118,6 +120,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     deinit {
         clickThroughTimer?.invalidate()
+        clickThroughScrollTap?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -137,6 +140,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     func stop() {
         clickThroughTimer?.invalidate()
         clickThroughTimer = nil
+        removeClickThroughScrollTap()
         persistCurrentPlacement()
         streamQueue.sync {
             try? stream?.stopCapture()
@@ -348,9 +352,6 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             ? String(localized: "Click through is on. Hover the title bar to adjust. Scroll still zooms.")
             : String(localized: "Click Through")
         clickThroughButton.setAccessibilityLabel(clickThroughButton.toolTip)
-        if let root = window?.contentView as? PictureInPictureRootView {
-            root.clickThroughEnabled = placement.clickThrough
-        }
         updateClickThroughIgnoring()
         if placement.clickThrough {
             if clickThroughTimer == nil {
@@ -362,9 +363,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 RunLoop.main.add(timer, forMode: .common)
                 clickThroughTimer = timer
             }
+            installClickThroughScrollTap()
         } else {
             clickThroughTimer?.invalidate()
             clickThroughTimer = nil
+            removeClickThroughScrollTap()
             window?.ignoresMouseEvents = false
         }
     }
@@ -374,15 +377,48 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             window?.ignoresMouseEvents = false
             return
         }
+        clickThroughWindowFrame = window.frame
         let hoveringChrome = window.convertToScreen(chrome.convert(chrome.bounds, to: nil))
             .insetBy(dx: -10, dy: -10)
             .contains(NSEvent.mouseLocation)
-        // Stay live over the preview so scroll/pinch still zoom. The root view
-        // forwards clicks that miss chrome controls.
-        window.ignoresMouseEvents = !hoveringChrome && !PictureInPictureLayout.isMouseOverWindow(
-            mouse: NSEvent.mouseLocation,
-            windowFrame: window.frame
-        )
+        // Clicks keep passing through the preview. Scroll-zoom is intercepted
+        // separately so the window can stay click-through.
+        window.ignoresMouseEvents = !hoveringChrome
+    }
+
+    private func installClickThroughScrollTap() {
+        guard clickThroughScrollTap == nil else { return }
+        clickThroughScrollTap = PictureInPictureScrollTap { [weak self] event in
+            guard let self else { return false }
+            guard PictureInPictureLayout.isMouseOverWindow(
+                mouse: NSEvent.mouseLocation,
+                windowFrame: self.clickThroughWindowFrame
+            ) else {
+                return false
+            }
+            let captured = event
+            DispatchQueue.main.async {
+                switch captured.type {
+                case .scrollWheel:
+                    self.handleScrollWheel(captured)
+                case .magnify:
+                    self.handleMagnify(captured)
+                default:
+                    break
+                }
+            }
+            return true
+        }
+    }
+
+    private func removeClickThroughScrollTap() {
+        clickThroughScrollTap?.invalidate()
+        clickThroughScrollTap = nil
+    }
+
+    private func shouldZoomThroughClickThrough() -> Bool {
+        guard placement.clickThrough, let window else { return false }
+        return PictureInPictureLayout.isMouseOverWindow(mouse: NSEvent.mouseLocation, windowFrame: window.frame)
     }
 
     private func syncPinPopup() {
@@ -512,44 +548,68 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 }
 
+/// Intercepts scroll/pinch while click-through is on, without eating mouse clicks.
+final class PictureInPictureScrollTap {
+    private var tap: CFMachPort?
+    private var source: CFRunLoopSource?
+    private let handler: (NSEvent) -> Bool
+
+    init(handler: @escaping (NSEvent) -> Bool) {
+        self.handler = handler
+        let mask = (1 << CGEventType.scrollWheel.rawValue)
+        let callback: CGEventTapCallBack = { _, type, event, userInfo in
+            guard let userInfo else { return Unmanaged.passUnretained(event) }
+            let tap = Unmanaged<PictureInPictureScrollTap>.fromOpaque(userInfo).takeUnretainedValue()
+            if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+                if let mach = tap.tap {
+                    CGEvent.tapEnable(tap: mach, enable: true)
+                }
+                return Unmanaged.passUnretained(event)
+            }
+            guard let nsEvent = NSEvent(cgEvent: event), tap.handler(nsEvent) else {
+                return Unmanaged.passUnretained(event)
+            }
+            return nil
+        }
+        let userInfo = Unmanaged.passUnretained(self).toOpaque()
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: CGEventMask(mask),
+            callback: callback,
+            userInfo: userInfo
+        ) else {
+            return
+        }
+        self.tap = tap
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        self.source = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    func invalidate() {
+        if let tap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+        }
+        if let source {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        }
+        tap = nil
+        source = nil
+    }
+
+    deinit {
+        invalidate()
+    }
+}
+
 final class PictureInPictureRootView: NSView {
     var onScrollWheel: ((NSEvent) -> Void)?
     var onMagnify: ((NSEvent) -> Void)?
-    var clickThroughEnabled = false
 
     override var acceptsFirstResponder: Bool { true }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        let hit = super.hitTest(point)
-        if clickThroughEnabled, hit is PictureInPicturePreviewView || hit is NSTextField {
-            return self
-        }
-        return hit
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        if clickThroughEnabled, shouldPassClick(event) {
-            passClicksTemporarily()
-            return
-        }
-        super.mouseDown(with: event)
-    }
-
-    override func rightMouseDown(with event: NSEvent) {
-        if clickThroughEnabled, shouldPassClick(event) {
-            passClicksTemporarily()
-            return
-        }
-        super.rightMouseDown(with: event)
-    }
-
-    override func otherMouseDown(with event: NSEvent) {
-        if clickThroughEnabled, shouldPassClick(event) {
-            passClicksTemporarily()
-            return
-        }
-        super.otherMouseDown(with: event)
-    }
 
     override func scrollWheel(with event: NSEvent) {
         onScrollWheel?(event)
@@ -557,20 +617,6 @@ final class PictureInPictureRootView: NSView {
 
     override func magnify(with event: NSEvent) {
         onMagnify?(event)
-    }
-
-    private func shouldPassClick(_ event: NSEvent) -> Bool {
-        let point = convert(event.locationInWindow, from: nil)
-        let hit = super.hitTest(point)
-        return hit == nil || hit is PictureInPicturePreviewView || hit is NSTextField
-    }
-
-    private func passClicksTemporarily() {
-        guard let window else { return }
-        window.ignoresMouseEvents = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            window.ignoresMouseEvents = false
-        }
     }
 }
 
