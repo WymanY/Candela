@@ -15,6 +15,8 @@ public final class FakeDDC: DDCCommanding {
         isAvailable: Bool = true,
         values: [UInt8: (current: UInt16, max: UInt16)] = [
             0x10: (50, 100),
+            0x12: (50, 100),
+            0x60: (0x0F, 0x1B),
             0x62: (25, 100),
         ]
     ) {

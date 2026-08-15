@@ -11,7 +11,7 @@ settings:
     SWIFT_VERSION: "5.10"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     PRODUCT_BUNDLE_IDENTIFIER: app.candela.macos
-    DEVELOPMENT_TEAM: ${CANDELA_DEVELOPMENT_TEAM}
+    DEVELOPMENT_TEAM: A594W68DE5
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_APP_SANDBOX: NO
@@ -43,13 +43,15 @@ targets:
     info:
       path: App/Candela/Resources/Info.plist
       properties:
-        LSUIElement: true
+        LSUIElement: false
         LSRequiresNativeExecution: true
         LSApplicationCategoryType: public.app-category.utilities
         NSHighResolutionCapable: true
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: false
         NSPrincipalClass: NSApplication
+        NSAudioCaptureUsageDescription: Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.
+        NSScreenCaptureUsageDescription: Candela needs Screen Recording to apply software volume to HDMI and DisplayPort monitor speakers.
         CFBundleDisplayName: Candela
         CFBundleName: Candela
         LSMinimumSystemVersion: "14.0"
@@ -73,6 +75,8 @@ targets:
         product: AudioKit
       - package: CandelaKit
         product: PersistenceKit
+      - package: CandelaKit
+        product: ControlKit
       - package: CandelaKit
         product: TestSupport
     scheme:

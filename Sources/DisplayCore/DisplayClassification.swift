@@ -72,6 +72,20 @@ public func classifyDisplayKind(isVirtual: Bool, isBuiltin: Bool) -> DisplayKind
     return .genericExternal
 }
 
+/// Built-in laptop/iMac panels and virtual screens cannot be rotated.
+public func supportsDisplayRotation(isVirtual: Bool, isBuiltin: Bool) -> Bool {
+    !isVirtual && !isBuiltin
+}
+
+/// Reconnect restore is only for newly attached identities, not mode/rotation reconfigs.
+public func newlyAttachedDisplayKeys(previous: Set<String>, next: Set<String>) -> Set<String> {
+    next.subtracting(previous)
+}
+
+public func displayIdentitiesChanged(previous: Set<String>, next: Set<String>) -> Bool {
+    previous != next
+}
+
 public func connectionKind(
     isBuiltin: Bool,
     transportDownstream: String?,

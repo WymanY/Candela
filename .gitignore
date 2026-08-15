@@ -5,3 +5,4 @@ DerivedData/
 .swiftpm/
 *.xcuserstate
 .idea/
+Configs/Developer.xcconfig

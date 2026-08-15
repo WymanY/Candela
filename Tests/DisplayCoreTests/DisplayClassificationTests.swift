@@ -43,6 +43,20 @@ final class DisplayClassificationTests: XCTestCase {
         XCTAssertEqual(classifyDisplayKind(isVirtual: false, isBuiltin: false), .genericExternal)
     }
 
+    func testBuiltinAndVirtualNeverSupportRotation() {
+        XCTAssertFalse(supportsDisplayRotation(isVirtual: false, isBuiltin: true))
+        XCTAssertFalse(supportsDisplayRotation(isVirtual: true, isBuiltin: false))
+        XCTAssertTrue(supportsDisplayRotation(isVirtual: false, isBuiltin: false))
+    }
+
+    func testRotationReconfigIsNotANewAttachment() {
+        let keys: Set<String> = ["v1:dell"]
+        XCTAssertTrue(newlyAttachedDisplayKeys(previous: keys, next: keys).isEmpty)
+        XCTAssertFalse(displayIdentitiesChanged(previous: keys, next: keys))
+        XCTAssertEqual(newlyAttachedDisplayKeys(previous: [], next: keys), keys)
+        XCTAssertTrue(displayIdentitiesChanged(previous: [], next: keys))
+    }
+
     func testConnectionKindBuiltinFirst() {
         XCTAssertEqual(
             connectionKind(

@@ -49,6 +49,21 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertTrue(loaded.launchAtLogin)
     }
 
+    func testSavesCustomNameAndContrast() {
+        let store = PersistenceStore()
+        var record = DisplayRecord(persistentKey: "v1:desk")
+        record.customName = "Desk"
+        record.lastContrast = 0.4
+        record.lastInputCode = 0x11
+        record.lastRotationDegrees = 90
+        store.save(record)
+        let loaded = store.record(for: "v1:desk")
+        XCTAssertEqual(loaded?.customName, "Desk")
+        XCTAssertEqual(loaded?.lastContrast, 0.4)
+        XCTAssertEqual(loaded?.lastInputCode, 0x11)
+        XCTAssertEqual(loaded?.lastRotationDegrees, 90)
+    }
+
     private func clearStore() {
         let defaults = UserDefaults.standard
         for key in keys {

@@ -300,12 +300,12 @@ extension AudioMatching {
         return hits
     }
 
-    static func vendorToken(forVendorID vendorID: UInt32) -> String? {
+    public static func vendorToken(forVendorID vendorID: UInt32) -> String? {
         guard let pnp = pnpID(from: vendorID) else { return nil }
         return pnpToVendorToken[pnp]
     }
 
-    static func pnpID(from vendorID: UInt32) -> String? {
+    public static func pnpID(from vendorID: UInt32) -> String? {
         let normalized = vendorID == 0xFFFF_FFFF ? 0 : vendorID
         guard normalized != 0 else { return nil }
         let packed = normalized & 0x7FFF

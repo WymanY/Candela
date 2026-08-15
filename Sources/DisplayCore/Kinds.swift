@@ -26,5 +26,6 @@ public enum BrightnessBackendKind: String, Codable, Sendable {
 public enum VolumeBackendKind: String, Codable, Sendable {
     case coreAudio
     case ddc
+    case software
     case none
 }

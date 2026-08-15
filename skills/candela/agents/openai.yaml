@@ -1,0 +1,4 @@
+interface:
+  display_name: "Candela Displays"
+  short_description: "Control macOS display brightness from agents"
+  default_prompt: "Use $candela to list displays and dim the external monitor to night mode."

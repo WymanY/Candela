@@ -22,15 +22,20 @@ public final class DisplayIOBox: @unchecked Sendable {
     private var brightness: Double
     private var volume: Double
     private var muted: Bool
+    private var contrast: Double
     private var audioUID: String?
     private var brightnessCaps: BrightnessCapabilities
     private var volumeCaps: VolumeCapabilities
+    private var contrastCaps: ContrastCapabilities
+    private var inputCaps: InputCapabilities
     private var context: BrightnessProbeContext
     private var backend: BrightnessBackendKind
 
     private var brightnessLatest: Double?
     private var volumeLatest: Double?
     private var muteLatest: Bool?
+    private var contrastLatest: Double?
+    private var inputLatest: UInt16?
     private var ddcInFlight = false
     private var lastDDC: ContinuousClock.Instant?
     private var writeScheduled = false
@@ -60,9 +65,12 @@ public final class DisplayIOBox: @unchecked Sendable {
         self.brightness = snapshot.brightness.current
         self.volume = snapshot.volume.current
         self.muted = snapshot.volume.isMuted
+        self.contrast = snapshot.contrast.current
         self.audioUID = snapshot.volume.audioDeviceUID
         self.brightnessCaps = snapshot.brightness
         self.volumeCaps = snapshot.volume
+        self.contrastCaps = snapshot.contrast
+        self.inputCaps = snapshot.input
         self.backend = snapshot.brightness.backend
         self.context = BrightnessProbeContext(
             vendorID: snapshot.id.fields.inputs.vendorID,
@@ -114,6 +122,29 @@ public final class DisplayIOBox: @unchecked Sendable {
         }
     }
 
+    public func setContrast(_ value: Double) {
+        let clamped = Self.clamp(value)
+        queue.async {
+            self.contrast = clamped
+            self.contrastCaps.current = clamped
+            self.contrastLatest = clamped
+            if !self.writeScheduled {
+                self.armSliderHoldLocked()
+            }
+        }
+    }
+
+    public func setInput(_ source: DisplayInputSource) {
+        queue.async {
+            self.inputCaps.current = source
+            self.inputCaps.currentCode = source.code
+            self.inputLatest = source.code
+            if !self.writeScheduled {
+                self.armSliderHoldLocked()
+            }
+        }
+    }
+
     public func currentBrightness() async -> Double {
         await withCheckedContinuation { continuation in
             queue.async { continuation.resume(returning: self.brightness) }
@@ -129,6 +160,12 @@ public final class DisplayIOBox: @unchecked Sendable {
     public func isMuted() async -> Bool {
         await withCheckedContinuation { continuation in
             queue.async { continuation.resume(returning: self.muted) }
+        }
+    }
+
+    public func currentContrast() async -> Double {
+        await withCheckedContinuation { continuation in
+            queue.async { continuation.resume(returning: self.contrast) }
         }
     }
 
@@ -160,6 +197,14 @@ public final class DisplayIOBox: @unchecked Sendable {
         await withCheckedContinuation { continuation in
             queue.async {
                 continuation.resume(returning: self.probeDDCVolumeLocked())
+            }
+        }
+    }
+
+    public func probeDDCExtras() async -> (ContrastCapabilities, InputCapabilities) {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                continuation.resume(returning: (self.probeDDCContrastLocked(), self.probeDDCInputLocked()))
             }
         }
     }
@@ -328,7 +373,9 @@ public final class DisplayIOBox: @unchecked Sendable {
 
     private func scheduleNextLocked() {
         if ddcInFlight { return }
-        if brightnessLatest == nil && volumeLatest == nil && muteLatest == nil {
+        if brightnessLatest == nil && volumeLatest == nil && muteLatest == nil
+            && contrastLatest == nil && inputLatest == nil
+        {
             return
         }
         if brightnessLatest != nil {
@@ -351,6 +398,15 @@ public final class DisplayIOBox: @unchecked Sendable {
                 }
             }
             beginWriteVolumeLocked()
+            return
+        }
+        if contrastLatest != nil || inputLatest != nil {
+            let wait = ddcWaitIntervalLocked()
+            if wait > .zero {
+                armWaitSpacingLocked(wait) { self.beginWriteExtrasLocked() }
+                return
+            }
+            beginWriteExtrasLocked()
         }
     }
 
@@ -385,6 +441,23 @@ public final class DisplayIOBox: @unchecked Sendable {
             lastDDC = .now
             ddcInFlight = false
         }
+        scheduleNextLocked()
+    }
+
+    private func beginWriteExtrasLocked() {
+        let contrastToSend = contrastLatest
+        contrastLatest = nil
+        let inputToSend = inputLatest
+        inputLatest = nil
+        ddcInFlight = true
+        if let contrastToSend {
+            _ = performDDCContrastPulseLocked(contrastToSend)
+        }
+        if let inputToSend {
+            _ = performDDCInputPulseLocked(inputToSend)
+        }
+        lastDDC = .now
+        ddcInFlight = false
         scheduleNextLocked()
     }
 
@@ -582,6 +655,45 @@ public final class DisplayIOBox: @unchecked Sendable {
         return (false, nil, 0)
     }
 
+    private func probeDDCContrastLocked() -> ContrastCapabilities {
+        if contrastCaps.supportsContrast {
+            return contrastCaps
+        }
+        guard enablesHardware, !context.isBuiltin else { return contrastCaps }
+        ensureDDCClientLocked()
+        guard let client = ddcClient, client.isAvailable else { return contrastCaps }
+        ddcInFlight = true
+        defer {
+            lastDDC = .now
+            ddcInFlight = false
+        }
+        guard let (current, max) = try? client.read(vcp: DDCPacket.VCP.contrast), max > 0 else {
+            return contrastCaps
+        }
+        contrast = Double(current) / Double(max)
+        contrastCaps = ContrastCapabilities(supportsContrast: true, current: contrast, ddcMax: max)
+        return contrastCaps
+    }
+
+    private func probeDDCInputLocked() -> InputCapabilities {
+        if inputCaps.supportsInputSelect {
+            return inputCaps
+        }
+        guard enablesHardware, !context.isBuiltin else { return inputCaps }
+        ensureDDCClientLocked()
+        guard let client = ddcClient, client.isAvailable else { return inputCaps }
+        ddcInFlight = true
+        defer {
+            lastDDC = .now
+            ddcInFlight = false
+        }
+        guard let (current, max) = try? client.read(vcp: DDCPacket.VCP.inputSelect), max > 0 || current > 0 else {
+            return inputCaps
+        }
+        inputCaps = InputCapabilities(supportsInputSelect: true, currentCode: current)
+        return inputCaps
+    }
+
     private func probeDDCVolumeLocked() -> VolumeCapabilities {
         if volumeCaps.backend == .coreAudio, volumeCaps.supportsVolume {
             return volumeCaps
@@ -618,6 +730,22 @@ public final class DisplayIOBox: @unchecked Sendable {
     @discardableResult
     private func performDDCVolumePulseLocked(_ value: Double) -> Bool {
         pulseDDCLocked(vcp: DDCPacket.VCP.volume, value: value, max: 100)
+    }
+
+    @discardableResult
+    private func performDDCContrastPulseLocked(_ value: Double) -> Bool {
+        pulseDDCLocked(vcp: DDCPacket.VCP.contrast, value: value, max: contrastCaps.ddcMax)
+    }
+
+    @discardableResult
+    private func performDDCInputPulseLocked(_ code: UInt16) -> Bool {
+        guard let client = ddcClient, client.isAvailable else { return false }
+        do {
+            try client.write(vcp: DDCPacket.VCP.inputSelect, value: code)
+            return true
+        } catch {
+            return false
+        }
     }
 
     @discardableResult

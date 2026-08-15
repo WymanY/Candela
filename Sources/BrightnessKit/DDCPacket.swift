@@ -4,6 +4,8 @@ import Foundation
 public enum DDCPacket {
     public enum VCP {
         public static let brightness: UInt8 = 0x10
+        public static let contrast: UInt8 = 0x12
+        public static let inputSelect: UInt8 = 0x60
         public static let volume: UInt8 = 0x62
         public static let mute: UInt8 = 0x8D
     }

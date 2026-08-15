@@ -8,7 +8,6 @@ enum PrivateSymbols {
     typealias DisplayServicesGetBrightnessFn = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
     typealias DisplayServicesSetBrightnessFn = @convention(c) (CGDirectDisplayID, Float) -> Int32
     typealias CGSFlagFn = @convention(c) (CGDirectDisplayID) -> Int32
-    typealias CGSServiceForDisplayNumberFn = @convention(c) (CGDirectDisplayID) -> UInt32
     typealias CoreDisplayCreateInfoDictionaryFn = @convention(c) (CGDirectDisplayID) -> Unmanaged<CFDictionary>?
 
     private static let log = Logger(subsystem: "app.candela.macos", category: "private-io")
@@ -53,10 +52,7 @@ enum PrivateSymbols {
 
     static let cgsIsHDREnabled: CGSFlagFn? = symbol(skyLightHandle, name: "CGSIsHDREnabled")
     static let cgsIsHDRSupported: CGSFlagFn? = symbol(skyLightHandle, name: "CGSIsHDRSupported")
-    static let cgsServiceForDisplayNumber: CGSServiceForDisplayNumberFn? = symbol(
-        skyLightHandle,
-        name: "CGSServiceForDisplayNumber"
-    )
+
 
     static var displayServicesAvailable: Bool {
         displayServicesGetBrightness != nil && displayServicesSetBrightness != nil

@@ -20,6 +20,11 @@ public struct DisplayHardwareFacts: Equatable, Sendable {
     public var isVirtualDevice: Bool
     public var isAirPlay: Bool
     public var ioClassOrName: String?
+    public var pixelWidth: UInt32
+    public var pixelHeight: UInt32
+    public var refreshHz: Double
+    public var scaleFactor: Double
+    public var rotationDegrees: Double
 
     public init(
         displayID: CGDirectDisplayID,
@@ -39,7 +44,12 @@ public struct DisplayHardwareFacts: Equatable, Sendable {
         transportUpstream: String? = nil,
         isVirtualDevice: Bool = false,
         isAirPlay: Bool = false,
-        ioClassOrName: String? = nil
+        ioClassOrName: String? = nil,
+        pixelWidth: UInt32 = 0,
+        pixelHeight: UInt32 = 0,
+        refreshHz: Double = 0,
+        scaleFactor: Double = 1,
+        rotationDegrees: Double = 0
     ) {
         self.displayID = displayID
         self.isBuiltin = isBuiltin
@@ -59,6 +69,11 @@ public struct DisplayHardwareFacts: Equatable, Sendable {
         self.isVirtualDevice = isVirtualDevice
         self.isAirPlay = isAirPlay
         self.ioClassOrName = ioClassOrName
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+        self.refreshHz = refreshHz
+        self.scaleFactor = scaleFactor
+        self.rotationDegrees = rotationDegrees
     }
 
     public var resolvedName: String {
@@ -207,17 +222,29 @@ public func buildLiveCatalog(
             persistentKey: newKey,
             fields: DisplayIdentityFields(inputs: inputs)
         )
+        let hardwareName = fact.resolvedName
+        let record = lookupRecord(newKey, records: records, aliases: aliases)
         snapshots.append(
             DisplaySnapshot(
                 id: identity,
                 sessionDisplayID: fact.displayID,
-                name: fact.resolvedName,
+                name: DisplayNameResolver.displayName(hardwareName: hardwareName, customName: record?.customName),
                 kind: kind,
                 isMain: fact.isMain,
                 isBuiltin: fact.isBuiltin,
                 connection: connection,
                 brightness: brightness,
-                volume: previewVolumeCapabilities()
+                volume: previewVolumeCapabilities(),
+                contrast: .unsupported,
+                input: .unsupported,
+                rotation: supportsDisplayRotation(isVirtual: isVirtual, isBuiltin: fact.isBuiltin)
+                    ? .supported(DisplayRotation.from(degrees: fact.rotationDegrees))
+                    : .unsupported,
+                hardwareName: hardwareName,
+                pixelWidth: fact.pixelWidth,
+                pixelHeight: fact.pixelHeight,
+                refreshHz: fact.refreshHz,
+                scaleFactor: fact.scaleFactor
             )
         )
         keysByDisplayID[fact.displayID] = newKey

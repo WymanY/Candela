@@ -11,6 +11,14 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
     public var connection: ConnectionKind
     public var brightness: BrightnessCapabilities
     public var volume: VolumeCapabilities
+    public var contrast: ContrastCapabilities
+    public var input: InputCapabilities
+    public var rotation: RotationCapabilities
+    public var hardwareName: String
+    public var pixelWidth: UInt32
+    public var pixelHeight: UInt32
+    public var refreshHz: Double
+    public var scaleFactor: Double
 
     public init(
         id: DisplayIdentity,
@@ -21,7 +29,15 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
         isBuiltin: Bool,
         connection: ConnectionKind,
         brightness: BrightnessCapabilities,
-        volume: VolumeCapabilities
+        volume: VolumeCapabilities,
+        contrast: ContrastCapabilities = .unsupported,
+        input: InputCapabilities = .unsupported,
+        rotation: RotationCapabilities = .unsupported,
+        hardwareName: String? = nil,
+        pixelWidth: UInt32 = 0,
+        pixelHeight: UInt32 = 0,
+        refreshHz: Double = 0,
+        scaleFactor: Double = 1
     ) {
         self.id = id
         self.sessionDisplayID = sessionDisplayID
@@ -32,5 +48,19 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
         self.connection = connection
         self.brightness = brightness
         self.volume = volume
+        self.contrast = contrast
+        self.input = input
+        self.rotation = rotation
+        self.hardwareName = hardwareName ?? name
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+        self.refreshHz = refreshHz
+        self.scaleFactor = scaleFactor
+    }
+
+    public var displayName: String { name }
+
+    public var hasMode: Bool {
+        pixelWidth > 0 && pixelHeight > 0
     }
 }

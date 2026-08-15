@@ -10,12 +10,19 @@ let package = Package(
         .library(name: "BrightnessKit", targets: ["BrightnessKit"]),
         .library(name: "AudioKit", targets: ["AudioKit"]),
         .library(name: "PersistenceKit", targets: ["PersistenceKit"]),
+        .library(name: "ControlKit", targets: ["ControlKit"]),
         .library(name: "TestSupport", targets: ["TestSupport"]),
+        .executable(name: "candela-cli", targets: ["candela-cli"]),
+        .executable(name: "candela-mcp", targets: ["candela-mcp"]),
     ],
     targets: [
         .target(
             name: "CandelaPrivateIO",
-            publicHeadersPath: "include"
+            publicHeadersPath: "include",
+            linkerSettings: [
+                .linkedFramework("CoreGraphics"),
+                .linkedLibrary("objc"),
+            ]
         ),
         .target(
             name: "DisplayCore",
@@ -43,7 +50,23 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("CoreAudio"),
                 .linkedFramework("AudioToolbox"),
+                .linkedFramework("CoreGraphics"),
             ]
+        ),
+        .target(
+            name: "ControlKit",
+            dependencies: ["DisplayCore"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "candela-cli",
+            dependencies: ["ControlKit"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "candela-mcp",
+            dependencies: ["ControlKit"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .target(
             name: "TestSupport",
@@ -54,6 +77,7 @@ let package = Package(
         .testTarget(name: "BrightnessKitTests", dependencies: ["BrightnessKit", "TestSupport"]),
         .testTarget(name: "AudioKitTests", dependencies: ["AudioKit", "TestSupport"]),
         .testTarget(name: "PersistenceKitTests", dependencies: ["PersistenceKit"]),
+        .testTarget(name: "ControlKitTests", dependencies: ["ControlKit", "TestSupport"]),
     ],
     swiftLanguageModes: [.v5]
 )

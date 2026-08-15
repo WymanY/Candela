@@ -3,38 +3,49 @@ import AppKit
 @MainActor
 final class SettingsAboutView: NSView {
     private let session: DisplaySessionController
-    private let versionLabel = NSTextField(labelWithString: "")
+    private let versionLabel = CandelaChrome.makeCaption()
 
     init(session: DisplaySessionController) {
         self.session = session
-        super.init(frame: NSRect(x: 0, y: 0, width: 460, height: 260))
+        super.init(frame: NSRect(x: 0, y: 0, width: 620, height: 480))
 
-        let name = NSTextField(labelWithString: String(localized: "Candela"))
-        name.font = .systemFont(ofSize: 18, weight: .semibold)
-        name.translatesAutoresizingMaskIntoConstraints = false
+        let icon = NSImageView()
+        icon.image = NSApp.applicationIconImage
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.wantsLayer = true
+        icon.layer?.cornerRadius = 14
+        icon.layer?.cornerCurve = .continuous
+        icon.layer?.masksToBounds = true
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.widthAnchor.constraint(equalToConstant: 72).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: 72).isActive = true
 
+        let name = CandelaChrome.makeTitle(String(localized: "Candela"), size: 26, weight: .semibold)
+        name.alignment = .center
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         versionLabel.stringValue = "\(short) (\(build))"
-        versionLabel.textColor = .secondaryLabelColor
-        versionLabel.translatesAutoresizingMaskIntoConstraints = false
+        versionLabel.alignment = .center
         versionLabel.toolTip = String(localized: "Option-click to copy a debug dump")
 
-        let notice = NSTextField(wrappingLabelWithString: String(localized: "Not affiliated with BetterDisplay."))
+        let blurb = CandelaChrome.makeCaption(String(localized: "Menu-bar brightness for every display."))
+        blurb.alignment = .center
+        blurb.font = .systemFont(ofSize: 13, weight: .medium)
+        let notice = CandelaChrome.makeCaption(String(localized: "Not affiliated with BetterDisplay."))
+        notice.alignment = .center
         notice.textColor = .tertiaryLabelColor
-        notice.translatesAutoresizingMaskIntoConstraints = false
 
-        addSubview(name)
-        addSubview(versionLabel)
-        addSubview(notice)
+        let column = NSStackView(views: [icon, name, versionLabel, blurb, notice])
+        column.orientation = .vertical
+        column.alignment = .centerX
+        column.spacing = 8
+        column.setCustomSpacing(14, after: icon)
+        column.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(column)
         NSLayoutConstraint.activate([
-            name.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            name.topAnchor.constraint(equalTo: topAnchor, constant: 20),
-            versionLabel.leadingAnchor.constraint(equalTo: name.leadingAnchor),
-            versionLabel.topAnchor.constraint(equalTo: name.bottomAnchor, constant: 6),
-            notice.leadingAnchor.constraint(equalTo: name.leadingAnchor),
-            notice.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            notice.topAnchor.constraint(equalTo: versionLabel.bottomAnchor, constant: 16),
+            column.centerXAnchor.constraint(equalTo: centerXAnchor),
+            column.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -12),
+            column.widthAnchor.constraint(lessThanOrEqualToConstant: 360),
         ])
 
         let click = NSClickGestureRecognizer(target: self, action: #selector(versionClicked(_:)))
@@ -51,8 +62,7 @@ final class SettingsAboutView: NSView {
             || NSApp.currentEvent?.modifierFlags.contains(.option) == true
         let debugEnv = ProcessInfo.processInfo.environment["CANDELA_DEBUG"] == "1"
         guard optionDown || debugEnv else { return }
-        let redact = !debugEnv
-        let dump = session.debugDump(redact: redact)
+        let dump = session.debugDump(redact: !debugEnv)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(dump, forType: .string)
         let logs = FileManager.default.homeDirectoryForCurrentUser

@@ -43,7 +43,12 @@ public enum FakeSnapshots {
                 supportsVolume: false,
                 supportsMute: false,
                 current: 0
-            )
+            ),
+            rotation: .unsupported,
+            pixelWidth: 2560,
+            pixelHeight: 1600,
+            refreshHz: 60,
+            scaleFactor: 2
         )
     }
 
@@ -75,7 +80,14 @@ public enum FakeSnapshots {
                 supportsVolume: true,
                 supportsMute: true,
                 current: 0.25
-            )
+            ),
+            contrast: ContrastCapabilities(supportsContrast: true, current: 0.50, ddcMax: 100),
+            input: InputCapabilities(supportsInputSelect: true, currentCode: DisplayInputSource.displayPort1.code),
+            rotation: .supported(.deg0),
+            pixelWidth: 3840,
+            pixelHeight: 2160,
+            refreshHz: 60,
+            scaleFactor: 2
         )
     }
 
@@ -106,7 +118,12 @@ public enum FakeSnapshots {
                 supportsVolume: false,
                 supportsMute: false,
                 current: 0
-            )
+            ),
+            rotation: .supported(.deg0),
+            pixelWidth: 1920,
+            pixelHeight: 1080,
+            refreshHz: 60,
+            scaleFactor: 1
         )
     }
 
@@ -137,7 +154,11 @@ public enum FakeSnapshots {
                 supportsVolume: false,
                 supportsMute: false,
                 current: 0
-            )
+            ),
+            pixelWidth: 2360,
+            pixelHeight: 1640,
+            refreshHz: 60,
+            scaleFactor: 2
         )
     }
 
@@ -150,7 +171,14 @@ public enum FakeSnapshots {
         isBuiltin: Bool,
         connection: ConnectionKind,
         brightness: BrightnessCapabilities,
-        volume: VolumeCapabilities
+        volume: VolumeCapabilities,
+        contrast: ContrastCapabilities = .unsupported,
+        input: InputCapabilities = .unsupported,
+        rotation: RotationCapabilities = .unsupported,
+        pixelWidth: UInt32 = 0,
+        pixelHeight: UInt32 = 0,
+        refreshHz: Double = 0,
+        scaleFactor: Double = 1
     ) -> DisplaySnapshot {
         let identity = makeIdentity(inputs: inputs, siblings: [inputs])
         return DisplaySnapshot(
@@ -162,7 +190,15 @@ public enum FakeSnapshots {
             isBuiltin: isBuiltin,
             connection: connection,
             brightness: brightness,
-            volume: volume
+            volume: volume,
+            contrast: contrast,
+            input: input,
+            rotation: rotation,
+            hardwareName: name,
+            pixelWidth: pixelWidth,
+            pixelHeight: pixelHeight,
+            refreshHz: refreshHz,
+            scaleFactor: scaleFactor
         )
     }
 }

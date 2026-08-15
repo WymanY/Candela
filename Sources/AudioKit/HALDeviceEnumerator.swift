@@ -94,6 +94,16 @@ public enum HALDeviceEnumerator {
         return uid.isEmpty ? nil : uid
     }
 
+    @discardableResult
+    public static func setDefaultOutputUID(_ uid: String) -> Bool {
+        guard let deviceID = deviceID(forUID: uid) else { return false }
+        return HALObject.set(
+            AudioObjectID(kAudioObjectSystemObject),
+            defaultOutputDeviceAddress,
+            deviceID
+        )
+    }
+
     public static func deviceID(forUID uid: String) -> AudioDeviceID? {
         guard !uid.isEmpty else { return nil }
         for deviceID in deviceIDs() {

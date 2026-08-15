@@ -249,6 +249,10 @@ final class HALVolumeControlTests: XCTestCase {
         )
     }
 
+    func testUnknownUIDDoesNotSetDefaultOutput() {
+        XCTAssertFalse(HALDeviceEnumerator.setDefaultOutputUID("candela-no-such-device"))
+    }
+
     func testUnknownUIDDoesNotThrow() {
         XCTAssertNil(HALDeviceEnumerator.deviceID(forUID: "candela-no-such-device"))
         XCTAssertFalse(HALVolumeControl.setVolume(uid: "candela-no-such-device", value: 0.5))

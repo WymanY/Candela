@@ -120,6 +120,7 @@ public enum IOKitDisplaySource {
             ?? transportPair(from: core)
         let ioClass = ioRegRecord.map { "\($0.name) \($0.path)" }
 
+        let mode = currentMode(for: displayID)
         return DisplayHardwareFacts(
             displayID: displayID,
             isBuiltin: isBuiltin,
@@ -138,8 +139,26 @@ public enum IOKitDisplaySource {
             transportUpstream: transport.1,
             isVirtualDevice: boolFlag(core[DisplayInfoKey.isVirtualDevice]),
             isAirPlay: boolFlag(core[DisplayInfoKey.isAirPlay]),
-            ioClassOrName: ioClass
+            ioClassOrName: ioClass,
+            pixelWidth: mode.width,
+            pixelHeight: mode.height,
+            refreshHz: mode.refresh,
+            scaleFactor: mode.scale,
+            rotationDegrees: CGDisplayRotation(displayID)
         )
+    }
+
+    private static func currentMode(for displayID: CGDirectDisplayID) -> (width: UInt32, height: UInt32, refresh: Double, scale: Double) {
+        let width = UInt32(CGDisplayPixelsWide(displayID))
+        let height = UInt32(CGDisplayPixelsHigh(displayID))
+        var refresh = 0.0
+        if let mode = CGDisplayCopyDisplayMode(displayID) {
+            refresh = mode.refreshRate
+        }
+        let bounds = CGDisplayBounds(displayID)
+        let pointWidth = Double(bounds.width)
+        let scale = pointWidth > 0 ? Double(width) / pointWidth : 1
+        return (width, height, refresh, scale)
     }
 
     private static func locationString(_ dictionary: [String: Any]) -> String? {

@@ -40,6 +40,8 @@ final class LiveCatalogBuilderTests: XCTestCase {
         XCTAssertEqual(virtual?.kind, .virtualUnsupported)
         XCTAssertFalse(virtual?.brightness.showsBrightnessSlider ?? true)
         XCTAssertFalse(virtual?.volume.supportsVolume ?? true)
+        XCTAssertFalse(lcd?.rotation.supportsRotation ?? true)
+        XCTAssertFalse(virtual?.rotation.supportsRotation ?? true)
         XCTAssertEqual(lcd?.id.persistentKey, makePersistentKey(inputs: builtIn.identityInputs, siblings: [builtIn.identityInputs], records: [:]))
     }
 
@@ -130,6 +132,19 @@ final class LiveCatalogBuilderTests: XCTestCase {
         XCTAssertEqual(second.snapshots[0].brightness.current, 0.33, accuracy: 0.000_1)
     }
 
+    func testCustomNameOverridesHardwareName() {
+        let dell = fact(id: 2, port: "IOService:/GPU/dp@1", name: "DELL U2723QE")
+        let key = makePersistentKey(inputs: dell.identityInputs, siblings: [dell.identityInputs], records: [:])
+        let result = buildLiveCatalog(
+            facts: [dell],
+            records: [key: DisplayRecord(persistentKey: key, customName: "Desk")],
+            aliases: [:],
+            previousKeysByDisplayID: [:]
+        )
+        XCTAssertEqual(result.snapshots[0].hardwareName, "DELL U2723QE")
+        XCTAssertEqual(result.snapshots[0].name, "Desk")
+    }
+
     func testScreenFallbackNameWhenProductEmpty() {
         var facts = fact(id: 5, port: "IOService:/unknown", name: "")
         facts.screenFallbackName = "LG UltraFine"
@@ -147,6 +162,7 @@ final class LiveCatalogBuilderTests: XCTestCase {
         XCTAssertEqual(result.snapshots[0].kind, .genericExternal)
         XCTAssertEqual(result.snapshots[0].connection, .displayPort)
         XCTAssertNotEqual(result.snapshots[0].kind, .appleExternal)
+        XCTAssertTrue(result.snapshots[0].rotation.supportsRotation)
     }
 
     private func fact(

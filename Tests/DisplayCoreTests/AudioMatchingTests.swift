@@ -65,6 +65,28 @@ final class AudioMatchingTests: XCTestCase {
         XCTAssertNil(AudioMatching.match(display: display, overrideUID: nil, devices: [headset]))
     }
 
+    func testDisplayPortDeviceWithoutHALVolumeStillMatches() {
+        let display = snapshot(
+            key: "v1:mi-dp",
+            name: "Mi Monitor",
+            kind: .genericExternal,
+            connection: .displayPort,
+            vendorID: 0x26D0
+        )
+        let device = HALOutputDevice(
+            uid: "dp-mi",
+            name: "Mi Monitor",
+            manufacturer: "XMI",
+            transport: AudioMatching.transportDisplayPort,
+            hasVolume: false,
+            hasMute: false
+        )
+        XCTAssertEqual(
+            AudioMatching.match(display: display, overrideUID: nil, devices: [device]),
+            "dp-mi"
+        )
+    }
+
     func testStudioDisplayBindsUSBSpeakers() {
         let display = snapshot(
             key: "v1:studio",
