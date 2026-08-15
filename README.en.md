@@ -40,7 +40,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 ### Picture in Picture
 
 - Each real display has a PiP button in the menu-bar panel.
-- Opens a floating, resizable mirror of that screen, preferably on another display.
+- Opens a floating, resizable mirror of that screen, preferably on another display. Scroll or pinch to zoom.
 - Opacity and click-through keep the window watchable without blocking the work underneath.
 - Pin it to a corner. The last size, place, and opacity come back the next time it opens.
 - Captures at the source display's pixel size so text stays readable.

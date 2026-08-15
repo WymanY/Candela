@@ -88,7 +88,14 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         panel.maxSize = NSSize(width: PictureInPictureLayout.maxWidth, height: 900)
         super.init(window: panel)
         panel.delegate = self
-        panel.contentView = makeContent(title: title, contentSize: content)
+        let root = makeContent(title: title, contentSize: content)
+        root.onMagnify = { [weak self] event in
+            self?.handleMagnify(event)
+        }
+        root.onScrollWheel = { [weak self] event in
+            self?.handleScrollWheel(event)
+        }
+        panel.contentView = root
         applyPlacementToWindow()
         persistCurrentPlacement()
         NotificationCenter.default.addObserver(
@@ -165,6 +172,33 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         return NSSize(width: width, height: width / aspect + PictureInPictureLayout.chromeHeight)
     }
 
+    private func handleScrollWheel(_ event: NSEvent) {
+        let raw = event.scrollingDeltaY != 0 ? event.scrollingDeltaY : event.deltaY
+        guard raw != 0 else { return }
+        applyZoom(factor: PictureInPictureLayout.zoomFactor(deltaY: raw, precise: event.hasPreciseScrollingDeltas), event: event)
+    }
+
+    private func handleMagnify(_ event: NSEvent) {
+        applyZoom(factor: 1 + event.magnification, event: event)
+    }
+
+    private func applyZoom(factor: CGFloat, event: NSEvent) {
+        guard let window, factor > 0, abs(factor - 1) > 0.001 else { return }
+        let visible = hostVisibleFrame(for: window.frame) ?? window.screen?.visibleFrame
+        let next = PictureInPictureLayout.zoomedFrame(
+            current: window.frame,
+            factor: factor,
+            aspect: aspect,
+            corner: placement.corner,
+            visible: visible
+        )
+        guard next != window.frame else { return }
+        isApplying = true
+        window.setFrame(next, display: true, animate: false)
+        isApplying = false
+        persistCurrentPlacement()
+    }
+
     @objc private func closePictureInPicture() {
         window?.close()
     }
@@ -209,8 +243,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         persistCurrentPlacement()
     }
 
-    private func makeContent(title: String, contentSize: CGSize) -> NSView {
-        let root = NSView()
+    private func makeContent(title: String, contentSize: CGSize) -> PictureInPictureRootView {
+        let root = PictureInPictureRootView()
         CandelaChrome.applyPanelSurface(root)
         let backdrop = CandelaChrome.makeBackdrop()
         CandelaChrome.pin(backdrop, to: root, insets: .init(top: 0, left: 0, bottom: 0, right: 0))
@@ -465,6 +499,21 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         } catch {
             showPlaceholder(String(localized: "Screen Recording permission is required for Picture in Picture."))
         }
+    }
+}
+
+final class PictureInPictureRootView: NSView {
+    var onScrollWheel: ((NSEvent) -> Void)?
+    var onMagnify: ((NSEvent) -> Void)?
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func scrollWheel(with event: NSEvent) {
+        onScrollWheel?(event)
+    }
+
+    override func magnify(with event: NSEvent) {
+        onMagnify?(event)
     }
 }
 

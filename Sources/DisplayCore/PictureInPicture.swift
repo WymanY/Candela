@@ -73,6 +73,8 @@ public enum PictureInPictureLayout {
     public static let minimumCaptureHeight = 720
     public static let minimumOpacity: Double = 0.25
     public static let snapTolerance: CGFloat = 12
+    public static let zoomStep: CGFloat = 1.08
+    public static let preciseZoomDivisor: CGFloat = 250
 
     public static func supports(kind: DisplayKind) -> Bool {
         kind != .virtualUnsupported
@@ -228,5 +230,48 @@ public enum PictureInPictureLayout {
         let dx = frame.origin.x - snap.x
         let dy = frame.origin.y - snap.y
         return (dx * dx + dy * dy).squareRoot() > snapTolerance
+    }
+
+    /// Positive `deltaY` zooms in. Discrete wheels take one step; trackpads scale by distance.
+    public static func zoomFactor(deltaY: CGFloat, precise: Bool) -> CGFloat {
+        if precise {
+            return min(max(1 + (deltaY / preciseZoomDivisor), 0.85), 1.18)
+        }
+        if deltaY == 0 { return 1 }
+        return deltaY > 0 ? zoomStep : 1 / zoomStep
+    }
+
+    public static func zoomedFrame(
+        current: CGRect,
+        factor: CGFloat,
+        aspect: CGFloat,
+        anchor: CGPoint? = nil,
+        corner: PictureInPictureCorner? = nil,
+        visible: CGRect? = nil
+    ) -> CGRect {
+        let safeAspect = max(aspect, 0.2)
+        let nextWidth = min(max(current.width * factor, minWidth), maxWidth)
+        let nextHeight = nextWidth / safeAspect + chromeHeight
+        var next = CGRect(x: current.origin.x, y: current.origin.y, width: nextWidth, height: nextHeight)
+        if abs(nextWidth - current.width) < 0.5, abs(nextHeight - current.height) < 0.5 {
+            return visible.map { clampedFrame(current, in: $0) } ?? current
+        }
+        if let corner, let visible {
+            next.origin = snapOrigin(windowSize: next.size, corner: corner, visible: visible)
+            return clampedFrame(next, in: visible)
+        }
+        if let anchor, current.width > 1, current.height > 1 {
+            let tx = (anchor.x - current.minX) / current.width
+            let ty = (anchor.y - current.minY) / current.height
+            next.origin.x = anchor.x - tx * next.width
+            next.origin.y = anchor.y - ty * next.height
+        } else {
+            next.origin.x += (current.width - next.width) / 2
+            next.origin.y += (current.height - next.height) / 2
+        }
+        if let visible {
+            return clampedFrame(next, in: visible)
+        }
+        return next
     }
 }

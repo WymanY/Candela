@@ -106,4 +106,53 @@ final class PictureInPictureTests: XCTestCase {
         dragged.origin.x -= 40
         XCTAssertTrue(PictureInPictureLayout.movedOffPinnedCorner(frame: dragged, corner: .bottomRight, visible: visible))
     }
+
+    func testScrollWheelZoomsAndKeepsPinnedCorner() {
+        XCTAssertEqual(PictureInPictureLayout.zoomFactor(deltaY: 1, precise: false), 1.08, accuracy: 0.0001)
+        XCTAssertEqual(PictureInPictureLayout.zoomFactor(deltaY: -1, precise: false), 1 / 1.08, accuracy: 0.0001)
+        XCTAssertEqual(PictureInPictureLayout.zoomFactor(deltaY: 25, precise: true), 1.10, accuracy: 0.0001)
+
+        let current = CGRect(x: 100, y: 80, width: 400, height: 257)
+        let zoomed = PictureInPictureLayout.zoomedFrame(
+            current: current,
+            factor: 1.08,
+            aspect: 400 / 225
+        )
+        XCTAssertEqual(zoomed.width, 432, accuracy: 0.001)
+        XCTAssertEqual(zoomed.height, 432 / (400 / 225) + PictureInPictureLayout.chromeHeight, accuracy: 0.001)
+        XCTAssertEqual(zoomed.origin.x, 84, accuracy: 0.001)
+        XCTAssertEqual(zoomed.origin.y, 80 + (257 - zoomed.height) / 2, accuracy: 0.001)
+
+        let visible = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let pinned = CGRect(
+            origin: PictureInPictureLayout.snapOrigin(windowSize: current.size, corner: .bottomRight, visible: visible),
+            size: current.size
+        )
+        let grown = PictureInPictureLayout.zoomedFrame(
+            current: pinned,
+            factor: 1.08,
+            aspect: 400 / 225,
+            corner: .bottomRight,
+            visible: visible
+        )
+        XCTAssertEqual(grown.maxX, visible.maxX - PictureInPictureLayout.margin, accuracy: 0.001)
+        XCTAssertEqual(grown.minY, visible.minY + PictureInPictureLayout.margin, accuracy: 0.001)
+        XCTAssertGreaterThan(grown.width, pinned.width)
+    }
+
+    func testZoomStopsAtWidthLimits() {
+        let tiny = PictureInPictureLayout.zoomedFrame(
+            current: CGRect(x: 40, y: 40, width: PictureInPictureLayout.minWidth, height: 200),
+            factor: 0.5,
+            aspect: 16 / 9
+        )
+        XCTAssertEqual(tiny.width, PictureInPictureLayout.minWidth, accuracy: 0.001)
+
+        let huge = PictureInPictureLayout.zoomedFrame(
+            current: CGRect(x: 40, y: 40, width: PictureInPictureLayout.maxWidth, height: 752),
+            factor: 1.5,
+            aspect: 16 / 9
+        )
+        XCTAssertEqual(huge.width, PictureInPictureLayout.maxWidth, accuracy: 0.001)
+    }
 }
