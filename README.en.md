@@ -21,6 +21,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Third-party HDMI / DisplayPort / USB-C monitors use DDC/CI VCP `0x10` on Apple Silicon.
 - If hardware control is missing or fails, Candela falls back to software gamma dimming and keeps the LUT alive so WindowServer does not revert it.
 - Night / Desk / Max presets: 20%, 50%, and 100%.
+- Scenes remember each display's brightness, volume, mute, contrast, input, rotation, and Picture in Picture, plus the current speaker output, volume, and mute, then restore that mix later.
 - Match All copies one display's brightness (and volume/contrast when available) onto the others.
 - Last brightness can be restored when a display reconnects.
 
@@ -49,6 +50,15 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Requires Screen Recording permission.
 - Virtual screens such as Sidecar are not supported.
 
+### Scenes
+
+- Save the current display mix from the menu bar and apply recent scenes with one click.
+- Applying a scene also switches back to the speaker that was selected then, and restores its volume and mute.
+- The Settings Scenes tab can rename, update, or delete saved scenes.
+- Saving with the same name overwrites that scene instead of duplicating it.
+- Missing displays are skipped and applied again when they return.
+- Candela does not ship built-in scene templates. Saved scenes live in local preferences and survive app relaunch.
+
 ### Settings
 
 - Launch at Login
@@ -57,6 +67,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Allow dim to black
 - Show percent labels next to sliders
 - Per-display custom names
+- Save and apply display scenes
 
 ### Agent interface
 
@@ -75,6 +86,9 @@ swift run --package-path . candela-cli set-pip --display DELL --enabled true
 swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
+swift run --package-path . candela-cli scenes
+swift run --package-path . candela-cli save-scene --name Night
+swift run --package-path . candela-cli apply-scene Night
 swift run --package-path . candela-cli dump
 ```
 
@@ -84,7 +98,7 @@ Display queries: name, custom name, `persistentKey`, `main`, `builtin`, or `exte
 
 ## What it does not do
 
-Candela does not create virtual screens, override EDID, unlock XDR nits, force HiDPI or custom resolutions, take over media keys, or change the system default audio output.
+Candela does not create virtual screens, override EDID, unlock XDR nits, force HiDPI or custom resolutions, or take over media keys. It does not change the system default audio output in ordinary use; applying a saved scene is the exception, and only then does it switch back to that scene's remembered speaker.
 
 ## Requirements
 

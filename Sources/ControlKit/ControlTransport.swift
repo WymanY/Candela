@@ -5,10 +5,15 @@ public enum ControlCodec {
     public static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
         return encoder
     }()
 
-    public static let decoder = JSONDecoder()
+    public static let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
 
     public static func encode(_ value: some Encodable) throws -> Data {
         var data = try encoder.encode(value)

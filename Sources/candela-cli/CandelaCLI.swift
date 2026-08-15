@@ -49,6 +49,16 @@ enum CandelaCLI {
             return ControlRequest(action: .preset, display: optionalDisplay(rest), preset: try requiredToken(rest, name: "preset"))
         case "match-all":
             return ControlRequest(action: .matchAll, display: try requiredDisplay(rest))
+        case "scenes":
+            return ControlRequest(action: .listScenes)
+        case "apply-scene":
+            return ControlRequest(action: .applyScene, scene: try requiredToken(rest, name: "scene"))
+        case "save-scene":
+            return ControlRequest(action: .saveScene, name: try requiredName(rest))
+        case "rename-scene":
+            return ControlRequest(action: .renameScene, name: try requiredName(rest), scene: try requiredToken(rest, name: "scene"))
+        case "delete-scene":
+            return ControlRequest(action: .deleteScene, scene: try requiredToken(rest, name: "scene"))
         case "dump":
             return ControlRequest(action: .dump, redact: !rest.contains("--no-redact"))
         case "help", "-h", "--help":
@@ -96,14 +106,41 @@ enum CandelaCLI {
         if name == "preset", let last = args.last, ["night", "desk", "max"].contains(last.lowercased()) {
             return last.lowercased()
         }
-        if ["input", "rotation"].contains(name), let last = args.last, !last.hasPrefix("-"), last != args.first {
-            return last
+        if ["input", "rotation", "scene"].contains(name), let first = positional(args).first {
+            return first
         }
+        throw CLIError.usage
+    }
+
+    static func requiredName(_ args: [String]) throws -> String {
+        if let value = named(args, names: ["--name"]) { return value }
+        let values = positional(args)
+        if values.count >= 2 { return values[1] }
+        if values.count == 1 { return values[0] }
         throw CLIError.usage
     }
 
     static func optionalName(_ args: [String]) -> String? {
         named(args, names: ["--name"]) ?? args.dropFirst().first(where: { !$0.hasPrefix("-") })
+    }
+
+    static func positional(_ args: [String]) -> [String] {
+        var values: [String] = []
+        var index = 0
+        while index < args.count {
+            let arg = args[index]
+            if arg.hasPrefix("--"), arg.contains("=") {
+                index += 1
+                continue
+            }
+            if arg.hasPrefix("-") {
+                index += 2
+                continue
+            }
+            values.append(arg)
+            index += 1
+        }
+        return values
     }
 
     static func named(_ args: [String], names: [String]) -> String? {
@@ -134,7 +171,7 @@ enum CLIError: LocalizedError {
         case .usage:
             return """
             candela-cli <command> [options]
-            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip rename preset match-all dump
+            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip rename preset match-all scenes apply-scene save-scene rename-scene delete-scene dump
             display queries: name, persistentKey, main, builtin, external
             """
         case .unknown(let command):

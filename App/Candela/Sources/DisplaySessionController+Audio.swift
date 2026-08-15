@@ -44,11 +44,27 @@ extension DisplaySessionController {
                 volume.notes = notes
             }
             if volume.backend == .coreAudio, let uid {
-                if let current = HALVolumeControl.volume(uid: uid) {
+                let desiredVolume = record?.lastVolume ?? snapshot.volume.current
+                let desiredMuted = record?.lastMuted ?? snapshot.volume.isMuted
+                let current = HALVolumeControl.volume(uid: uid)
+                let muted = HALVolumeControl.isMuted(uid: uid)
+                let volumeMatches = current.map { abs($0 - desiredVolume) <= 0.02 } ?? false
+                let muteMatches = muted.map { $0 == desiredMuted } ?? false
+                if record?.lastVolume == nil, let current {
                     volume.current = current
+                } else {
+                    volume.current = desiredVolume
+                    if !volumeMatches {
+                        HALVolumeControl.setVolume(uid: uid, value: desiredVolume)
+                    }
                 }
-                if let muted = HALVolumeControl.isMuted(uid: uid) {
+                if record?.lastMuted == nil, let muted {
                     volume.isMuted = muted
+                } else {
+                    volume.isMuted = desiredMuted
+                    if volume.supportsMute, !muteMatches {
+                        HALVolumeControl.setMuted(uid: uid, muted: desiredMuted)
+                    }
                 }
             }
             snapshots[index].volume = volume
@@ -73,11 +89,26 @@ extension DisplaySessionController {
         )
         if var resolved = next, resolved.displayKey == nil, let uid = resolved.uid {
             if resolved.volume.backend == .coreAudio {
-                if let current = HALVolumeControl.volume(uid: uid) {
+                let keepDesired = speaker?.uid == uid
+                let desiredVolume = keepDesired ? (speaker?.volume.current ?? resolved.volume.current) : resolved.volume.current
+                let desiredMuted = keepDesired ? (speaker?.volume.isMuted ?? resolved.volume.isMuted) : resolved.volume.isMuted
+                let current = HALVolumeControl.volume(uid: uid)
+                let muted = HALVolumeControl.isMuted(uid: uid)
+                if keepDesired, abs((current ?? desiredVolume) - desiredVolume) > 0.02 {
+                    HALVolumeControl.setVolume(uid: uid, value: desiredVolume)
+                    resolved.volume.current = desiredVolume
+                } else if let current {
                     resolved.volume.current = current
+                } else if keepDesired {
+                    resolved.volume.current = desiredVolume
                 }
-                if let muted = HALVolumeControl.isMuted(uid: uid) {
+                if keepDesired, resolved.volume.supportsMute, (muted ?? desiredMuted) != desiredMuted {
+                    HALVolumeControl.setMuted(uid: uid, muted: desiredMuted)
+                    resolved.volume.isMuted = desiredMuted
+                } else if let muted {
                     resolved.volume.isMuted = muted
+                } else if keepDesired {
+                    resolved.volume.isMuted = desiredMuted
                 }
             }
             next = resolved

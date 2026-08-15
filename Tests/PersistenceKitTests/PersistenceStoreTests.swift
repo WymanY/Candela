@@ -3,7 +3,7 @@ import PersistenceKit
 import XCTest
 
 final class PersistenceStoreTests: XCTestCase {
-    private let keys = ["schemaVersion", "global", "displays", "aliases"]
+    private let keys = ["schemaVersion", "global", "displays", "aliases", "scenes"]
 
     override func setUp() {
         super.setUp()
@@ -47,6 +47,52 @@ final class PersistenceStoreTests: XCTestCase {
         let loaded = store.global()
         XCTAssertTrue(loaded.hasOpenedPanelOnce)
         XCTAssertTrue(loaded.launchAtLogin)
+    }
+
+    func testSavesScenes() {
+        let store = PersistenceStore()
+        let scene = DisplayScene(
+            name: "Desk",
+            targets: [DisplaySceneTarget(persistentKey: "v1:desk", brightness: 0.4)]
+        )
+        store.saveScenes([scene])
+        XCTAssertEqual(store.allScenes().first?.name, "Desk")
+        XCTAssertEqual(store.allScenes().first?.targets.first?.brightness, 0.4)
+    }
+
+    func testSceneRoundTripKeepsValues() {
+        let store = PersistenceStore()
+        let scene = DisplayScene(
+            name: "Night",
+            targets: [
+                DisplaySceneTarget(
+                    persistentKey: "v1:desk",
+                    brightness: 0.22,
+                    volume: 0.31,
+                    muted: true,
+                    contrast: 0.44,
+                    inputCode: 0x11,
+                    rotationDegrees: 90,
+                    pictureInPicture: true
+                )
+            ],
+            speakerUID: "macbook",
+            speakerVolume: 0.43,
+            speakerMuted: false
+        )
+        store.saveScenes([scene])
+        let loaded = PersistenceStore().allScenes()
+        XCTAssertEqual(loaded.count, 1)
+        XCTAssertEqual(loaded.first?.targets.first?.brightness, 0.22)
+        XCTAssertEqual(loaded.first?.targets.first?.volume, 0.31)
+        XCTAssertEqual(loaded.first?.targets.first?.muted, true)
+        XCTAssertEqual(loaded.first?.targets.first?.contrast, 0.44)
+        XCTAssertEqual(loaded.first?.targets.first?.inputCode, 0x11)
+        XCTAssertEqual(loaded.first?.targets.first?.rotationDegrees, 90)
+        XCTAssertEqual(loaded.first?.targets.first?.pictureInPicture, true)
+        XCTAssertEqual(loaded.first?.speakerUID, "macbook")
+        XCTAssertEqual(loaded.first?.speakerVolume, 0.43)
+        XCTAssertEqual(loaded.first?.speakerMuted, false)
     }
 
     func testSavesCustomNameAndContrast() {

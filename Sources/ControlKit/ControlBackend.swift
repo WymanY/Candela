@@ -13,6 +13,11 @@ public struct ControlBackend {
     public var rename: (String, String?) -> Bool
     public var applyPreset: (BrightnessPreset, String?) -> Void
     public var matchAll: (String) -> Void
+    public var scenes: () -> [DisplayScene]
+    public var applyScene: (String) -> DisplayScene?
+    public var saveScene: (String) -> DisplayScene?
+    public var renameScene: (String, String) -> DisplayScene?
+    public var deleteScene: (String) -> Bool
     public var dump: (Bool) -> String
 
     public init(
@@ -27,6 +32,11 @@ public struct ControlBackend {
         rename: @escaping (String, String?) -> Bool,
         applyPreset: @escaping (BrightnessPreset, String?) -> Void,
         matchAll: @escaping (String) -> Void,
+        scenes: @escaping () -> [DisplayScene] = { [] },
+        applyScene: @escaping (String) -> DisplayScene? = { _ in nil },
+        saveScene: @escaping (String) -> DisplayScene? = { _ in nil },
+        renameScene: @escaping (String, String) -> DisplayScene? = { _, _ in nil },
+        deleteScene: @escaping (String) -> Bool = { _ in false },
         dump: @escaping (Bool) -> String
     ) {
         self.snapshots = snapshots
@@ -40,6 +50,11 @@ public struct ControlBackend {
         self.rename = rename
         self.applyPreset = applyPreset
         self.matchAll = matchAll
+        self.scenes = scenes
+        self.applyScene = applyScene
+        self.saveScene = saveScene
+        self.renameScene = renameScene
+        self.deleteScene = deleteScene
         self.dump = dump
     }
 }
@@ -52,13 +67,17 @@ public enum ControlRouter {
             return .success(displays: all.map(ControlDisplayDTO.init(snapshot:)))
         case .dump:
             return ControlResponse(ok: true, dump: backend.dump(request.redact ?? true))
-        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .rename, .preset, .matchAll:
+        case .listScenes:
+            return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: all) })
+        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .rename, .preset, .matchAll, .applyScene, .saveScene, .renameScene, .deleteScene:
             break
         }
 
         let query = request.display?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let resolved: DisplaySnapshot?
         if request.action == .preset, query.isEmpty || query.lowercased() == "all" {
+            resolved = nil
+        } else if [.applyScene, .saveScene, .renameScene, .deleteScene].contains(request.action) {
             resolved = nil
         } else {
             guard !query.isEmpty else {
@@ -71,7 +90,7 @@ public enum ControlRouter {
         }
 
         switch request.action {
-        case .list, .dump:
+        case .list, .dump, .listScenes:
             return .failure("unreachable")
         case .get:
             return .success(displays: [ControlDisplayDTO(snapshot: resolved!)])
@@ -136,6 +155,41 @@ public enum ControlRouter {
             backend.applyPreset(preset, resolved?.id.persistentKey)
         case .matchAll:
             backend.matchAll(resolved!.id.persistentKey)
+        case .applyScene:
+            guard let query = sceneQuery(request) else {
+                return .failure("Scene name or id is required.")
+            }
+            guard let scene = backend.applyScene(query) else {
+                return .failure("No scene matched '\(query)'.")
+            }
+            return sceneResponse(scene, backend: backend)
+        case .saveScene:
+            guard let name = request.name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+                return .failure("Scene name is required.")
+            }
+            guard let scene = backend.saveScene(name) else {
+                return .failure("Could not save scene '\(name)'.")
+            }
+            return sceneResponse(scene, backend: backend)
+        case .renameScene:
+            guard let query = sceneQuery(request) else {
+                return .failure("Scene name or id is required.")
+            }
+            guard let name = request.name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+                return .failure("New scene name is required.")
+            }
+            guard let scene = backend.renameScene(query, name) else {
+                return .failure("No scene matched '\(query)'.")
+            }
+            return sceneResponse(scene, backend: backend)
+        case .deleteScene:
+            guard let query = sceneQuery(request) else {
+                return .failure("Scene name or id is required.")
+            }
+            guard backend.deleteScene(query) else {
+                return .failure("No scene matched '\(query)'.")
+            }
+            return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: backend.snapshots()) })
         }
 
         let latest = backend.snapshots()
@@ -143,5 +197,19 @@ public enum ControlRouter {
             return .success(displays: [ControlDisplayDTO(snapshot: current)])
         }
         return .success(displays: latest.map(ControlDisplayDTO.init(snapshot:)))
+    }
+
+    private static func sceneQuery(_ request: ControlRequest) -> String? {
+        let raw = request.scene ?? request.name ?? request.display
+        let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private static func sceneResponse(_ scene: DisplayScene, backend: ControlBackend) -> ControlResponse {
+        let snapshots = backend.snapshots()
+        return .success(
+            displays: snapshots.map(ControlDisplayDTO.init(snapshot:)),
+            scenes: [ControlSceneDTO(scene: scene, snapshots: snapshots)]
+        )
     }
 }

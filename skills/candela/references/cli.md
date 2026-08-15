@@ -18,6 +18,11 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 | `rename --display Q --name Desk` | `rename` | Empty name clears custom name |
 | `preset night` | `preset` | night/desk/max; optional `--display` |
 | `match-all --display Q` | `matchAll` | Copy source brightness/volume/contrast |
+| `scenes` | `listScenes` | Saved scenes |
+| `save-scene --name Night` | `saveScene` | Capture current mix; same name overwrites |
+| `apply-scene Night` | `applyScene` | Name, slug, or id |
+| `rename-scene Night --name Late` | `renameScene` | Rename a saved scene |
+| `delete-scene Night` | `deleteScene` | Delete a saved scene |
 | `set-pip --display Q --enabled true` | `setPictureInPicture` | Floating display mirror |
 | `dump` | `dump` | Redacted unless `--no-redact` |
 
@@ -35,6 +40,11 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 - `candela_rename_display`
 - `candela_apply_preset`
 - `candela_match_all`
+- `candela_list_scenes`
+- `candela_apply_scene`
+- `candela_save_scene`
+- `candela_rename_scene`
+- `candela_delete_scene`
 - `candela_set_picture_in_picture`
 - `candela_debug_dump`
 
