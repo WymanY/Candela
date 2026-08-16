@@ -6,6 +6,7 @@ options:
   xcodeVersion: "16.0"
   createIntermediateGroups: true
   defaultConfig: Debug
+  developmentLanguage: en
 settings:
   base:
     SWIFT_VERSION: "5.10"
@@ -40,6 +41,7 @@ targets:
     resources:
       - path: App/Candela/Resources/Assets.xcassets
       - path: App/Candela/Resources/Localizable.xcstrings
+      - path: App/Candela/Resources/InfoPlist.xcstrings
     info:
       path: App/Candela/Resources/Info.plist
       properties:
@@ -52,6 +54,7 @@ targets:
         NSPrincipalClass: NSApplication
         NSAudioCaptureUsageDescription: Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.
         NSScreenCaptureUsageDescription: Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.
+        CFBundleLocalizations: [en, zh-Hans]
         CFBundleDisplayName: Candela
         CFBundleName: Candela
         LSMinimumSystemVersion: "14.0"

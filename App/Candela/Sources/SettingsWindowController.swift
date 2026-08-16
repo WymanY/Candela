@@ -13,12 +13,13 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         case general
         case displays
         case scenes
+        case shortcuts
         case about
     }
 
     init(session: DisplaySessionController) {
         self.session = session
-        let window = NSWindow(
+        let window = SettingsWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 500),
             styleMask: [.titled, .closable],
             backing: .buffered,
@@ -29,6 +30,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         window.isRestorable = false
         window.titlebarAppearsTransparent = false
         window.toolbarStyle = .preference
+        window.level = .floating
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        window.hidesOnDeactivate = false
         super.init(window: window)
         window.delegate = self
 
@@ -54,6 +58,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         scenes.label = String(localized: "Scenes")
         scenes.view = scenesView
 
+        let shortcuts = NSTabViewItem(identifier: Tab.shortcuts.rawValue)
+        shortcuts.label = String(localized: "Shortcuts")
+        shortcuts.view = SettingsShortcutsView()
+
         let about = NSTabViewItem(identifier: Tab.about.rawValue)
         about.label = String(localized: "About")
         about.view = SettingsAboutView(session: session)
@@ -61,6 +69,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         tabView.addTabViewItem(general)
         tabView.addTabViewItem(displays)
         tabView.addTabViewItem(scenes)
+        tabView.addTabViewItem(shortcuts)
         tabView.addTabViewItem(about)
 
         let root = NSView()
@@ -109,6 +118,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
             NSToolbarItem.Identifier(Tab.general.rawValue),
             NSToolbarItem.Identifier(Tab.displays.rawValue),
             NSToolbarItem.Identifier(Tab.scenes.rawValue),
+            NSToolbarItem.Identifier(Tab.shortcuts.rawValue),
             NSToolbarItem.Identifier(Tab.about.rawValue),
         ]
     }
@@ -131,6 +141,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         case Tab.scenes.rawValue:
             item.label = String(localized: "Scenes")
             item.image = CandelaChrome.symbol("square.stack.3d.up", size: 16)
+        case Tab.shortcuts.rawValue:
+            item.label = String(localized: "Shortcuts")
+            item.image = CandelaChrome.symbol("keyboard", size: 16)
         case Tab.about.rawValue:
             item.label = String(localized: "About")
             item.image = CandelaChrome.symbol("info.circle", size: 16)
@@ -141,7 +154,29 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
     }
 
     @objc private func selectTab(_ sender: NSToolbarItem) {
-        tabView.selectTabViewItem(withIdentifier: sender.itemIdentifier.rawValue)
-        window?.toolbar?.selectedItemIdentifier = sender.itemIdentifier
+        selectTab(identifier: sender.itemIdentifier)
+    }
+
+    @objc func selectTabForIdentifier(_ sender: NSToolbarItem) {
+        selectTab(identifier: sender.itemIdentifier)
+    }
+
+    func selectTab(identifier: NSToolbarItem.Identifier) {
+        tabView.selectTabViewItem(withIdentifier: identifier.rawValue)
+        window?.toolbar?.selectedItemIdentifier = identifier
+    }
+}
+
+private final class SettingsWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) {
+        performClose(sender)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {
+            performClose(nil)
+            return
+        }
+        super.keyDown(with: event)
     }
 }

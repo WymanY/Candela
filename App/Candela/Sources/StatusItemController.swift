@@ -8,12 +8,13 @@ final class StatusItemController: NSObject {
     private let session: DisplaySessionController
     private let statusItem: NSStatusItem
     private let panelController: StatusPanelController
-    private let settingsController: SettingsWindowController
+    private var settingsController: SettingsWindowController
     private let guideController = MenuBarGuideController()
     private let log = Logger(subsystem: "app.candela.macos", category: "ui")
     private var globalMonitor: Any?
     private var localMonitor: Any?
     private var suppressDismissUntil: Date?
+    private var appliedLanguage: String
 
     init(session: DisplaySessionController) {
         Self.forceSystemVisible()
@@ -21,13 +22,11 @@ final class StatusItemController: NSObject {
         self.statusItem = Self.makeStatusItem()
         self.panelController = StatusPanelController(session: session)
         self.settingsController = SettingsWindowController(session: session)
+        self.appliedLanguage = session.settings.preferredLanguage
         super.init()
-        settingsController.onClose = { [weak self] in
-            self?.settingsDidClose()
-        }
+        bindSettingsController()
         session.onChange = { [weak self] in
-            self?.panelController.reload()
-            self?.settingsController.reload()
+            self?.handleSessionChange()
         }
         panelController.bindActions(
             openSettings: { [weak self] in self?.openSettings() },
@@ -167,7 +166,7 @@ final class StatusItemController: NSObject {
     private func showContextMenu() {
         let menu = NSMenu()
         let settingsItem = NSMenuItem(
-            title: String(localized: "Settings…"),
+            title: String(localized: "Settings"),
             action: #selector(openSettings),
             keyEquivalent: ","
         )
@@ -186,28 +185,77 @@ final class StatusItemController: NSObject {
         statusItem.menu = nil
     }
 
+    private func bindSettingsController() {
+        settingsController.onClose = { [weak self] in
+            self?.settingsDidClose()
+        }
+    }
+
+    private func handleSessionChange() {
+        let language = session.settings.preferredLanguage
+        if language != appliedLanguage {
+            appliedLanguage = language
+            panelController.rebuild()
+            if settingsController.window?.isVisible == true {
+                rebuildSettingsWindow()
+            }
+        } else {
+            panelController.reload()
+            settingsController.reload()
+        }
+    }
+
+    private func rebuildSettingsWindow() {
+        guard let window = settingsController.window, window.isVisible else { return }
+        let selected = window.toolbar?.selectedItemIdentifier
+        let frame = window.frame
+        settingsController.onClose = nil
+        let replacement = SettingsWindowController(session: session)
+        settingsController = replacement
+        bindSettingsController()
+        replacement.showWindow(nil)
+        if let next = replacement.window {
+            next.setFrame(frame, display: true)
+            if let selected {
+                replacement.selectTab(identifier: selected)
+            }
+            next.level = .floating
+            next.makeKeyAndOrderFront(nil)
+            next.orderFrontRegardless()
+        }
+        window.close()
+    }
+
     @objc func openSettings() {
         hidePanel()
         NSApp.setActivationPolicy(.regular)
-        settingsController.showWindow(nil)
-        if let window = settingsController.window {
-            let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
-                ?? NSScreen.main
-            if let screen {
-                let visible = screen.visibleFrame
-                let size = window.frame.size
-                window.setFrameOrigin(
-                    NSPoint(
-                        x: visible.midX - size.width / 2,
-                        y: visible.midY - size.height / 2
-                    )
-                )
-            } else {
-                window.center()
-            }
-            window.makeKeyAndOrderFront(nil)
-        }
+        NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
+        presentSettingsWindow()
+    }
+
+    private func presentSettingsWindow() {
+        settingsController.showWindow(nil)
+        guard let window = settingsController.window else { return }
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
+            ?? NSScreen.main
+        if let screen {
+            let visible = screen.visibleFrame
+            let size = window.frame.size
+            window.setFrameOrigin(
+                NSPoint(
+                    x: visible.midX - size.width / 2,
+                    y: visible.midY - size.height / 2
+                )
+            )
+        } else {
+            window.center()
+        }
+        window.collectionBehavior.insert(.moveToActiveSpace)
+        window.collectionBehavior.insert(.fullScreenAuxiliary)
+        window.level = .floating
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 
     @objc private func quit() {
@@ -238,12 +286,17 @@ final class StatusItemController: NSObject {
                         self.hidePanel()
                     }
                 }
-            } else if event.type == .keyDown,
-                      event.keyCode == 53,
-                      self.panelController.isVisible
-            {
-                self.hidePanel()
-                return nil
+            } else if event.type == .keyDown, self.panelController.isVisible {
+                if event.keyCode == 53 {
+                    self.hidePanel()
+                    return nil
+                }
+                if event.modifierFlags.contains(.command),
+                   event.charactersIgnoringModifiers == ","
+                {
+                    self.openSettings()
+                    return nil
+                }
             }
             return event
         }

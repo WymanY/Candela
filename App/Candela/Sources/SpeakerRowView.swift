@@ -12,7 +12,7 @@ final class SpeakerRowView: NSView {
     private let metaLabel = CandelaChrome.makeMeta()
     private let outputPopup = NSPopUpButton()
     private let volumeIcon = CandelaChrome.makeSymbol("speaker.wave.2")
-    private let volumeSlider: NSSlider
+    private let volumeSlider: CandelaSlider
     private let volumePercent = CandelaChrome.makePercent()
     private let muteButton: NSButton
     private let volumeRow = NSStackView()
@@ -20,11 +20,12 @@ final class SpeakerRowView: NSView {
     private let column = NSStackView()
     private var isApplying = false
     private var showPercent = true
+    private var isMuted = false
 
     override init(frame frameRect: NSRect) {
         volumeSlider = CandelaChrome.makeSlider()
         muteButton = CandelaChrome.makeIconButton(
-            symbolName: "speaker.wave.2.fill",
+            symbolName: "speaker.slash",
             help: String(localized: "Mute")
         )
         super.init(frame: frameRect)
@@ -117,9 +118,11 @@ final class SpeakerRowView: NSView {
         if showsVolume {
             volumeSlider.doubleValue = speaker.volume.current * 100
             updateVolumePercent(speaker.volume.current)
-            updateMuteButton(isMuted: speaker.volume.isMuted, name: speaker.name)
+            applyMutedAppearance(isMuted: speaker.volume.isMuted, name: speaker.name)
             volumeSlider.setAccessibilityLabel("\(String(localized: "Volume")), \(speaker.name)")
             volumeSlider.setAccessibilityValueDescription(percentPhrase(speaker.volume.current))
+        } else {
+            applyMutedAppearance(isMuted: false, name: speaker.name)
         }
 
         let showSoftwareVolume = showsVolume && speaker.volume.backend == .software
@@ -175,13 +178,16 @@ final class SpeakerRowView: NSView {
         let value = sender.doubleValue / 100
         updateVolumePercent(value)
         sender.setAccessibilityValueDescription(percentPhrase(value))
+        if isMuted {
+            applyMutedAppearance(isMuted: false, name: nameLabel.stringValue)
+            onMute?(false)
+        }
         onVolume?(value)
     }
 
     @objc private func muteClicked(_ sender: NSButton) {
-        let muted = sender.state == .on
-        updateMuteSymbol(isMuted: muted)
-        onMute?(muted)
+        applyMutedAppearance(isMuted: sender.state == .on, name: nameLabel.stringValue)
+        onMute?(isMuted)
     }
 
     @objc private func outputChanged(_ sender: NSPopUpButton) {
@@ -194,16 +200,29 @@ final class SpeakerRowView: NSView {
         volumePercent.stringValue = "\(Int((value * 100).rounded()))%"
     }
 
-    private func updateMuteButton(isMuted: Bool, name: String) {
+    private func applyMutedAppearance(isMuted: Bool, name: String) {
+        self.isMuted = isMuted
         muteButton.state = isMuted ? .on : .off
-        muteButton.setAccessibilityLabel(String(localized: "Mute"))
+        muteButton.toolTip = isMuted ? String(localized: "Unmute") : String(localized: "Mute")
+        muteButton.setAccessibilityLabel(isMuted ? String(localized: "Unmute") : String(localized: "Mute"))
         muteButton.setAccessibilityHelp(name)
-        updateMuteSymbol(isMuted: isMuted)
-    }
-
-    private func updateMuteSymbol(isMuted: Bool) {
-        let symbol = isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill"
-        muteButton.image = CandelaChrome.symbol(symbol, size: 13)
+        muteButton.wantsLayer = true
+        muteButton.layer?.cornerRadius = 7
+        muteButton.layer?.cornerCurve = .continuous
+        muteButton.layer?.backgroundColor = isMuted
+            ? CandelaChrome.accentSoft.cgColor
+            : NSColor.clear.cgColor
+        muteButton.contentTintColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
+        muteButton.image = CandelaChrome.symbol(isMuted ? "speaker.slash.fill" : "speaker.slash", size: 13)
+        volumeIcon.image = CandelaChrome.symbol("speaker.wave.2", size: CandelaChrome.iconSize)
+        volumeIcon.contentTintColor = isMuted ? .tertiaryLabelColor : .secondaryLabelColor
+        volumeSlider.appearsMuted = isMuted
+        volumeSlider.alphaValue = 1
+        volumePercent.textColor = isMuted ? .tertiaryLabelColor : .secondaryLabelColor
+        metaLabel.textColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
+        metaLabel.stringValue = isMuted
+            ? String(localized: "Muted · Current output")
+            : String(localized: "Current output")
     }
 
     private func percentPhrase(_ value: Double) -> String {

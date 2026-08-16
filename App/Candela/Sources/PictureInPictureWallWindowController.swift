@@ -7,11 +7,11 @@ import ScreenCaptureKit
 
 @MainActor
 final class PictureInPictureWallWindowController: NSWindowController, NSWindowDelegate {
-    private let titleLabel = CandelaChrome.makeTitle(String(localized: "Monitor Wall"), size: 12, weight: .semibold)
+    private let titleLabel = CandelaChrome.makeTitle(String(localized: "Display Overview"), size: 12, weight: .semibold)
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
-    private let pinPopup = NSPopUpButton()
-    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Monitor Wall"))
+    private let pinControl = PictureInPicturePinControl()
+    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Display Overview"))
     private let chrome = NSStackView()
     private let tilesHost = WallTilesHost()
     private var tiles: [WallTile] = []
@@ -181,17 +181,8 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         clickThroughButton.target = self
         clickThroughButton.action = #selector(toggleClickThrough)
 
-        pinPopup.controlSize = .small
-        pinPopup.font = .systemFont(ofSize: 11, weight: .medium)
-        pinPopup.target = self
-        pinPopup.action = #selector(pinChanged(_:))
-        pinPopup.setAccessibilityLabel(String(localized: "Pin Corner"))
-        pinPopup.removeAllItems()
-        pinPopup.addItem(withTitle: String(localized: "Free"))
-        pinPopup.lastItem?.representedObject = ""
-        for corner in PictureInPictureCorner.allCases {
-            pinPopup.addItem(withTitle: localizedCornerTitle(corner))
-            pinPopup.lastItem?.representedObject = corner.rawValue
+        pinControl.onChange = { [weak self] corner in
+            self?.pinChanged(corner)
         }
 
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -203,7 +194,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         chrome.addArrangedSubview(NSView())
         chrome.addArrangedSubview(opacitySlider)
         chrome.addArrangedSubview(clickThroughButton)
-        chrome.addArrangedSubview(pinPopup)
+        chrome.addArrangedSubview(pinControl)
         chrome.addArrangedSubview(closeButton)
 
         tilesHost.translatesAutoresizingMaskIntoConstraints = false
@@ -255,9 +246,9 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         tilesHost.tileViews = tiles.map(\.view)
         layoutTiles()
         if snapshots.isEmpty {
-            titleLabel.stringValue = String(localized: "Monitor Wall")
+            titleLabel.stringValue = String(localized: "Display Overview")
         } else {
-            titleLabel.stringValue = String(localized: "Monitor Wall") + " · \(snapshots.count)"
+            titleLabel.stringValue = String(localized: "Display Overview") + " · \(snapshots.count)"
         }
     }
 
@@ -289,15 +280,11 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         persistCurrentPlacement()
     }
 
-    @objc private func pinChanged(_ sender: NSPopUpButton) {
+    private func pinChanged(_ corner: PictureInPictureCorner?) {
         guard !isApplying else { return }
-        if let raw = sender.selectedItem?.representedObject as? String,
-           let corner = PictureInPictureCorner(rawValue: raw)
-        {
-            placement.corner = corner
+        placement.corner = corner
+        if corner != nil {
             snapToPinnedCorner()
-        } else {
-            placement.corner = nil
         }
         persistCurrentPlacement()
     }
@@ -423,12 +410,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     }
 
     private func syncPinPopup() {
-        let selected = placement.corner?.rawValue ?? ""
-        if let index = pinPopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == selected }) {
-            pinPopup.selectItem(at: index)
-        } else {
-            pinPopup.selectItem(at: 0)
-        }
+        pinControl.select(corner: placement.corner)
     }
 
     private func snapToPinnedCorner() {
@@ -496,15 +478,6 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
             sourceDisplayID: 0,
             screens: Self.screenDescriptors()
         )?.visible
-    }
-
-    private func localizedCornerTitle(_ corner: PictureInPictureCorner) -> String {
-        switch corner {
-        case .topLeft: return String(localized: "Top Left")
-        case .topRight: return String(localized: "Top Right")
-        case .bottomLeft: return String(localized: "Bottom Left")
-        case .bottomRight: return String(localized: "Bottom Right")
-        }
     }
 
     private static func screenDescriptors() -> [(id: CGDirectDisplayID, visible: CGRect)] {

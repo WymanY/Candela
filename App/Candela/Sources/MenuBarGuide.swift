@@ -36,7 +36,7 @@ final class MenuBarGuideController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "Candela"
+        window.title = String(localized: "Candela")
         window.isReleasedWhenClosed = false
         window.level = .floating
         window.isRestorable = false
@@ -95,26 +95,26 @@ final class MenuBarGuideController: NSWindowController {
 
     private static func makeContent(target: MenuBarGuideController) -> NSView {
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 520, height: 340))
-        let title = NSTextField(labelWithString: "菜单栏图标被 macOS 26 挡住了")
+        let title = NSTextField(labelWithString: String(localized: "The menu bar icon is hidden by macOS 26."))
         title.font = .systemFont(ofSize: 18, weight: .semibold)
         title.translatesAutoresizingMaskIntoConstraints = false
 
-        let body = NSTextField(wrappingLabelWithString: """
-        Candela 不需要辅助功能、屏幕录制或任何隐私权限。
+        let body = NSTextField(wrappingLabelWithString: String(localized: """
+        Candela does not need Accessibility, Screen Recording, or other privacy permissions.
 
-        macOS 26 新增了一道开关：第三方状态栏图标默认不允许显示。请打开：
+        macOS 26 added a switch that hides third-party status items by default. Open:
 
-        系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela
+        System Settings → Menu Bar → Allow in the Menu Bar → enable Candela
 
-        打开后图标会出现在主显示器（笔记本屏幕）菜单栏右侧。外接屏菜单栏通常不会出现第三方图标。
+        The icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.
 
-        如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。
-        """)
+        If you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.
+        """))
         body.font = .systemFont(ofSize: 13)
         body.translatesAutoresizingMaskIntoConstraints = false
 
         let button = NSButton(
-            title: "打开系统设置 · 菜单栏",
+            title: String(localized: "Open System Settings · Menu Bar"),
             target: target,
             action: #selector(MenuBarGuideController.openSettingsPane)
         )

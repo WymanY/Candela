@@ -9,6 +9,12 @@
             "state": "translated",
             "value": "Candela"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candela"
+          }
         }
       }
     },
@@ -20,16 +26,11 @@
             "state": "translated",
             "value": "Quit"
           }
-        }
-      }
-    },
-    "Settings…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Settings…"
+            "value": "退出"
           }
         }
       }
@@ -42,6 +43,12 @@
             "state": "translated",
             "value": "Brightness"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "亮度"
+          }
         }
       }
     },
@@ -52,6 +59,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音量"
           }
         }
       }
@@ -64,6 +77,12 @@
             "state": "translated",
             "value": "Mute"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "静音"
+          }
         }
       }
     },
@@ -75,6 +94,12 @@
             "state": "translated",
             "value": "Built-in Display"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置显示器"
+          }
         }
       }
     },
@@ -82,6 +107,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DELL U2723QE"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "DELL U2723QE"
@@ -97,6 +128,12 @@
             "state": "translated",
             "value": "HDMI Television"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HDMI 电视"
+          }
         }
       }
     },
@@ -104,6 +141,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sidecar"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Sidecar"
@@ -119,6 +162,12 @@
             "state": "translated",
             "value": "Built-in"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置"
+          }
         }
       }
     },
@@ -126,6 +175,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Apple"
@@ -141,6 +196,12 @@
             "state": "translated",
             "value": "External"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外接"
+          }
         }
       }
     },
@@ -152,6 +213,12 @@
             "state": "translated",
             "value": "Unsupported"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支持"
+          }
         }
       }
     },
@@ -159,6 +226,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HDMI"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "HDMI"
@@ -174,6 +247,12 @@
             "state": "translated",
             "value": "DisplayPort"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DisplayPort"
+          }
         }
       }
     },
@@ -181,6 +260,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thunderbolt"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Thunderbolt"
@@ -196,6 +281,12 @@
             "state": "translated",
             "value": "USB-C"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB-C"
+          }
         }
       }
     },
@@ -206,6 +297,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "General"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通用"
           }
         }
       }
@@ -218,6 +315,12 @@
             "state": "translated",
             "value": "Displays"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示器"
+          }
         }
       }
     },
@@ -228,6 +331,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "About"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
           }
         }
       }
@@ -240,6 +349,12 @@
             "state": "translated",
             "value": "No Displays"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有显示器"
+          }
         }
       }
     },
@@ -251,16 +366,11 @@
             "state": "translated",
             "value": "General settings will appear in a later release."
           }
-        }
-      }
-    },
-    "Not affiliated with BetterDisplay.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not affiliated with BetterDisplay."
+            "value": "通用设置将在后续版本中提供。"
           }
         }
       }
@@ -273,6 +383,12 @@
             "state": "translated",
             "value": "Option-click to copy a debug dump"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住 Option 点击可复制调试信息"
+          }
         }
       }
     },
@@ -283,6 +399,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "%d percent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 百分比"
           }
         }
       }
@@ -295,6 +417,12 @@
             "state": "translated",
             "value": "Software dimming"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "软件调光"
+          }
         }
       }
     },
@@ -305,6 +433,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Software dimming reduces HDR contrast."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "软件调光会降低 HDR 对比度。"
           }
         }
       }
@@ -317,6 +451,12 @@
             "state": "translated",
             "value": "Launch at Login"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录时打开"
+          }
         }
       }
     },
@@ -327,6 +467,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Restore last brightness on reconnect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新连接时恢复上次亮度"
           }
         }
       }
@@ -339,6 +485,12 @@
             "state": "translated",
             "value": "Allow dim to black"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许调到全黑"
+          }
         }
       }
     },
@@ -349,6 +501,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show percent next to sliders"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在滑块旁显示百分比"
           }
         }
       }
@@ -361,6 +519,12 @@
             "state": "translated",
             "value": "Custom Name"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义名称"
+          }
         }
       }
     },
@@ -371,6 +535,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示器"
           }
         }
       }
@@ -383,6 +553,12 @@
             "state": "translated",
             "value": "Night"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜间"
+          }
         }
       }
     },
@@ -393,6 +569,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面"
           }
         }
       }
@@ -405,6 +587,12 @@
             "state": "translated",
             "value": "Max"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最大"
+          }
         }
       }
     },
@@ -415,6 +603,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Match All"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部匹配"
           }
         }
       }
@@ -427,6 +621,12 @@
             "state": "translated",
             "value": "Contrast"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对比度"
+          }
         }
       }
     },
@@ -437,6 +637,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Match"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匹配"
           }
         }
       }
@@ -449,6 +655,12 @@
             "state": "translated",
             "value": "Startup, dimming, and panel labels."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启动、调光和面板标签。"
+          }
         }
       }
     },
@@ -459,6 +671,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Candela when you log in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录后自动打开 Candela。"
           }
         }
       }
@@ -471,6 +689,12 @@
             "state": "translated",
             "value": "Startup"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启动"
+          }
         }
       }
     },
@@ -481,6 +705,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板"
           }
         }
       }
@@ -493,6 +723,12 @@
             "state": "translated",
             "value": "Input"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入"
+          }
         }
       }
     },
@@ -503,6 +739,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brightness restored after unplug."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拔掉后重新接上时恢复亮度。"
           }
         }
       }
@@ -515,6 +757,12 @@
             "state": "translated",
             "value": "Use gamma when hardware control is missing."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有硬件控制时使用 gamma。"
+          }
         }
       }
     },
@@ -525,6 +773,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Let software dimming reach 0%."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许软件调光降到 0%。"
           }
         }
       }
@@ -537,6 +791,12 @@
             "state": "translated",
             "value": "Show 50% beside each slider."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在每个滑块旁显示 50%。"
+          }
         }
       }
     },
@@ -547,6 +807,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hardware Name"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "硬件名称"
           }
         }
       }
@@ -559,6 +825,12 @@
             "state": "translated",
             "value": "Name this display in the menu-bar panel."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在菜单栏面板中为此显示器命名。"
+          }
         }
       }
     },
@@ -569,6 +841,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brightness for every display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每台显示器的亮度"
           }
         }
       }
@@ -581,6 +859,12 @@
             "state": "translated",
             "value": "Menu-bar brightness for every display."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在菜单栏调节每台显示器的亮度。"
+          }
         }
       }
     },
@@ -591,6 +875,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Software volume for this display's speakers."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此显示器扬声器的软件音量。"
           }
         }
       }
@@ -603,6 +893,12 @@
             "state": "translated",
             "value": "Identity, connection, and control path for each panel."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每块屏幕的标识、连接和控制路径。"
+          }
         }
       }
     },
@@ -613,6 +909,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Main"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主显示器"
           }
         }
       }
@@ -625,6 +927,12 @@
             "state": "translated",
             "value": "Main display"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主显示器"
+          }
         }
       }
     },
@@ -635,6 +943,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Resolution"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分辨率"
           }
         }
       }
@@ -647,6 +961,12 @@
             "state": "translated",
             "value": "Connection"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接"
+          }
         }
       }
     },
@@ -657,6 +977,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vendor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "厂商"
           }
         }
       }
@@ -669,6 +995,12 @@
             "state": "translated",
             "value": "Product"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "产品"
+          }
         }
       }
     },
@@ -679,6 +1011,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Serial"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "序列号"
           }
         }
       }
@@ -691,6 +1029,12 @@
             "state": "translated",
             "value": "Role"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角色"
+          }
         }
       }
     },
@@ -701,6 +1045,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pending"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "待定"
           }
         }
       }
@@ -713,6 +1063,12 @@
             "state": "translated",
             "value": "None"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无"
+          }
         }
       }
     },
@@ -720,6 +1076,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DisplayServices"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "DisplayServices"
@@ -735,6 +1097,12 @@
             "state": "translated",
             "value": "Core Audio"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Core Audio"
+          }
         }
       }
     },
@@ -746,6 +1114,12 @@
             "state": "translated",
             "value": "Software"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "软件"
+          }
         }
       }
     },
@@ -753,6 +1127,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DDC"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "DDC"
@@ -768,6 +1148,12 @@
             "state": "translated",
             "value": "Current"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前"
+          }
         }
       }
     },
@@ -778,6 +1164,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Software volume for the current output."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前输出的软件音量。"
           }
         }
       }
@@ -790,6 +1182,12 @@
             "state": "translated",
             "value": "Speaker"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扬声器"
+          }
         }
       }
     },
@@ -800,6 +1198,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Current output"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前输出"
           }
         }
       }
@@ -812,6 +1216,12 @@
             "state": "translated",
             "value": "Output"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出"
+          }
         }
       }
     },
@@ -822,6 +1232,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rotation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旋转"
           }
         }
       }
@@ -834,6 +1250,12 @@
             "state": "translated",
             "value": "Landscape"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "横向"
+          }
         }
       }
     },
@@ -844,6 +1266,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Portrait"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纵向"
           }
         }
       }
@@ -856,6 +1284,12 @@
             "state": "translated",
             "value": "Landscape flipped"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "横向翻转"
+          }
         }
       }
     },
@@ -867,6 +1301,12 @@
             "state": "translated",
             "value": "Portrait flipped"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纵向翻转"
+          }
         }
       }
     },
@@ -874,6 +1314,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0°"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "0°"
@@ -889,6 +1335,12 @@
             "state": "translated",
             "value": "90°"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90°"
+          }
         }
       }
     },
@@ -896,6 +1348,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "180°"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "180°"
@@ -911,6 +1369,12 @@
             "state": "translated",
             "value": "270°"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "270°"
+          }
         }
       }
     },
@@ -918,6 +1382,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PiP"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "PiP"
@@ -933,6 +1403,12 @@
             "state": "translated",
             "value": "Close PiP"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭 PiP"
+          }
         }
       }
     },
@@ -943,6 +1419,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Picture in Picture"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 Picture in Picture"
           }
         }
       }
@@ -955,6 +1437,12 @@
             "state": "translated",
             "value": "Close Picture in Picture"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭 Picture in Picture"
+          }
         }
       }
     },
@@ -962,6 +1450,12 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picture in Picture"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Picture in Picture"
@@ -977,6 +1471,12 @@
             "state": "translated",
             "value": "Open"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已打开"
+          }
         }
       }
     },
@@ -987,6 +1487,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Available"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用"
           }
         }
       }
@@ -999,6 +1505,12 @@
             "state": "translated",
             "value": "Waiting for display…"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在等待显示器…"
+          }
         }
       }
     },
@@ -1009,6 +1521,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preview only in fake-hardware mode."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在假硬件模式下预览。"
           }
         }
       }
@@ -1021,6 +1539,12 @@
             "state": "translated",
             "value": "This display is not available."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此显示器不可用。"
+          }
         }
       }
     },
@@ -1031,6 +1555,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Could not find this display for capture."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到可采集的显示器。"
           }
         }
       }
@@ -1043,6 +1573,12 @@
             "state": "translated",
             "value": "Screen Recording permission is required for Picture in Picture."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 Picture in Picture 需要屏幕录制权限。"
+          }
         }
       }
     },
@@ -1053,6 +1589,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opacity"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不透明度"
           }
         }
       }
@@ -1065,6 +1607,12 @@
             "state": "translated",
             "value": "Click Through"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击穿透"
+          }
         }
       }
     },
@@ -1075,6 +1623,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Click through is on. Hover the title bar to adjust. Scroll still zooms."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击穿透已开启。将指针移到标题栏即可调整，滚轮仍可缩放。"
           }
         }
       }
@@ -1087,6 +1641,12 @@
             "state": "translated",
             "value": "Pin Corner"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "固定到角落"
+          }
         }
       }
     },
@@ -1097,6 +1657,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自由"
           }
         }
       }
@@ -1109,6 +1675,12 @@
             "state": "translated",
             "value": "Top Left"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左上"
+          }
         }
       }
     },
@@ -1119,6 +1691,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Top Right"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右上"
           }
         }
       }
@@ -1131,6 +1709,12 @@
             "state": "translated",
             "value": "Bottom Left"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左下"
+          }
         }
       }
     },
@@ -1141,6 +1725,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bottom Right"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右下"
           }
         }
       }
@@ -1153,6 +1743,12 @@
             "state": "translated",
             "value": "Scenes"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "场景"
+          }
         }
       }
     },
@@ -1163,6 +1759,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "No Scenes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有场景"
           }
         }
       }
@@ -1175,6 +1777,12 @@
             "state": "translated",
             "value": "Apply Scene"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用场景"
+          }
         }
       }
     },
@@ -1185,6 +1793,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save Scene"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存场景"
           }
         }
       }
@@ -1197,6 +1811,12 @@
             "state": "translated",
             "value": "Save Current…"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存当前…"
+          }
         }
       }
     },
@@ -1207,6 +1827,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save the current displays as a named scene, then apply it later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将当前显示器状态保存为命名场景，之后再应用。"
           }
         }
       }
@@ -1219,6 +1845,12 @@
             "state": "translated",
             "value": "Capture brightness, volume, input, rotation, and Picture in Picture for the current displays."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存当前显示器的亮度、音量、输入、旋转和 Picture in Picture。"
+          }
         }
       }
     },
@@ -1229,6 +1861,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
           }
         }
       }
@@ -1241,6 +1879,12 @@
             "state": "translated",
             "value": "Cancel"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
         }
       }
     },
@@ -1251,6 +1895,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apply"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
           }
         }
       }
@@ -1263,6 +1913,12 @@
             "state": "translated",
             "value": "Update"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
         }
       }
     },
@@ -1273,6 +1929,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
           }
         }
       }
@@ -1285,6 +1947,12 @@
             "state": "translated",
             "value": "Delete Scene"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除场景"
+          }
         }
       }
     },
@@ -1295,6 +1963,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "No saved scenes yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有已保存的场景。"
           }
         }
       }
@@ -1307,6 +1981,12 @@
             "state": "translated",
             "value": "displays"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "台显示器"
+          }
         }
       }
     },
@@ -1317,6 +1997,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "missing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "台缺失"
           }
         }
       }
@@ -1329,6 +2015,12 @@
             "state": "translated",
             "value": "Active"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前"
+          }
         }
       }
     },
@@ -1339,6 +2031,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Scene %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "场景 %lld"
           }
         }
       }
@@ -1351,10 +2049,15 @@
             "state": "translated",
             "value": "Remove “%@”? This cannot be undone."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要删除“%@”吗？此操作无法撤销。"
+          }
         }
       }
-    }
-,
+    },
     "Source": {
       "extractionState": "manual",
       "localizations": {
@@ -1362,6 +2065,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Source"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源"
           }
         }
       }
@@ -1374,6 +2083,12 @@
             "state": "translated",
             "value": "Window"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口"
+          }
         }
       }
     },
@@ -1385,6 +2100,12 @@
             "state": "translated",
             "value": "Magnifier"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大镜"
+          }
         }
       }
     },
@@ -1395,6 +2116,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Magnifier Zoom"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大镜缩放"
           }
         }
       }
@@ -1411,7 +2138,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "可用鼠标滚轮缩放"
+            "value": "滚轮缩放"
           }
         }
       }
@@ -1428,7 +2155,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "按住空格拖动查看不同位置"
+            "value": "按住空格拖动平移"
           }
         }
       }
@@ -1441,6 +2168,12 @@
             "state": "translated",
             "value": "Mirror"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "镜像"
+          }
         }
       }
     },
@@ -1451,6 +2184,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mirrored. Flip back to the original view."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已镜像。再点一次可恢复原视图。"
           }
         }
       }
@@ -1463,6 +2202,12 @@
             "state": "translated",
             "value": "Choose Window"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择窗口"
+          }
         }
       }
     },
@@ -1474,60 +2219,657 @@
             "state": "translated",
             "value": "Could not find that window. Pick another one."
           }
-        }
-      }
-    },
-    "Monitor Wall": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Monitor Wall"
+            "value": "找不到该窗口，请另选一个。"
           }
         }
       }
     },
-    "Open Monitor Wall": {
+    "Language": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Monitor Wall"
+            "value": "Language"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言"
           }
         }
       }
     },
-    "Close Monitor Wall": {
+    "App Language": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close Monitor Wall"
+            "value": "App Language"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用语言"
           }
         }
       }
     },
-    "Wall": {
+    "System": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wall"
+            "value": "System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统"
           }
         }
       }
     },
-    "Close Wall": {
+    "English": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close Wall"
+            "value": "English"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
+    "简体中文": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "简体中文"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "简体中文"
+          }
+        }
+      }
+    },
+    "Defaults to the language set in System Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Defaults to the language set in System Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认使用系统设置中的语言。"
+          }
+        }
+      }
+    },
+    "The menu bar icon is hidden by macOS 26.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The menu bar icon is hidden by macOS 26."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏图标被 macOS 26 挡住了。"
+          }
+        }
+      }
+    },
+    "Candela does not need Accessibility, Screen Recording, or other privacy permissions.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candela does not need Accessibility, Screen Recording, or other privacy permissions.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candela 不需要辅助功能、屏幕录制或其他隐私权限。\n\nmacOS 26 新增了一道开关：第三方状态栏图标默认不允许显示。请打开：\n\n系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela\n\n打开后图标会出现在主显示器（笔记本屏幕）菜单栏右侧。外接屏菜单栏通常不会出现第三方图标。\n\n如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
+          }
+        }
+      }
+    },
+    "Open System Settings · Menu Bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings · Menu Bar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置 · 菜单栏"
+          }
+        }
+      }
+    },
+    "Launch at Login requires macOS 13 or later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch at Login requires macOS 13 or later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录时打开需要 macOS 13 或更高版本。"
+          }
+        }
+      }
+    },
+    "Untitled Scene": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled Scene"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未命名场景"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "Overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多屏"
+          }
+        }
+      }
+    },
+    "Close Overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭多屏"
+          }
+        }
+      }
+    },
+    "Display Overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多屏预览"
+          }
+        }
+      }
+    },
+    "Open Display Overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Display Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开多屏预览"
+          }
+        }
+      }
+    },
+    "Close Display Overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Display Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭多屏预览"
+          }
+        }
+      }
+    },
+    "Dim": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dim"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低亮"
+          }
+        }
+      }
+    },
+    "Normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常亮"
+          }
+        }
+      }
+    },
+    "Full": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全亮"
+          }
+        }
+      }
+    },
+    "Snap to Corner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snap to Corner"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "吸附到角落"
+          }
+        }
+      }
+    },
+    "Free Position": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free Position"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自由位置"
+          }
+        }
+      }
+    },
+    "Snap Top Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top Left"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左上角"
+          }
+        }
+      }
+    },
+    "Snap Top Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top Right"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右上角"
+          }
+        }
+      }
+    },
+    "Snap Bottom Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bottom Left"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左下角"
+          }
+        }
+      }
+    },
+    "Snap Bottom Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bottom Right"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右下角"
+          }
+        }
+      }
+    },
+    "Shortcuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键"
+          }
+        }
+      }
+    },
+    "Keyboard shortcuts already available in Candela.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyboard shortcuts already available in Candela."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前 Candela 已支持的快捷键。"
+          }
+        }
+      }
+    },
+    "Menu Bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏"
+          }
+        }
+      }
+    },
+    "Open Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开设置"
+          }
+        }
+      }
+    },
+    "Close Panel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭面板"
+          }
+        }
+      }
+    },
+    "Scroll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚轮"
+          }
+        }
+      }
+    },
+    "Space-drag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space-drag"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住空格拖动"
+          }
+        }
+      }
+    },
+    "Copy debug dump": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy debug dump"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制调试信息"
+          }
+        }
+      }
+    },
+    "Option-click": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option-click"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option-点击"
+          }
+        }
+      }
+    },
+    "Close Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭设置"
+          }
+        }
+      }
+    },
+    "Unmute": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmute"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消静音"
+          }
+        }
+      }
+    },
+    "Muted · Current output": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muted · Current output"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已静音 · 当前输出"
           }
         }
       }

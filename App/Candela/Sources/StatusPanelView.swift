@@ -12,9 +12,9 @@ final class StatusPanelView: NSView {
     private let markView = CandelaChrome.makeSymbol("sun.max.fill", size: 14)
     private let presets = NSSegmentedControl(
         labels: [
-            String(localized: "Night"),
-            String(localized: "Desk"),
-            String(localized: "Max"),
+            String(localized: "Dim"),
+            String(localized: "Normal"),
+            String(localized: "Full"),
         ],
         trackingMode: .selectOne,
         target: nil,
@@ -333,17 +333,19 @@ final class StatusPanelView: NSView {
         content.addSubview(footer)
 
         let line = CandelaChrome.makeHairline()
-        let settingsButton = CandelaChrome.makeQuietButton(title: String(localized: "Settings…"), symbolName: "gearshape")
+        let settingsButton = CandelaChrome.makeQuietButton(title: String(localized: "Settings"), symbolName: "gearshape")
         settingsButton.target = self
         settingsButton.action = #selector(openSettings)
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
-        let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Wall"), symbolName: "rectangle.split.2x2")
+        sizeFooterButton(settingsButton)
+        let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Overview"), symbolName: "rectangle.split.2x2")
         wallButton.target = self
         wallButton.action = #selector(toggleWall)
         wallButton.translatesAutoresizingMaskIntoConstraints = false
+        sizeFooterButton(wallButton)
         wallButton.toolTip = session.isPictureInPictureWallOpen
-            ? String(localized: "Close Monitor Wall")
-            : String(localized: "Open Monitor Wall")
+            ? String(localized: "Close Display Overview")
+            : String(localized: "Open Display Overview")
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
@@ -351,22 +353,28 @@ final class StatusPanelView: NSView {
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
         quitButton.translatesAutoresizingMaskIntoConstraints = false
+        sizeFooterButton(quitButton)
         footer.addSubview(line)
-        footer.addSubview(settingsButton)
-        footer.addSubview(wallButton)
         footer.addSubview(quitButton)
+
+        let actions = NSStackView(views: [settingsButton, wallButton])
+        actions.orientation = .horizontal
+        actions.alignment = .centerY
+        actions.spacing = 10
+        actions.translatesAutoresizingMaskIntoConstraints = false
+        actions.setHuggingPriority(.required, for: .horizontal)
+        footer.addSubview(actions)
 
         NSLayoutConstraint.activate([
             footer.heightAnchor.constraint(equalToConstant: 28),
             line.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
             line.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
             line.topAnchor.constraint(equalTo: footer.topAnchor),
-            settingsButton.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
-            settingsButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
-            wallButton.leadingAnchor.constraint(equalTo: settingsButton.trailingAnchor, constant: 10),
-            wallButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
+            actions.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
+            actions.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
             quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
-            quitButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
+            quitButton.centerYAnchor.constraint(equalTo: actions.centerYAnchor),
+            quitButton.leadingAnchor.constraint(greaterThanOrEqualTo: actions.trailingAnchor, constant: 8),
         ])
     }
 
@@ -425,10 +433,24 @@ final class StatusPanelView: NSView {
             return
         }
         wallButton.toolTip = session.isPictureInPictureWallOpen
-            ? String(localized: "Close Monitor Wall")
-            : String(localized: "Open Monitor Wall")
+            ? String(localized: "Close Display Overview")
+            : String(localized: "Open Display Overview")
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
-        wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Wall") : String(localized: "Wall")
+        wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Overview") : String(localized: "Overview")
+        sizeFooterButton(wallButton)
+    }
+
+    private func sizeFooterButton(_ button: NSButton) {
+        button.sizeToFit()
+        let fitting = button.fittingSize
+        let width = max(fitting.width + 4, 44)
+        if let existing = button.constraints.first(where: { $0.firstAttribute == .width && $0.secondItem == nil }) {
+            existing.constant = width
+        } else {
+            button.widthAnchor.constraint(equalToConstant: width).isActive = true
+        }
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
 }

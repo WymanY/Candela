@@ -15,6 +15,9 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.borderType = .noBorder
+        scroll.automaticallyAdjustsContentInsets = false
+        scroll.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        scroll.scrollerInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         scroll.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scroll)
 
@@ -34,12 +37,16 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         empty.font = .systemFont(ofSize: 13, weight: .medium)
         empty.alignment = .center
 
-        let document = NSView()
+        let document = TopAlignedDocumentView()
         document.translatesAutoresizingMaskIntoConstraints = false
         document.addSubview(header)
         document.addSubview(stack)
         scroll.documentView = document
         header.translatesAutoresizingMaskIntoConstraints = false
+        scroll.contentView.drawsBackground = false
+        if let documentView = scroll.documentView {
+            documentView.setContentHuggingPriority(.required, for: .vertical)
+        }
 
         NSLayoutConstraint.activate([
             scroll.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -58,6 +65,8 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
             stack.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 14),
             stack.bottomAnchor.constraint(equalTo: document.bottomAnchor, constant: -28),
         ])
+        document.setContentHuggingPriority(.required, for: .vertical)
+        document.setContentCompressionResistancePriority(.required, for: .vertical)
         reload()
     }
 
@@ -216,3 +225,8 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         reload()
     }
 }
+
+private final class TopAlignedDocumentView: NSView {
+    override var isFlipped: Bool { true }
+}
+

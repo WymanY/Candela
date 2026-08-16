@@ -94,10 +94,13 @@ extension DisplaySessionController {
     func setSpeakerVolume(_ value: Double) {
         let clamped = min(1, max(0, value))
         if let key = speaker?.displayKey {
+            if speaker?.volume.isMuted == true {
+                setMuted(key: key, muted: false)
+            }
             setVolume(key: key, value: clamped)
             return
         }
-        applyStandaloneSpeaker(volume: clamped, muted: speaker?.volume.isMuted)
+        applyStandaloneSpeaker(volume: clamped, muted: false)
     }
 
     func setSpeakerMuted(_ muted: Bool) {

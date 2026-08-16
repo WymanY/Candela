@@ -15,6 +15,9 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.borderType = .noBorder
+        scroll.automaticallyAdjustsContentInsets = false
+        scroll.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        scroll.scrollerInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         scroll.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scroll)
 
@@ -38,12 +41,16 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
 
         empty.font = .systemFont(ofSize: 13, weight: .medium)
 
-        let document = NSView()
+        let document = TopAlignedDocumentView()
         document.translatesAutoresizingMaskIntoConstraints = false
         document.addSubview(header)
         document.addSubview(saveButton)
         document.addSubview(stack)
         scroll.documentView = document
+        scroll.contentView.drawsBackground = false
+        if let documentView = scroll.documentView {
+            documentView.setContentHuggingPriority(.required, for: .vertical)
+        }
 
         NSLayoutConstraint.activate([
             scroll.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -64,6 +71,8 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
             stack.topAnchor.constraint(equalTo: saveButton.bottomAnchor, constant: 14),
             stack.bottomAnchor.constraint(equalTo: document.bottomAnchor, constant: -28),
         ])
+        document.setContentHuggingPriority(.required, for: .vertical)
+        document.setContentCompressionResistancePriority(.required, for: .vertical)
         reload()
     }
 
@@ -165,7 +174,7 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
         guard let id = sender.identifier?.rawValue, let scene = session.scene(matching: id) else { return }
         let alert = NSAlert()
         alert.messageText = String(localized: "Delete Scene")
-        alert.informativeText = String(localized: "Remove “\(scene.displayName)”? This cannot be undone.")
+        alert.informativeText = String(format: String(localized: "Remove “%@”? This cannot be undone."), scene.displayName)
         alert.addButton(withTitle: String(localized: "Delete"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
@@ -213,3 +222,8 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
         completion(field.stringValue)
     }
 }
+
+private final class TopAlignedDocumentView: NSView {
+    override var isFlipped: Bool { true }
+}
+

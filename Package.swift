@@ -26,6 +26,7 @@ let package = Package(
         ),
         .target(
             name: "DisplayCore",
+            resources: [.process("Localizable.xcstrings")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .target(
