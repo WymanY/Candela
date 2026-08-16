@@ -29,6 +29,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         window.isRestorable = false
         window.titlebarAppearsTransparent = false
         window.toolbarStyle = .preference
+        window.level = .floating
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        window.hidesOnDeactivate = false
         super.init(window: window)
         window.delegate = self
 

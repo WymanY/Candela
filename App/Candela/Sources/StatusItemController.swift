@@ -219,7 +219,9 @@ final class StatusItemController: NSObject {
             if let selected {
                 replacement.selectTab(identifier: selected)
             }
+            next.level = .floating
             next.makeKeyAndOrderFront(nil)
+            next.orderFrontRegardless()
         }
         window.close()
     }
@@ -227,25 +229,33 @@ final class StatusItemController: NSObject {
     @objc func openSettings() {
         hidePanel()
         NSApp.setActivationPolicy(.regular)
-        settingsController.showWindow(nil)
-        if let window = settingsController.window {
-            let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
-                ?? NSScreen.main
-            if let screen {
-                let visible = screen.visibleFrame
-                let size = window.frame.size
-                window.setFrameOrigin(
-                    NSPoint(
-                        x: visible.midX - size.width / 2,
-                        y: visible.midY - size.height / 2
-                    )
-                )
-            } else {
-                window.center()
-            }
-            window.makeKeyAndOrderFront(nil)
-        }
+        NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
+        presentSettingsWindow()
+    }
+
+    private func presentSettingsWindow() {
+        settingsController.showWindow(nil)
+        guard let window = settingsController.window else { return }
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
+            ?? NSScreen.main
+        if let screen {
+            let visible = screen.visibleFrame
+            let size = window.frame.size
+            window.setFrameOrigin(
+                NSPoint(
+                    x: visible.midX - size.width / 2,
+                    y: visible.midY - size.height / 2
+                )
+            )
+        } else {
+            window.center()
+        }
+        window.collectionBehavior.insert(.moveToActiveSpace)
+        window.collectionBehavior.insert(.fullScreenAuxiliary)
+        window.level = .floating
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 
     @objc private func quit() {
