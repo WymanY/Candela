@@ -4,27 +4,20 @@ import DisplayCore
 @MainActor
 final class PictureInPicturePinControl: NSPopUpButton {
     var onChange: ((PictureInPictureCorner?) -> Void)?
+    private var isRebuilding = false
 
     convenience init() {
-        self.init(frame: .zero)
+        self.init(frame: .zero, pullsDown: true)
     }
 
     override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        bezelStyle = .recessed
-        controlSize = .small
-        isBordered = false
-        imagePosition = .imageOnly
-        pullsDown = true
-        preferredEdge = .minY
-        target = self
-        action = #selector(selectionChanged(_:))
-        setAccessibilityLabel(String(localized: "Snap to Corner"))
-        toolTip = String(localized: "Snap to Corner")
-        translatesAutoresizingMaskIntoConstraints = false
-        widthAnchor.constraint(equalToConstant: 28).isActive = true
-        heightAnchor.constraint(equalToConstant: 26).isActive = true
-        rebuildMenu()
+        super.init(frame: frameRect, pullsDown: true)
+        configure()
+    }
+
+    override init(frame buttonFrame: NSRect, pullsDown flag: Bool) {
+        super.init(frame: buttonFrame, pullsDown: true)
+        configure()
     }
 
     @available(*, unavailable)
@@ -42,16 +35,34 @@ final class PictureInPicturePinControl: NSPopUpButton {
         refreshTitleImage()
     }
 
+    private func configure() {
+        bezelStyle = .recessed
+        controlSize = .small
+        isBordered = false
+        imagePosition = .imageOnly
+        preferredEdge = .minY
+        target = self
+        action = #selector(selectionChanged(_:))
+        setAccessibilityLabel(String(localized: "Snap to Corner"))
+        toolTip = String(localized: "Snap to Corner")
+        translatesAutoresizingMaskIntoConstraints = false
+        widthAnchor.constraint(equalToConstant: 28).isActive = true
+        heightAnchor.constraint(equalToConstant: 26).isActive = true
+        rebuildMenu()
+    }
+
     private func rebuildMenu() {
+        isRebuilding = true
         removeAllItems()
         addItem(withTitle: "")
-        item(at: 0)?.image = Self.symbol("rectangle.dashed")
+        item(at: 0)?.image = Self.symbol("arrow.up.and.down.and.arrow.left.and.right")
 
         addOption(title: String(localized: "Free Position"), value: "", symbolName: "arrow.up.and.down.and.arrow.left.and.right")
-        addOption(title: String(localized: "Snap Top Left"), value: PictureInPictureCorner.topLeft.rawValue, symbolName: "rectangle.lefthalf.inset.filled.arrow.left")
-        addOption(title: String(localized: "Snap Top Right"), value: PictureInPictureCorner.topRight.rawValue, symbolName: "rectangle.righthalf.inset.filled.arrow.right")
-        addOption(title: String(localized: "Snap Bottom Left"), value: PictureInPictureCorner.bottomLeft.rawValue, symbolName: "rectangle.bottomhalf.inset.filled")
-        addOption(title: String(localized: "Snap Bottom Right"), value: PictureInPictureCorner.bottomRight.rawValue, symbolName: "rectangle.tophalf.inset.filled")
+        addOption(title: String(localized: "Snap Top Left"), value: PictureInPictureCorner.topLeft.rawValue, symbolName: "arrow.up.left.square")
+        addOption(title: String(localized: "Snap Top Right"), value: PictureInPictureCorner.topRight.rawValue, symbolName: "arrow.up.right.square")
+        addOption(title: String(localized: "Snap Bottom Left"), value: PictureInPictureCorner.bottomLeft.rawValue, symbolName: "arrow.down.left.square")
+        addOption(title: String(localized: "Snap Bottom Right"), value: PictureInPictureCorner.bottomRight.rawValue, symbolName: "arrow.down.right.square")
+        isRebuilding = false
         select(corner: nil)
     }
 
@@ -63,6 +74,7 @@ final class PictureInPicturePinControl: NSPopUpButton {
     }
 
     @objc private func selectionChanged(_ sender: NSPopUpButton) {
+        guard !isRebuilding else { return }
         refreshTitleImage()
         let raw = selectedItem?.representedObject as? String ?? ""
         onChange?(PictureInPictureCorner(rawValue: raw))
@@ -73,19 +85,20 @@ final class PictureInPicturePinControl: NSPopUpButton {
         let symbolName: String
         switch PictureInPictureCorner(rawValue: raw) {
         case .topLeft:
-            symbolName = "rectangle.lefthalf.inset.filled.arrow.left"
+            symbolName = "arrow.up.left.square"
         case .topRight:
-            symbolName = "rectangle.righthalf.inset.filled.arrow.right"
+            symbolName = "arrow.up.right.square"
         case .bottomLeft:
-            symbolName = "rectangle.bottomhalf.inset.filled"
+            symbolName = "arrow.down.left.square"
         case .bottomRight:
-            symbolName = "rectangle.tophalf.inset.filled"
+            symbolName = "arrow.down.right.square"
         case nil:
             symbolName = "arrow.up.and.down.and.arrow.left.and.right"
         }
         item(at: 0)?.image = Self.symbol(symbolName)
-        toolTip = selectedItem?.title.isEmpty == false ? selectedItem?.title : String(localized: "Snap to Corner")
-        setAccessibilityValue(toolTip)
+        let title = selectedItem?.title.isEmpty == false ? selectedItem?.title : String(localized: "Snap to Corner")
+        toolTip = title
+        setAccessibilityValue(title)
     }
 
     private static func symbol(_ name: String) -> NSImage? {
