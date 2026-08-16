@@ -25,6 +25,7 @@
 		7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C13464143DB251CFC1D652 /* AppLanguage.swift */; };
 		74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
 		7F771C0205EDD2945ED9E130 /* SettingsScenesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */; };
+		8306540F60897D69FE9546DB /* SettingsShortcutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */; };
 		8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
 		87FAFF8076EE924CA5893831 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
 		93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */; };
@@ -71,6 +72,7 @@
 		EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DisplaySessionController+Audio.swift"; sourceTree = "<group>"; };
 		EE08E062782DE20F87A30B88 /* StatusPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelView.swift; sourceTree = "<group>"; };
 		F8025C56D2F05F5E8F195926 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsShortcutsView.swift; sourceTree = "<group>"; };
 		FC86E6BCBA869D8AC1D3E059 /* betterDisplay */ = {isa = PBXFileReference; lastKnownFileType = folder; name = betterDisplay; path = .; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -112,6 +114,7 @@
 				D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */,
 				1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */,
 				027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */,
+				F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */,
 				2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */,
 				0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */,
 				E5705532336236260D9C43BA /* StatusItemController.swift */,
@@ -284,6 +287,7 @@
 				637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */,
 				E571621392FF6E664F9851C6 /* SettingsGeneralView.swift in Sources */,
 				7F771C0205EDD2945ED9E130 /* SettingsScenesView.swift in Sources */,
+				8306540F60897D69FE9546DB /* SettingsShortcutsView.swift in Sources */,
 				F999A81BF392E44AABEF45BD /* SettingsWindowController.swift in Sources */,
 				28544AC3C17324B984A50B02 /* SpeakerRowView.swift in Sources */,
 				3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */,
