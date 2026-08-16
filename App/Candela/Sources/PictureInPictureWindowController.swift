@@ -15,7 +15,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private let zoomPopup = NSPopUpButton()
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
-    private let pinPopup = NSPopUpButton()
+    private let pinControl = PictureInPicturePinControl()
     private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Picture in Picture"))
     private let preview = PictureInPicturePreviewView()
     private let placeholder = CandelaChrome.makeCaption(String(localized: "Waiting for display…"))
@@ -379,15 +379,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         persistCurrentPlacement()
     }
 
-    @objc private func pinChanged(_ sender: NSPopUpButton) {
+    private func pinChanged(_ corner: PictureInPictureCorner?) {
         guard !isApplying else { return }
-        if let raw = sender.selectedItem?.representedObject as? String,
-           let corner = PictureInPictureCorner(rawValue: raw)
-        {
-            placement.corner = corner
+        placement.corner = corner
+        if corner != nil {
             snapToPinnedCorner()
-        } else {
-            placement.corner = nil
         }
         persistCurrentPlacement()
     }
@@ -502,19 +498,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         zoomPopup.target = self
         zoomPopup.action = #selector(zoomChanged(_:))
 
-        pinPopup.controlSize = .small
-        pinPopup.font = .systemFont(ofSize: 11, weight: .medium)
-        pinPopup.target = self
-        pinPopup.action = #selector(pinChanged(_:))
-        pinPopup.setAccessibilityLabel(String(localized: "Pin Corner"))
-        pinPopup.removeAllItems()
-        pinPopup.addItem(withTitle: String(localized: "Free"))
-        pinPopup.lastItem?.representedObject = ""
-        for corner in PictureInPictureCorner.allCases {
-            pinPopup.addItem(withTitle: localizedCornerTitle(corner))
-            pinPopup.lastItem?.representedObject = corner.rawValue
+        pinControl.onChange = { [weak self] corner in
+            self?.pinChanged(corner)
         }
-        pinPopup.setContentHuggingPriority(.required, for: .horizontal)
 
         chrome.orientation = .horizontal
         chrome.alignment = .centerY
@@ -524,7 +510,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         chrome.addArrangedSubview(NSView())
         chrome.addArrangedSubview(opacitySlider)
         chrome.addArrangedSubview(clickThroughButton)
-        chrome.addArrangedSubview(pinPopup)
+        chrome.addArrangedSubview(pinControl)
         chrome.addArrangedSubview(closeButton)
 
         sourceRow.orientation = .horizontal
@@ -697,12 +683,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     private func syncPinPopup() {
-        let selected = placement.corner?.rawValue ?? ""
-        if let index = pinPopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == selected }) {
-            pinPopup.selectItem(at: index)
-        } else {
-            pinPopup.selectItem(at: 0)
-        }
+        pinControl.select(corner: placement.corner)
     }
 
     private func syncModePopup() {
@@ -802,15 +783,6 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             sourceDisplayID: sourceDisplayID,
             screens: Self.screenDescriptors()
         )?.visible
-    }
-
-    private func localizedCornerTitle(_ corner: PictureInPictureCorner) -> String {
-        switch corner {
-        case .topLeft: return String(localized: "Top Left")
-        case .topRight: return String(localized: "Top Right")
-        case .bottomLeft: return String(localized: "Bottom Left")
-        case .bottomRight: return String(localized: "Bottom Right")
-        }
     }
 
     private func localizedModeTitle(_ mode: PictureInPictureMode) -> String {

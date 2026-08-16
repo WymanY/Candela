@@ -15,6 +15,7 @@
 		3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5705532336236260D9C43BA /* StatusItemController.swift */; };
 		431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */; };
 		479649E80C10E3EEAEC137BA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */; };
+		4C519E5C71C5AC8243AD9C3A /* PictureInPicturePinControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */; };
 		5D26A0F4FE898DAEBFFAD35B /* ControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = AE981E167F2C87818BFE05A1 /* ControlKit */; };
 		637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */; };
 		692330B621E06F8B7B3C0916 /* StatusPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE08E062782DE20F87A30B88 /* StatusPanelView.swift */; };
@@ -52,6 +53,7 @@
 		2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		2E916555AC134A6FD1608068 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelController.swift; sourceTree = "<group>"; };
+		55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPicturePinControl.swift; sourceTree = "<group>"; };
 		84C65B68A38C3CFB42408055 /* CandelaChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandelaChrome.swift; sourceTree = "<group>"; };
 		86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWindowController.swift; sourceTree = "<group>"; };
 		86C13464143DB251CFC1D652 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
@@ -103,6 +105,7 @@
 				2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */,
 				97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */,
 				A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */,
+				55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */,
 				B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */,
 				86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */,
 				236871E20297EA15E8B19C30 /* SettingsAboutView.swift */,
@@ -274,6 +277,7 @@
 				9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */,
 				93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */,
 				FDC2756D29258B397D38AF69 /* PictureInPictureCapture.swift in Sources */,
+				4C519E5C71C5AC8243AD9C3A /* PictureInPicturePinControl.swift in Sources */,
 				431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */,
 				38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */,
 				148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */,
