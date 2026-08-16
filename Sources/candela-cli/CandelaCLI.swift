@@ -42,7 +42,12 @@ enum CandelaCLI {
         case "set-rotation":
             return ControlRequest(action: .setRotation, display: try requiredDisplay(rest), rotation: try requiredToken(rest, name: "rotation"))
         case "set-pip":
-            return ControlRequest(action: .setPictureInPicture, display: try requiredDisplay(rest), pictureInPicture: try requiredBool(rest, names: ["--enabled", "--value", "--pip"]))
+            return try parseSetPip(rest)
+        case "set-pip-wall":
+            return ControlRequest(
+                action: .setPictureInPictureWall,
+                pictureInPicture: try requiredBool(rest, names: ["--enabled", "--value", "--pip", "--wall"])
+            )
         case "rename":
             return ControlRequest(action: .rename, display: try requiredDisplay(rest), name: optionalName(rest))
         case "preset":
@@ -66,6 +71,45 @@ enum CandelaCLI {
         default:
             throw CLIError.unknown(command)
         }
+    }
+
+
+    static func parseSetPip(_ args: [String]) throws -> ControlRequest {
+        let mode = named(args, names: ["--mode"])
+        let window = named(args, names: ["--window", "--app"])
+        let bundle = named(args, names: ["--bundle"])
+        let zoom = named(args, names: ["--zoom"]).flatMap(Double.init)
+        let mirrored = optionalBool(args, names: ["--mirror", "--mirrored"])
+        let enabled = optionalBool(args, names: ["--enabled", "--value", "--pip"])
+        let configuring = mode != nil || window != nil || bundle != nil || zoom != nil || mirrored != nil
+        if configuring {
+            return ControlRequest(
+                action: .configurePictureInPicture,
+                display: try requiredDisplay(args),
+                pictureInPicture: enabled ?? true,
+                pictureInPictureMode: mode,
+                pictureInPictureMirrored: mirrored,
+                pictureInPictureWindow: window,
+                pictureInPictureBundle: bundle,
+                pictureInPictureZoom: zoom
+            )
+        }
+        return ControlRequest(
+            action: .setPictureInPicture,
+            display: try requiredDisplay(args),
+            pictureInPicture: try requiredBool(args, names: ["--enabled", "--value", "--pip"])
+        )
+    }
+
+    static func optionalBool(_ args: [String], names: [String]) -> Bool? {
+        if let raw = named(args, names: names) {
+            switch raw.lowercased() {
+            case "true", "1", "on": return true
+            case "false", "0", "off": return false
+            default: return nil
+            }
+        }
+        return nil
     }
 
     static func requiredDisplay(_ args: [String]) throws -> String {
@@ -171,8 +215,9 @@ enum CLIError: LocalizedError {
         case .usage:
             return """
             candela-cli <command> [options]
-            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip rename preset match-all scenes apply-scene save-scene rename-scene delete-scene dump
+            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip set-pip-wall rename preset match-all scenes apply-scene save-scene rename-scene delete-scene dump
             display queries: name, persistentKey, main, builtin, external
+            set-pip options: --enabled --mode display|window|magnifier --mirror --window --bundle --zoom
             """
         case .unknown(let command):
             return "Unknown command '\(command)'."

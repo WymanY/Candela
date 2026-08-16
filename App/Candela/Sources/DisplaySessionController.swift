@@ -21,10 +21,14 @@ final class DisplaySessionController {
     private var probedKeys: Set<String> = []
     private var pendingRotationByKey: [String: DisplayRotation] = [:]
     private var pictureInPictureWindows: [String: PictureInPictureWindowController] = [:]
+    private var pictureInPictureWall: PictureInPictureWallWindowController?
 
     var snapshots: [DisplaySnapshot] = []
     var pictureInPictureKeys: Set<String> {
         Set(pictureInPictureWindows.keys)
+    }
+    var isPictureInPictureWallOpen: Bool {
+        pictureInPictureWall != nil
     }
     var speaker: SpeakerOutput?
     var speakerChoices: [SpeakerChoice] = []
@@ -94,6 +98,7 @@ final class DisplaySessionController {
         }
         restoreTasks.removeAll()
         closeAllPictureInPicture()
+        closePictureInPictureWall()
         catalog.stop()
         if !Self.shouldUseFakeHardware {
             for box in boxes.values {
@@ -186,6 +191,7 @@ final class DisplaySessionController {
             existing.window?.makeKeyAndOrderFront(nil)
             return true
         }
+        let placement = persistence.record(for: key)?.pictureInPicture ?? .default
         let controller = PictureInPictureWindowController(
             key: key,
             title: snapshot.name,
@@ -193,7 +199,7 @@ final class DisplaySessionController {
             pixelWidth: snapshot.pixelWidth,
             pixelHeight: snapshot.pixelHeight,
             usePlaceholder: Self.shouldUseFakeHardware,
-            placement: persistence.record(for: key)?.pictureInPicture ?? .default
+            placement: placement
         )
         controller.onPlacementChange = { [weak self] placement in
             self?.savePictureInPicturePlacement(key: key, placement: placement)
@@ -226,6 +232,93 @@ final class DisplaySessionController {
             controller.stop()
         }
         pictureInPictureWindows.removeAll()
+    }
+
+    func configurePictureInPicture(
+        key: String,
+        mode: PictureInPictureMode? = nil,
+        mirrored: Bool? = nil,
+        window: PictureInPictureWindowIdentity? = nil,
+        magnifierZoom: Double? = nil,
+        openIfNeeded: Bool = true
+    ) -> Bool {
+        guard let snapshot = snapshots.first(where: { $0.id.persistentKey == key }) else { return false }
+        guard PictureInPictureLayout.supports(kind: snapshot.kind) else { return false }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        var placement = record.pictureInPicture ?? .default
+        if let mode { placement.mode = mode }
+        if let mirrored { placement.mirrored = mirrored }
+        if window != nil || mode == .display || mode == .magnifier {
+            placement.window = window
+        }
+        if let magnifierZoom {
+            placement.magnifierZoom = PictureInPictureMagnifier.clampedZoom(magnifierZoom)
+        }
+        record.pictureInPicture = placement
+        persistence.save(record)
+        if let controller = pictureInPictureWindows[key] {
+            controller.applyConfiguration(mode: mode, mirrored: mirrored, window: placement.window, magnifierZoom: magnifierZoom)
+            stampPictureInPictureState()
+            onChange?()
+            return true
+        }
+        if openIfNeeded {
+            return openPictureInPicture(key: key)
+        }
+        stampPictureInPictureState()
+        onChange?()
+        return true
+    }
+
+    @discardableResult
+    func togglePictureInPictureWall() -> Bool {
+        if isPictureInPictureWallOpen {
+            closePictureInPictureWall()
+            return false
+        }
+        return openPictureInPictureWall()
+    }
+
+    @discardableResult
+    func openPictureInPictureWall() -> Bool {
+        if let existing = pictureInPictureWall {
+            existing.update(snapshots: snapshots)
+            existing.window?.makeKeyAndOrderFront(nil)
+            onChange?()
+            return true
+        }
+        let controller = PictureInPictureWallWindowController(
+            usePlaceholder: Self.shouldUseFakeHardware,
+            placement: persistence.global().pictureInPictureWall ?? .default
+        )
+        controller.onPlacementChange = { [weak self] placement in
+            self?.savePictureInPictureWallPlacement(placement)
+        }
+        controller.onClose = { [weak self] in
+            guard let self else { return }
+            self.pictureInPictureWall = nil
+            self.onChange?()
+        }
+        pictureInPictureWall = controller
+        controller.showWindow(nil)
+        controller.update(snapshots: snapshots)
+        controller.capturePlacement()
+        onChange?()
+        return true
+    }
+
+    func closePictureInPictureWall() {
+        guard let controller = pictureInPictureWall else { return }
+        pictureInPictureWall = nil
+        controller.onClose = nil
+        controller.stop()
+        onChange?()
+    }
+
+    private func savePictureInPictureWallPlacement(_ placement: PictureInPicturePlacement) {
+        var next = settings
+        next.pictureInPictureWall = placement
+        persistence.saveGlobal(next)
     }
 
     func setRotation(key: String, rotation: DisplayRotation) {
@@ -500,6 +593,23 @@ final class DisplaySessionController {
                 self.closePictureInPicture(key: key)
                 return true
             },
+            configurePictureInPicture: { key, mode, mirrored, window, zoom in
+                self.configurePictureInPicture(
+                    key: key,
+                    mode: mode,
+                    mirrored: mirrored,
+                    window: window,
+                    magnifierZoom: zoom
+                )
+            },
+            setPictureInPictureWall: { enabled in
+                if enabled {
+                    return self.openPictureInPictureWall()
+                }
+                self.closePictureInPictureWall()
+                return true
+            },
+            isPictureInPictureWallOpen: { self.isPictureInPictureWallOpen },
             rename: { self.renameDisplay(key: $0, customName: $1) },
             applyPreset: { self.applyPreset($0, key: $1) },
             matchAll: { self.matchAll(to: $0) },
@@ -646,7 +756,18 @@ final class DisplaySessionController {
 
     private func stampPictureInPictureState() {
         for index in snapshots.indices {
-            snapshots[index].pictureInPictureActive = pictureInPictureWindows[snapshots[index].id.persistentKey] != nil
+            let key = snapshots[index].id.persistentKey
+            snapshots[index].pictureInPictureActive = pictureInPictureWindows[key] != nil
+            if let controller = pictureInPictureWindows[key] {
+                let placement = controller.currentPlacement
+                snapshots[index].pictureInPictureMode = placement.mode
+                snapshots[index].pictureInPictureMirrored = placement.mirrored
+                snapshots[index].pictureInPictureWindow = placement.window
+            } else if let placement = persistence.record(for: key)?.pictureInPicture {
+                snapshots[index].pictureInPictureMode = placement.mode
+                snapshots[index].pictureInPictureMirrored = placement.mirrored
+                snapshots[index].pictureInPictureWindow = placement.window
+            }
         }
     }
 
@@ -659,7 +780,9 @@ final class DisplaySessionController {
             }
             pictureInPictureWindows[key]?.updateTitle(snapshot.name)
             pictureInPictureWindows[key]?.updateSourceDisplay(snapshot.sessionDisplayID)
+            pictureInPictureWindows[key]?.updateSourcePixels(width: snapshot.pixelWidth, height: snapshot.pixelHeight)
         }
+        pictureInPictureWall?.update(snapshots: snapshots)
     }
 
     private func savePictureInPicturePlacement(key: String, placement: PictureInPicturePlacement) {

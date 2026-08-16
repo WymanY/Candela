@@ -1,6 +1,6 @@
 # Candela
 
-Candela 是一款原生 macOS 菜单栏应用，用来控制本机接上的每一块显示器。它可以调节苹果屏和第三方显示器的亮度，在显示器带 HDMI/DP 音箱时调节音量，旋转外接屏，切换 DDC 输入，并把指定屏幕镜像到浮动画中画窗口。1.1 起，画中画可以调透明度、点击穿透、钉角落，也能记住上次的位置和大小。
+Candela 是一款原生 macOS 菜单栏应用，用来控制本机接上的每一块显示器。它可以调节苹果屏和第三方显示器的亮度，在显示器带 HDMI/DP 音箱时调节音量，旋转外接屏，切换 DDC 输入，并把指定屏幕镜像到浮动画中画窗口。1.1 起，画中画可以调透明度、点击穿透、钉角落，也能记住上次的位置和大小。1.2 起还可以跟窗口、左右镜像、放大光标附近，以及把多块屏收成监视墙。
 
 这是一个 AppKit 菜单栏应用。Bundle ID：`app.candela.macos`。
 
@@ -40,12 +40,17 @@ English: [README.en.md](README.en.md)
 
 ### 画中画
 
-- 菜单栏里每一块真实显示器都有 PiP 按钮。
+- 菜单栏里每一块真实显示器都有 PiP 按钮。底部还有监视墙开关。
 - 打开后会在另一块屏上出现可拖动、可缩放的镜像窗口。
-- 滚轮或触控板捏合可放大缩小，宽度限制在 280–1280。钉在角落时，会从那个角长开。
-- 标题栏可调透明度（最低 25%），也能打开点击穿透：点预览画面会点到下面的窗口，鼠标停在 PiP 上时滚轮仍缩放这个窗口。
+- 源可以是整块屏、一个具体窗口，或跟着光标走的放大镜。刚打开或还没选窗口时，仍显示这块屏的画面。
+- 标题栏会显示当前显示器名；窗口模式再跟上窗口名。Display / Window 会提示可用滚轮缩放，放大镜会提示按住空格拖动查看不同位置。
+- 放大镜下按住空格拖动或滚动预览，可平移查看放大后的其他区域，此时不会缩放 PiP 窗口。
+- 预览可左右翻转，方便当提词器。
+- 滚轮或触控板捏合可放大缩小。单个 PiP 宽度限制在 280–1280；监视墙可以放到当前屏幕那么大。钉在角落时，会从那个角长开。
+- 标题栏可调透明度（最低 25%），也能打开点击穿透：点预览画面会点到下面的窗口，鼠标停在 PiP 上时滚轮仍缩放这个窗口。鼠标停在窗口上时，⌘W 关闭这个 PiP。
 - 可钉在左上 / 右上 / 左下 / 右下。拖离钉住的角会自动取消。
-- 每块屏会记住上次的位置、大小、透明度、点击穿透和钉角，关掉后再开会回到原处。
+- 每块屏会记住上次的位置、大小、透明度、点击穿透、钉角、镜像、模式和窗口身份，关掉后再开会回到原处。
+- 监视墙把所有真实屏缩成一格，位置单独记住，缩放上限跟着当前屏幕走。Sidecar 等虚拟屏不会进墙。窗口列表会去掉 Display Backstop 这类系统垫底层。
 - 按源屏像素采集，文字更清楚。
 - 需要「屏幕录制」权限。
 - Sidecar 等虚拟屏不支持。
@@ -83,6 +88,9 @@ swift run --package-path . candela-cli set-contrast --display DELL --value 0.5
 swift run --package-path . candela-cli set-input --display DELL hdmi1
 swift run --package-path . candela-cli set-rotation --display DELL 90
 swift run --package-path . candela-cli set-pip --display DELL --enabled true
+swift run --package-path . candela-cli set-pip --display DELL --mode window --window Slack --mirror true
+swift run --package-path . candela-cli set-pip --display DELL --mode magnifier --zoom 3
+swift run --package-path . candela-cli set-pip-wall --enabled true
 swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
@@ -185,6 +193,13 @@ swift test --package-path .
 ```
 
 CI 还会在 macOS 14 上构建 Candela 应用。
+
+## 1.2
+
+- 画中画可以跟一个窗口，不只跟整块屏。没选窗口时继续显示这块屏。
+- 预览可左右镜像，适合提词。
+- 放大镜模式跟着光标裁一块高清区域。按住空格拖动或滚动预览可平移画布，此时不会缩放 PiP 窗口。
+- 监视墙把多块真实屏收在一个浮窗里，并可放大到当前屏幕大小。
 
 ## 1.1
 

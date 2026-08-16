@@ -9,6 +9,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
     public var showPercentText: Bool
     public var hasShownGammaInterferenceAlert: Bool
     public var hasOpenedPanelOnce: Bool
+    public var pictureInPictureWall: PictureInPicturePlacement?
 
     public init(
         schemaVersion: Int = 1,
@@ -18,7 +19,8 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         allowDimToBlack: Bool = false,
         showPercentText: Bool = true,
         hasShownGammaInterferenceAlert: Bool = false,
-        hasOpenedPanelOnce: Bool = false
+        hasOpenedPanelOnce: Bool = false,
+        pictureInPictureWall: PictureInPicturePlacement? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.launchAtLogin = launchAtLogin
@@ -28,6 +30,20 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         self.showPercentText = showPercentText
         self.hasShownGammaInterferenceAlert = hasShownGammaInterferenceAlert
         self.hasOpenedPanelOnce = hasOpenedPanelOnce
+        self.pictureInPictureWall = pictureInPictureWall
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+        restoreOnReconnect = try container.decodeIfPresent(Bool.self, forKey: .restoreOnReconnect) ?? true
+        softwareDimmingEnabled = try container.decodeIfPresent(Bool.self, forKey: .softwareDimmingEnabled) ?? true
+        allowDimToBlack = try container.decodeIfPresent(Bool.self, forKey: .allowDimToBlack) ?? false
+        showPercentText = try container.decodeIfPresent(Bool.self, forKey: .showPercentText) ?? true
+        hasShownGammaInterferenceAlert = try container.decodeIfPresent(Bool.self, forKey: .hasShownGammaInterferenceAlert) ?? false
+        hasOpenedPanelOnce = try container.decodeIfPresent(Bool.self, forKey: .hasOpenedPanelOnce) ?? false
+        pictureInPictureWall = try container.decodeIfPresent(PictureInPicturePlacement.self, forKey: .pictureInPictureWall)
     }
 }
 

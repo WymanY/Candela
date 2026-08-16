@@ -127,6 +127,7 @@ final class StatusPanelView: NSView {
             applySpeaker()
             syncPresetSelection(with: snapshots)
             reloadScenes()
+            syncWallButton()
             return
         }
         rowKeys = keys
@@ -141,6 +142,7 @@ final class StatusPanelView: NSView {
             applySpeaker()
             syncPresetSelection(with: snapshots)
             reloadScenes()
+            syncWallButton()
             return
         }
 
@@ -181,6 +183,7 @@ final class StatusPanelView: NSView {
         applySpeaker()
         syncPresetSelection(with: snapshots)
         reloadScenes()
+        syncWallButton()
     }
 
     private func applySpeaker() {
@@ -334,12 +337,23 @@ final class StatusPanelView: NSView {
         settingsButton.target = self
         settingsButton.action = #selector(openSettings)
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Wall"), symbolName: "rectangle.split.2x2")
+        wallButton.target = self
+        wallButton.action = #selector(toggleWall)
+        wallButton.translatesAutoresizingMaskIntoConstraints = false
+        wallButton.toolTip = session.isPictureInPictureWallOpen
+            ? String(localized: "Close Monitor Wall")
+            : String(localized: "Open Monitor Wall")
+        wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
+        wallButton.setAccessibilityLabel(wallButton.toolTip)
+        wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
         let quitButton = CandelaChrome.makeQuietButton(title: String(localized: "Quit"), symbolName: "power")
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
         quitButton.translatesAutoresizingMaskIntoConstraints = false
         footer.addSubview(line)
         footer.addSubview(settingsButton)
+        footer.addSubview(wallButton)
         footer.addSubview(quitButton)
 
         NSLayoutConstraint.activate([
@@ -349,6 +363,8 @@ final class StatusPanelView: NSView {
             line.topAnchor.constraint(equalTo: footer.topAnchor),
             settingsButton.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
             settingsButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
+            wallButton.leadingAnchor.constraint(equalTo: settingsButton.trailingAnchor, constant: 10),
+            wallButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
             quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
             quitButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
         ])
@@ -398,4 +414,21 @@ final class StatusPanelView: NSView {
 
     @objc private func openSettings() { onOpenSettings?() }
     @objc private func quitClicked() { onQuit?() }
+
+    @objc private func toggleWall() {
+        _ = session.togglePictureInPictureWall()
+        reload(session.snapshots)
+    }
+
+    private func syncWallButton() {
+        guard let wallButton = footer.subviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == "monitor-wall" }) else {
+            return
+        }
+        wallButton.toolTip = session.isPictureInPictureWallOpen
+            ? String(localized: "Close Monitor Wall")
+            : String(localized: "Open Monitor Wall")
+        wallButton.setAccessibilityLabel(wallButton.toolTip)
+        wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
+        wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Wall") : String(localized: "Wall")
+    }
 }

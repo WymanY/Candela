@@ -10,6 +10,9 @@ public struct ControlBackend {
     public var setInput: (String, DisplayInputSource) -> Void
     public var setRotation: (String, DisplayRotation) -> Void
     public var setPictureInPicture: (String, Bool) -> Bool
+    public var configurePictureInPicture: (String, PictureInPictureMode?, Bool?, PictureInPictureWindowIdentity?, Double?) -> Bool
+    public var setPictureInPictureWall: (Bool) -> Bool
+    public var isPictureInPictureWallOpen: () -> Bool
     public var rename: (String, String?) -> Bool
     public var applyPreset: (BrightnessPreset, String?) -> Void
     public var matchAll: (String) -> Void
@@ -29,6 +32,9 @@ public struct ControlBackend {
         setInput: @escaping (String, DisplayInputSource) -> Void,
         setRotation: @escaping (String, DisplayRotation) -> Void,
         setPictureInPicture: @escaping (String, Bool) -> Bool,
+        configurePictureInPicture: @escaping (String, PictureInPictureMode?, Bool?, PictureInPictureWindowIdentity?, Double?) -> Bool = { _, _, _, _, _ in true },
+        setPictureInPictureWall: @escaping (Bool) -> Bool = { _ in true },
+        isPictureInPictureWallOpen: @escaping () -> Bool = { false },
         rename: @escaping (String, String?) -> Bool,
         applyPreset: @escaping (BrightnessPreset, String?) -> Void,
         matchAll: @escaping (String) -> Void,
@@ -47,6 +53,9 @@ public struct ControlBackend {
         self.setInput = setInput
         self.setRotation = setRotation
         self.setPictureInPicture = setPictureInPicture
+        self.configurePictureInPicture = configurePictureInPicture
+        self.setPictureInPictureWall = setPictureInPictureWall
+        self.isPictureInPictureWallOpen = isPictureInPictureWallOpen
         self.rename = rename
         self.applyPreset = applyPreset
         self.matchAll = matchAll
@@ -69,7 +78,7 @@ public enum ControlRouter {
             return ControlResponse(ok: true, dump: backend.dump(request.redact ?? true))
         case .listScenes:
             return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: all) })
-        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .rename, .preset, .matchAll, .applyScene, .saveScene, .renameScene, .deleteScene:
+        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .configurePictureInPicture, .setPictureInPictureWall, .rename, .preset, .matchAll, .applyScene, .saveScene, .renameScene, .deleteScene:
             break
         }
 
@@ -77,7 +86,7 @@ public enum ControlRouter {
         let resolved: DisplaySnapshot?
         if request.action == .preset, query.isEmpty || query.lowercased() == "all" {
             resolved = nil
-        } else if [.applyScene, .saveScene, .renameScene, .deleteScene].contains(request.action) {
+        } else if [.applyScene, .saveScene, .renameScene, .deleteScene, .setPictureInPictureWall].contains(request.action) {
             resolved = nil
         } else {
             guard !query.isEmpty else {
@@ -144,6 +153,58 @@ public enum ControlRouter {
             guard backend.setPictureInPicture(resolved!.id.persistentKey, enabled) else {
                 return .failure("Could not update Picture in Picture for \(resolved!.name).")
             }
+        case .configurePictureInPicture:
+            guard PictureInPictureLayout.supports(kind: resolved!.kind) else {
+                return .failure("\(resolved!.name) cannot open Picture in Picture.")
+            }
+            let mode: PictureInPictureMode?
+            if let raw = request.pictureInPictureMode {
+                guard let parsed = PictureInPictureMode.from(query: raw) else {
+                    return .failure("Picture in Picture mode must be display, window, or magnifier.")
+                }
+                mode = parsed
+            } else {
+                mode = nil
+            }
+            let window: PictureInPictureWindowIdentity?
+            if let raw = request.pictureInPictureWindow?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+                window = PictureInPictureWindowIdentity(
+                    bundleIdentifier: request.pictureInPictureBundle ?? "",
+                    title: raw,
+                    ownerName: raw
+                )
+            } else if mode == .display || mode == .magnifier {
+                window = nil
+            } else {
+                window = nil
+            }
+            if mode == .window, window == nil {
+                return .failure("Window name or bundle is required for window Picture in Picture.")
+            }
+            if request.pictureInPicture == true {
+                _ = backend.setPictureInPicture(resolved!.id.persistentKey, true)
+            }
+            guard backend.configurePictureInPicture(
+                resolved!.id.persistentKey,
+                mode,
+                request.pictureInPictureMirrored,
+                window,
+                request.pictureInPictureZoom
+            ) else {
+                return .failure("Could not configure Picture in Picture for \(resolved!.name).")
+            }
+        case .setPictureInPictureWall:
+            guard let enabled = request.pictureInPicture else {
+                return .failure("pictureInPicture true/false is required.")
+            }
+            guard backend.setPictureInPictureWall(enabled) else {
+                return .failure("Could not update the monitor wall.")
+            }
+            return ControlResponse(
+                ok: true,
+                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
+                pictureInPictureWall: backend.isPictureInPictureWallOpen()
+            )
         case .rename:
             guard backend.rename(resolved!.id.persistentKey, request.name) else {
                 return .failure("Could not rename \(resolved!.name).")
@@ -193,10 +254,11 @@ public enum ControlRouter {
         }
 
         let latest = backend.snapshots()
+        let wall = backend.isPictureInPictureWallOpen()
         if let resolved, let current = latest.first(where: { $0.id.persistentKey == resolved.id.persistentKey }) {
-            return .success(displays: [ControlDisplayDTO(snapshot: current)])
+            return ControlResponse(ok: true, displays: [ControlDisplayDTO(snapshot: current)], pictureInPictureWall: wall)
         }
-        return .success(displays: latest.map(ControlDisplayDTO.init(snapshot:)))
+        return ControlResponse(ok: true, displays: latest.map(ControlDisplayDTO.init(snapshot:)), pictureInPictureWall: wall)
     }
 
     private static func sceneQuery(_ request: ControlRequest) -> String? {

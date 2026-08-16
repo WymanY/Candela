@@ -17,9 +17,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.1</string>
+	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>1</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
@@ -28,17 +28,17 @@
 	<true/>
 	<key>LSUIElement</key>
 	<false/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
-	<key>NSAudioCaptureUsageDescription</key>
-	<string>Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.</string>
-	<key>NSScreenCaptureUsageDescription</key>
-	<string>Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.</string>
 </dict>
 </plist>

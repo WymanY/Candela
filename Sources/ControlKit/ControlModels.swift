@@ -11,6 +11,8 @@ public enum ControlAction: String, Codable, Sendable {
     case setInput
     case setRotation
     case setPictureInPicture
+    case configurePictureInPicture
+    case setPictureInPictureWall
     case rename
     case preset
     case matchAll
@@ -30,6 +32,11 @@ public struct ControlRequest: Codable, Equatable, Sendable {
     public var input: String?
     public var rotation: String?
     public var pictureInPicture: Bool?
+    public var pictureInPictureMode: String?
+    public var pictureInPictureMirrored: Bool?
+    public var pictureInPictureWindow: String?
+    public var pictureInPictureBundle: String?
+    public var pictureInPictureZoom: Double?
     public var name: String?
     public var preset: String?
     public var scene: String?
@@ -43,6 +50,11 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         input: String? = nil,
         rotation: String? = nil,
         pictureInPicture: Bool? = nil,
+        pictureInPictureMode: String? = nil,
+        pictureInPictureMirrored: Bool? = nil,
+        pictureInPictureWindow: String? = nil,
+        pictureInPictureBundle: String? = nil,
+        pictureInPictureZoom: Double? = nil,
         name: String? = nil,
         preset: String? = nil,
         scene: String? = nil,
@@ -55,6 +67,11 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         self.input = input
         self.rotation = rotation
         self.pictureInPicture = pictureInPicture
+        self.pictureInPictureMode = pictureInPictureMode
+        self.pictureInPictureMirrored = pictureInPictureMirrored
+        self.pictureInPictureWindow = pictureInPictureWindow
+        self.pictureInPictureBundle = pictureInPictureBundle
+        self.pictureInPictureZoom = pictureInPictureZoom
         self.name = name
         self.preset = preset
         self.scene = scene
@@ -85,6 +102,10 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
     public var supportsRotation: Bool
     public var supportsPictureInPicture: Bool
     public var pictureInPicture: Bool
+    public var pictureInPictureMode: String?
+    public var pictureInPictureMirrored: Bool?
+    public var pictureInPictureWindow: String?
+    public var pictureInPictureWall: Bool?
     public var resolution: String?
     public var refreshHz: Double?
     public var scale: Double?
@@ -112,6 +133,10 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
         rotation = supportsRotation ? snapshot.rotation.current.rawValue.description : nil
         supportsPictureInPicture = PictureInPictureLayout.supports(kind: snapshot.kind)
         pictureInPicture = snapshot.pictureInPictureActive
+        pictureInPictureMode = supportsPictureInPicture ? snapshot.pictureInPictureMode.rawValue : nil
+        pictureInPictureMirrored = supportsPictureInPicture ? snapshot.pictureInPictureMirrored : nil
+        pictureInPictureWindow = snapshot.pictureInPictureWindow?.displayTitle
+        pictureInPictureWall = nil
         resolution = DisplayPresentation.modeTitle(for: snapshot)
         refreshHz = snapshot.refreshHz > 0.5 ? snapshot.refreshHz : nil
         scale = snapshot.hasMode ? snapshot.scaleFactor : nil
@@ -144,19 +169,22 @@ public struct ControlResponse: Codable, Equatable, Sendable {
     public var displays: [ControlDisplayDTO]?
     public var scenes: [ControlSceneDTO]?
     public var dump: String?
+    public var pictureInPictureWall: Bool?
 
     public init(
         ok: Bool,
         error: String? = nil,
         displays: [ControlDisplayDTO]? = nil,
         scenes: [ControlSceneDTO]? = nil,
-        dump: String? = nil
+        dump: String? = nil,
+        pictureInPictureWall: Bool? = nil
     ) {
         self.ok = ok
         self.error = error
         self.displays = displays
         self.scenes = scenes
         self.dump = dump
+        self.pictureInPictureWall = pictureInPictureWall
     }
 
     public static func failure(_ message: String) -> ControlResponse {

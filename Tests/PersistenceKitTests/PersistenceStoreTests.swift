@@ -118,7 +118,11 @@ final class PersistenceStoreTests: XCTestCase {
             clickThrough: true,
             corner: .topLeft,
             frame: PictureInPictureFrame(x: 80, y: 40, width: 480, height: 300),
-            hostDisplayID: 7
+            hostDisplayID: 7,
+            mirrored: true,
+            mode: .magnifier,
+            window: PictureInPictureWindowIdentity(bundleIdentifier: "com.tinyspeck.slackmacgap", title: "#design", ownerName: "Slack"),
+            magnifierZoom: 3
         )
         store.save(record)
         let loaded = store.record(for: "v1:tv")?.pictureInPicture
@@ -127,6 +131,15 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertEqual(loaded?.corner, .topLeft)
         XCTAssertEqual(loaded?.frame?.x ?? -1, 80, accuracy: 0.0001)
         XCTAssertEqual(loaded?.hostDisplayID, 7)
+        XCTAssertEqual(loaded?.mirrored, true)
+        XCTAssertEqual(loaded?.mode, .magnifier)
+        XCTAssertEqual(loaded?.window?.title, "#design")
+        XCTAssertEqual(loaded?.magnifierZoom ?? -1, 3, accuracy: 0.0001)
+
+        var settings = store.global()
+        settings.pictureInPictureWall = PictureInPicturePlacement(opacity: 0.8, corner: .bottomLeft)
+        store.saveGlobal(settings)
+        XCTAssertEqual(store.global().pictureInPictureWall?.corner, .bottomLeft)
     }
 
     private func clearStore() {
