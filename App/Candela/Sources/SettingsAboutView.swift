@@ -31,11 +31,8 @@ final class SettingsAboutView: NSView {
         let blurb = CandelaChrome.makeCaption(String(localized: "Menu-bar brightness for every display."))
         blurb.alignment = .center
         blurb.font = .systemFont(ofSize: 13, weight: .medium)
-        let notice = CandelaChrome.makeCaption(String(localized: "Not affiliated with BetterDisplay."))
-        notice.alignment = .center
-        notice.textColor = .tertiaryLabelColor
 
-        let column = NSStackView(views: [icon, name, versionLabel, blurb, notice])
+        let column = NSStackView(views: [icon, name, versionLabel, blurb])
         column.orientation = .vertical
         column.alignment = .centerX
         column.spacing = 8

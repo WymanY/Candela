@@ -375,23 +375,6 @@
         }
       }
     },
-    "Not affiliated with BetterDisplay.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not affiliated with BetterDisplay."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "与 BetterDisplay 无关。"
-          }
-        }
-      }
-    },
     "Option-click to copy a debug dump": {
       "extractionState": "manual",
       "localizations": {
