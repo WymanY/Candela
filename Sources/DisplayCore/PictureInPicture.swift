@@ -359,6 +359,52 @@ public enum PictureInPictureMagnifier {
             y: localYFromTop / screenFrame.height * max(pixelHeight, 1)
         )
     }
+
+    public static func clampedFocus(
+        _ focus: CGPoint,
+        sourceWidth: Double,
+        sourceHeight: Double,
+        zoom: Double
+    ) -> CGPoint {
+        let crop = cropRect(
+            sourceWidth: sourceWidth,
+            sourceHeight: sourceHeight,
+            cursor: focus,
+            zoom: zoom
+        )
+        return CGPoint(x: crop.midX, y: crop.midY)
+    }
+
+    /// Space-drag pans the crop. Preview-space deltas are flipped so the canvas
+    /// follows the pointer the way a map does.
+    public static func pannedFocus(
+        current: CGPoint,
+        deltaX: Double,
+        deltaY: Double,
+        previewWidth: Double,
+        previewHeight: Double,
+        sourceWidth: Double,
+        sourceHeight: Double,
+        zoom: Double
+    ) -> CGPoint {
+        let crop = cropRect(
+            sourceWidth: sourceWidth,
+            sourceHeight: sourceHeight,
+            cursor: current,
+            zoom: zoom
+        )
+        let scaleX = previewWidth > 1 ? crop.width / previewWidth : 1
+        let scaleY = previewHeight > 1 ? crop.height / previewHeight : 1
+        return clampedFocus(
+            CGPoint(
+                x: current.x - deltaX * scaleX,
+                y: current.y + deltaY * scaleY
+            ),
+            sourceWidth: sourceWidth,
+            sourceHeight: sourceHeight,
+            zoom: zoom
+        )
+    }
 }
 
 public enum PictureInPictureWallLayout {
@@ -582,6 +628,16 @@ public enum PictureInPictureLayout {
         let dx = frame.origin.x - snap.x
         let dy = frame.origin.y - snap.y
         return (dx * dx + dy * dy).squareRoot() > snapTolerance
+    }
+
+    /// Space-pan in magnifier mode must not resize the floating window.
+    public static func shouldResizeWindow(forMagnifierPan spaceHeld: Bool, mode: PictureInPictureMode) -> Bool {
+        !(mode == .magnifier && spaceHeld)
+    }
+
+    /// Space-pan must change only the captured crop, never the window frame.
+    public static func shouldMoveWindow(forMagnifierPan spaceHeld: Bool, mode: PictureInPictureMode) -> Bool {
+        !(mode == .magnifier && spaceHeld)
     }
 
     /// Positive `deltaY` zooms in. Discrete wheels take one step; trackpads scale by distance.

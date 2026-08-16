@@ -29,14 +29,20 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private var clickThroughTimer: Timer?
     private var magnifierTimer: Timer?
     private var clickThroughScrollMonitor: Any?
+    private var spaceKeyMonitor: Any?
+    private var localSpaceKeyMonitor: Any?
     private var sourceDisplayID: CGDirectDisplayID
     private var windowCandidates: [PictureInPictureWindowCandidate] = []
     private var lastMagnifierRect: CGRect = .null
+    private var magnifierFocus: CGPoint?
+    private var isPanningMagnifier = false
+    private var spaceHeld = false
     var onClose: (() -> Void)?
     var onPlacementChange: ((PictureInPicturePlacement) -> Void)?
 
     private var sourcePixelWidth: UInt32
     private var sourcePixelHeight: UInt32
+    private var displayTitle: String
     private let usePlaceholder: Bool
 
     init(
@@ -52,6 +58,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         self.sourceDisplayID = displayID
         self.sourcePixelWidth = pixelWidth
         self.sourcePixelHeight = pixelHeight
+        self.displayTitle = title
         self.usePlaceholder = usePlaceholder
         self.placement = PictureInPicturePlacement(
             opacity: placement.opacity,
@@ -114,9 +121,19 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         root.onScrollWheel = { [weak self] event in
             self?.handleScrollWheel(event)
         }
+        root.onMouseDown = { [weak self] event in
+            self?.handlePreviewMouseDown(event) ?? false
+        }
+        root.onMouseDragged = { [weak self] event in
+            self?.handlePreviewMouseDragged(event) ?? false
+        }
+        root.onMouseUp = { [weak self] event in
+            self?.handlePreviewMouseUp(event) ?? false
+        }
         panel.contentView = root
         applyPlacementToWindow()
         persistCurrentPlacement()
+        installSpaceMonitor()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screensChanged),
@@ -144,17 +161,33 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         if let clickThroughScrollMonitor {
             NSEvent.removeMonitor(clickThroughScrollMonitor)
         }
+        if let spaceKeyMonitor {
+            NSEvent.removeMonitor(spaceKeyMonitor)
+        }
+        if let localSpaceKeyMonitor {
+            NSEvent.removeMonitor(localSpaceKeyMonitor)
+        }
         NotificationCenter.default.removeObserver(self)
     }
 
     func updateTitle(_ title: String) {
+        displayTitle = title
+        applyCurrentTitle()
+    }
+
+    private func applyCurrentTitle() {
+        if placement.mode == .magnifier {
+            titleLabel.stringValue = String(localized: "Magnifier · Space-drag to pan")
+            window?.title = titleLabel.stringValue
+            return
+        }
         if placement.mode == .window, let source = placement.window {
             titleLabel.stringValue = source.displayTitle
             self.window?.title = source.displayTitle
             return
         }
-        titleLabel.stringValue = title
-        window?.title = title
+        titleLabel.stringValue = displayTitle
+        window?.title = displayTitle
     }
 
     func updateSourceDisplay(_ displayID: CGDirectDisplayID) {
@@ -199,6 +232,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         magnifierTimer?.invalidate()
         magnifierTimer = nil
         removeClickThroughScrollMonitor()
+        endMagnifierPan()
         persistCurrentPlacement()
         stopStream()
         preview.flush()
@@ -214,6 +248,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     func windowDidMove(_ notification: Notification) {
         guard !isApplying else { return }
+        if shouldPanMagnifierCanvas {
+            return
+        }
         unpinIfDraggedAway()
         persistCurrentPlacement()
     }
@@ -232,12 +269,19 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     private func handleScrollWheel(_ event: NSEvent) {
+        if shouldPanMagnifierCanvas {
+            beginMagnifierPanSession()
+            panMagnifier(deltaX: event.scrollingDeltaX != 0 ? event.scrollingDeltaX : event.deltaX,
+                         deltaY: event.scrollingDeltaY != 0 ? event.scrollingDeltaY : event.deltaY)
+            return
+        }
         let raw = event.scrollingDeltaY != 0 ? event.scrollingDeltaY : event.deltaY
         guard raw != 0 else { return }
         applyZoom(factor: PictureInPictureLayout.zoomFactor(deltaY: raw, precise: event.hasPreciseScrollingDeltas), event: event)
     }
 
     private func handleMagnify(_ event: NSEvent) {
+        if shouldPanMagnifierCanvas { return }
         applyZoom(factor: 1 + event.magnification, event: event)
     }
 
@@ -316,6 +360,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         }
         applySourceChrome()
         persistCurrentPlacement()
+        applyCurrentTitle()
         Task { await startCapture() }
     }
 
@@ -531,7 +576,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         } else {
             magnifierTimer?.invalidate()
             magnifierTimer = nil
+            magnifierFocus = nil
+            endMagnifierPan()
         }
+        updateMagnifierCursor()
     }
 
     private func applyClickThrough() {
@@ -875,20 +923,142 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private func currentMagnifierCrop(display: SCDisplay) -> CGRect {
         let pixelWidth = Double(sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width))
         let pixelHeight = Double(sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height))
+        let focus = currentMagnifierFocus(pixelWidth: pixelWidth, pixelHeight: pixelHeight)
+        return PictureInPictureMagnifier.cropRect(
+            sourceWidth: pixelWidth,
+            sourceHeight: pixelHeight,
+            cursor: focus,
+            zoom: placement.magnifierZoom
+        )
+    }
+
+    private func currentMagnifierFocus(pixelWidth: Double, pixelHeight: Double) -> CGPoint {
+        if isPanningMagnifier || spaceHeld, let focus = magnifierFocus {
+            return PictureInPictureMagnifier.clampedFocus(
+                focus,
+                sourceWidth: pixelWidth,
+                sourceHeight: pixelHeight,
+                zoom: placement.magnifierZoom
+            )
+        }
         let screen = NSScreen.candelaScreen(for: sourceDisplayID)?.frame
-            ?? CGRect(x: 0, y: 0, width: display.width, height: display.height)
+            ?? CGRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight)
         let cursor = PictureInPictureMagnifier.cursorInSourcePixels(
             mouse: NSEvent.mouseLocation,
             screenFrame: screen,
             pixelWidth: pixelWidth,
             pixelHeight: pixelHeight
-        ) ?? CGPoint(x: pixelWidth / 2, y: pixelHeight / 2)
-        return PictureInPictureMagnifier.cropRect(
+        ) ?? magnifierFocus ?? CGPoint(x: pixelWidth / 2, y: pixelHeight / 2)
+        let focus = PictureInPictureMagnifier.clampedFocus(
+            cursor,
             sourceWidth: pixelWidth,
             sourceHeight: pixelHeight,
-            cursor: cursor,
             zoom: placement.magnifierZoom
         )
+        magnifierFocus = focus
+        return focus
+    }
+
+    private func handlePreviewMouseDown(_ event: NSEvent) -> Bool {
+        guard shouldPanMagnifier(with: event) else { return false }
+        beginMagnifierPanSession()
+        return true
+    }
+
+    private func handlePreviewMouseDragged(_ event: NSEvent) -> Bool {
+        guard isPanningMagnifier else { return false }
+        panMagnifier(deltaX: event.deltaX, deltaY: event.deltaY)
+        return true
+    }
+
+    private func handlePreviewMouseUp(_ event: NSEvent) -> Bool {
+        guard isPanningMagnifier else { return false }
+        endMagnifierPan()
+        return true
+    }
+
+    private func shouldPanMagnifier(with event: NSEvent) -> Bool {
+        guard event.type == .leftMouseDown else { return false }
+        return shouldPanMagnifierCanvas
+    }
+
+    private var shouldPanMagnifierCanvas: Bool {
+        placement.mode == .magnifier && (spaceHeld || isPanningMagnifier)
+    }
+
+    private func beginMagnifierPanSession() {
+        guard placement.mode == .magnifier else { return }
+        isPanningMagnifier = true
+        window?.isMovable = false
+        window?.isMovableByWindowBackground = false
+        (window as? StatusPanel)?.canvasPanActive = true
+        updateMagnifierCursor()
+    }
+
+    private func panMagnifier(deltaX: CGFloat, deltaY: CGFloat) {
+        guard placement.mode == .magnifier else { return }
+        let pixelWidth = Double(sourcePixelWidth > 0 ? sourcePixelWidth : 1)
+        let pixelHeight = Double(sourcePixelHeight > 0 ? sourcePixelHeight : 1)
+        let current = magnifierFocus ?? CGPoint(x: pixelWidth / 2, y: pixelHeight / 2)
+        magnifierFocus = PictureInPictureMagnifier.pannedFocus(
+            current: current,
+            deltaX: deltaX,
+            deltaY: deltaY,
+            previewWidth: Double(max(preview.bounds.width, 1)),
+            previewHeight: Double(max(preview.bounds.height, 1)),
+            sourceWidth: pixelWidth,
+            sourceHeight: pixelHeight,
+            zoom: placement.magnifierZoom
+        )
+        Task { await refreshMagnifierIfNeeded() }
+    }
+
+    private func endMagnifierPan() {
+        isPanningMagnifier = false
+        window?.isMovable = true
+        window?.isMovableByWindowBackground = true
+        (window as? StatusPanel)?.canvasPanActive = false
+        updateMagnifierCursor()
+    }
+
+    private func updateMagnifierCursor() {
+        preview.updatePanCursor(spaceHeld || isPanningMagnifier)
+    }
+
+    private func installSpaceMonitor() {
+        guard spaceKeyMonitor == nil, localSpaceKeyMonitor == nil else { return }
+        spaceKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+            self?.noteSpaceKey(event)
+        }
+        localSpaceKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+            guard let self else { return event }
+            if event.keyCode == 49 {
+                self.setSpaceHeld(event.type == .keyDown)
+                if self.placement.mode == .magnifier {
+                    return nil
+                }
+            }
+            return event
+        }
+    }
+
+    private func noteSpaceKey(_ event: NSEvent) {
+        if event.keyCode == 49 {
+            setSpaceHeld(event.type != .keyUp)
+        }
+    }
+
+    private func setSpaceHeld(_ held: Bool) {
+        guard spaceHeld != held else {
+            updateMagnifierCursor()
+            return
+        }
+        spaceHeld = held
+        if held {
+            beginMagnifierPanSession()
+        } else {
+            endMagnifierPan()
+        }
     }
 
     private func refreshMagnifierIfNeeded() async {
@@ -926,6 +1096,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 final class PictureInPictureRootView: NSView {
     var onScrollWheel: ((NSEvent) -> Void)?
     var onMagnify: ((NSEvent) -> Void)?
+    var onMouseDown: ((NSEvent) -> Bool)?
+    var onMouseDragged: ((NSEvent) -> Bool)?
+    var onMouseUp: ((NSEvent) -> Bool)?
 
     override var acceptsFirstResponder: Bool { true }
 
@@ -933,8 +1106,25 @@ final class PictureInPictureRootView: NSView {
         onScrollWheel?(event)
     }
 
+    override var mouseDownCanMoveWindow: Bool { false }
+
     override func magnify(with event: NSEvent) {
         onMagnify?(event)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if onMouseDown?(event) == true { return }
+        super.mouseDown(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if onMouseDragged?(event) == true { return }
+        super.mouseDragged(with: event)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if onMouseUp?(event) == true { return }
+        super.mouseUp(with: event)
     }
 
     override func wantsScrollEventsForSwipeTracking(on axis: NSEvent.GestureAxis) -> Bool {
@@ -946,6 +1136,8 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
     private let hostLayer = CALayer()
     private var displayLayer = AVSampleBufferDisplayLayer()
     private var mirrored = false
+
+    override var mouseDownCanMoveWindow: Bool { false }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -975,6 +1167,14 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         self.mirrored = mirrored
         needsLayout = true
         layoutSubtreeIfNeeded()
+    }
+
+    func updatePanCursor(_ panning: Bool) {
+        if panning {
+            NSCursor.openHand.set()
+        } else {
+            NSCursor.arrow.set()
+        }
     }
 
     func flush() {

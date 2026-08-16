@@ -295,6 +295,50 @@ final class PictureInPictureTests: XCTestCase {
         )
     }
 
+    func testMagnifierSpaceDragPansTheCropAndStaysOnScreen() {
+        let start = PictureInPictureMagnifier.clampedFocus(
+            CGPoint(x: 960, y: 540),
+            sourceWidth: 1920,
+            sourceHeight: 1080,
+            zoom: 2
+        )
+        XCTAssertEqual(start.x, 960, accuracy: 0.001)
+        XCTAssertEqual(start.y, 540, accuracy: 0.001)
+
+        let panned = PictureInPictureMagnifier.pannedFocus(
+            current: start,
+            deltaX: 100,
+            deltaY: 0,
+            previewWidth: 400,
+            previewHeight: 225,
+            sourceWidth: 1920,
+            sourceHeight: 1080,
+            zoom: 2
+        )
+        XCTAssertEqual(panned.x, 720, accuracy: 0.001)
+        XCTAssertEqual(panned.y, 540, accuracy: 0.001)
+
+        let edge = PictureInPictureMagnifier.pannedFocus(
+            current: CGPoint(x: 100, y: 100),
+            deltaX: 400,
+            deltaY: -400,
+            previewWidth: 400,
+            previewHeight: 225,
+            sourceWidth: 1920,
+            sourceHeight: 1080,
+            zoom: 2
+        )
+        XCTAssertEqual(edge.x, 480, accuracy: 0.001)
+        XCTAssertEqual(edge.y, 270, accuracy: 0.001)
+        XCTAssertFalse(PictureInPictureLayout.shouldResizeWindow(forMagnifierPan: true, mode: .magnifier))
+        XCTAssertTrue(PictureInPictureLayout.shouldResizeWindow(forMagnifierPan: false, mode: .magnifier))
+        XCTAssertTrue(PictureInPictureLayout.shouldResizeWindow(forMagnifierPan: true, mode: .window))
+
+        XCTAssertFalse(PictureInPictureLayout.shouldMoveWindow(forMagnifierPan: true, mode: .magnifier))
+        XCTAssertTrue(PictureInPictureLayout.shouldMoveWindow(forMagnifierPan: false, mode: .magnifier))
+        XCTAssertTrue(PictureInPictureLayout.shouldMoveWindow(forMagnifierPan: true, mode: .display))
+    }
+
     func testMonitorWallSkipsVirtualScreensAndTilesFromTopLeft() {
         let snapshots = FakeSnapshots.standard()
         let wall = PictureInPictureWallLayout.snapshots(snapshots)

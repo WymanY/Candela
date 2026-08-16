@@ -2,11 +2,25 @@ import AppKit
 
 @MainActor
 final class StatusPanel: NSPanel {
+    var canvasPanActive = false
+
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
     override func cancelOperation(_ sender: Any?) {
         orderOut(sender)
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        contentView?.scrollWheel(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if canvasPanActive {
+            contentView?.mouseDragged(with: event)
+            return
+        }
+        super.mouseDragged(with: event)
     }
 }
 
