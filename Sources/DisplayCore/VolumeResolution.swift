@@ -30,12 +30,6 @@ public enum VolumeResolution {
             volume.backend = .coreAudio
             volume.supportsVolume = true
             volume.supportsMute = device.hasMute || volume.supportsMute
-            if let lastVolume {
-                volume.current = lastVolume
-            }
-            if let lastMuted {
-                volume.isMuted = lastMuted
-            }
             return volume
         }
 
@@ -52,5 +46,21 @@ public enum VolumeResolution {
         volume.supportsVolume = true
         volume.supportsMute = true
         return volume
+    }
+
+    /// Overlay a live HAL read onto an already-bound volume. Does not invent values.
+    public static func adoptingHAL(
+        _ volume: VolumeCapabilities,
+        current: Double?,
+        muted: Bool?
+    ) -> VolumeCapabilities {
+        var next = volume
+        if let current {
+            next.current = min(1, max(0, current))
+        }
+        if let muted {
+            next.isMuted = muted
+        }
+        return next
     }
 }

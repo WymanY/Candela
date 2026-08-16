@@ -93,6 +93,7 @@ final class StatusPanelController {
     }
 
     func show(relativeTo button: NSView) {
+        session.sampleLiveSpeakerVolume()
         panelView.reload(session.snapshots)
         panelView.needsLayout = true
         panelView.layoutSubtreeIfNeeded()

@@ -20,8 +20,30 @@ final class VolumeResolutionTests: XCTestCase {
         XCTAssertEqual(bound.backend, .coreAudio)
         XCTAssertTrue(bound.supportsVolume)
         XCTAssertEqual(bound.audioDeviceUID, "hdmi-1")
-        XCTAssertEqual(bound.current, 0.4, accuracy: 0.0001)
+        XCTAssertEqual(bound.current, 0, accuracy: 0.0001)
         XCTAssertFalse(bound.isMuted)
+    }
+
+    func testHALBindKeepsExistingVolumeUntilLiveRead() {
+        let device = HALOutputDevice(
+            uid: "hdmi-1",
+            name: "DELL",
+            manufacturer: "Dell",
+            transport: AudioMatching.transportHDMI,
+            hasVolume: true,
+            hasMute: true
+        )
+        let bound = VolumeResolution.bind(
+            device: device,
+            existing: VolumeCapabilities(backend: .none, supportsVolume: false, supportsMute: false, current: 0.87),
+            lastVolume: 0.4,
+            lastMuted: true
+        )
+        XCTAssertEqual(bound.current, 0.87, accuracy: 0.0001)
+        XCTAssertFalse(bound.isMuted)
+        let live = VolumeResolution.adoptingHAL(bound, current: 0.87, muted: false)
+        XCTAssertEqual(live.current, 0.87, accuracy: 0.0001)
+        XCTAssertFalse(live.isMuted)
     }
 
     func testMatchedDeviceWithoutHALUsesSoftware() {
@@ -117,5 +139,22 @@ final class VolumeResolutionTests: XCTestCase {
         XCTAssertEqual(bound.backend, .software)
         XCTAssertEqual(bound.current, 0.2, accuracy: 0.0001)
         XCTAssertTrue(bound.isMuted)
+    }
+
+    func testAdoptingHALIgnoresMissingReads() {
+        let existing = VolumeCapabilities(
+            backend: .coreAudio,
+            supportsVolume: true,
+            supportsMute: true,
+            current: 0.43,
+            isMuted: true
+        )
+        let unchanged = VolumeResolution.adoptingHAL(existing, current: nil, muted: nil)
+        XCTAssertEqual(unchanged.current, 0.43, accuracy: 0.0001)
+        XCTAssertTrue(unchanged.isMuted)
+
+        let clamped = VolumeResolution.adoptingHAL(existing, current: 1.4, muted: false)
+        XCTAssertEqual(clamped.current, 1, accuracy: 0.0001)
+        XCTAssertFalse(clamped.isMuted)
     }
 }

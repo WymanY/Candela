@@ -107,4 +107,29 @@ final class SpeakerResolutionTests: XCTestCase {
         XCTAssertEqual(choices.map(\.uid), ["macbook", "hdmi-dell"])
         XCTAssertEqual(choices.map(\.name), ["MacBook Speakers", FakeSnapshots.dellName])
     }
+
+    func testMatchedDisplayUsesLiveVolumeOverSavedValue() {
+        var dell = FakeSnapshots.dellUSBC()
+        dell.volume.audioDeviceUID = "hdmi-dell"
+        dell.volume.current = 0.43
+        dell.volume.isMuted = false
+        let speaker = SpeakerResolution.resolve(
+            snapshots: [dell],
+            defaultUID: "hdmi-dell",
+            devices: [
+                HALOutputDevice(
+                    uid: "hdmi-dell",
+                    name: "DELL HDMI",
+                    manufacturer: "Dell",
+                    transport: AudioMatching.transportHDMI,
+                    hasVolume: true,
+                    hasMute: true
+                ),
+            ]
+        )
+        XCTAssertEqual(speaker?.displayKey, dell.id.persistentKey)
+        let live = VolumeResolution.adoptingHAL(speaker!.volume, current: 0.87, muted: false)
+        XCTAssertEqual(live.current, 0.87, accuracy: 0.0001)
+        XCTAssertNotEqual(live.current, 0.43, accuracy: 0.0001)
+    }
 }

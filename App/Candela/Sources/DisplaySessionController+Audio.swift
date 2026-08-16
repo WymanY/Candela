@@ -44,28 +44,11 @@ extension DisplaySessionController {
                 volume.notes = notes
             }
             if volume.backend == .coreAudio, let uid {
-                let desiredVolume = record?.lastVolume ?? snapshot.volume.current
-                let desiredMuted = record?.lastMuted ?? snapshot.volume.isMuted
-                let current = HALVolumeControl.volume(uid: uid)
-                let muted = HALVolumeControl.isMuted(uid: uid)
-                let volumeMatches = current.map { abs($0 - desiredVolume) <= 0.02 } ?? false
-                let muteMatches = muted.map { $0 == desiredMuted } ?? false
-                if record?.lastVolume == nil, let current {
-                    volume.current = current
-                } else {
-                    volume.current = desiredVolume
-                    if !volumeMatches {
-                        HALVolumeControl.setVolume(uid: uid, value: desiredVolume)
-                    }
-                }
-                if record?.lastMuted == nil, let muted {
-                    volume.isMuted = muted
-                } else {
-                    volume.isMuted = desiredMuted
-                    if volume.supportsMute, !muteMatches {
-                        HALVolumeControl.setMuted(uid: uid, muted: desiredMuted)
-                    }
-                }
+                volume = VolumeResolution.adoptingHAL(
+                    volume,
+                    current: HALVolumeControl.volume(uid: uid),
+                    muted: HALVolumeControl.isMuted(uid: uid)
+                )
             }
             snapshots[index].volume = volume
         }
@@ -87,33 +70,25 @@ extension DisplaySessionController {
             defaultUID: defaultUID,
             devices: devices
         )
-        if var resolved = next, resolved.displayKey == nil, let uid = resolved.uid {
-            if resolved.volume.backend == .coreAudio {
-                let keepDesired = speaker?.uid == uid
-                let desiredVolume = keepDesired ? (speaker?.volume.current ?? resolved.volume.current) : resolved.volume.current
-                let desiredMuted = keepDesired ? (speaker?.volume.isMuted ?? resolved.volume.isMuted) : resolved.volume.isMuted
-                let current = HALVolumeControl.volume(uid: uid)
-                let muted = HALVolumeControl.isMuted(uid: uid)
-                if keepDesired, abs((current ?? desiredVolume) - desiredVolume) > 0.02 {
-                    HALVolumeControl.setVolume(uid: uid, value: desiredVolume)
-                    resolved.volume.current = desiredVolume
-                } else if let current {
-                    resolved.volume.current = current
-                } else if keepDesired {
-                    resolved.volume.current = desiredVolume
-                }
-                if keepDesired, resolved.volume.supportsMute, (muted ?? desiredMuted) != desiredMuted {
-                    HALVolumeControl.setMuted(uid: uid, muted: desiredMuted)
-                    resolved.volume.isMuted = desiredMuted
-                } else if let muted {
-                    resolved.volume.isMuted = muted
-                } else if keepDesired {
-                    resolved.volume.isMuted = desiredMuted
-                }
+        if var resolved = next, let uid = resolved.uid, resolved.volume.backend == .coreAudio {
+            resolved.volume = VolumeResolution.adoptingHAL(
+                resolved.volume,
+                current: HALVolumeControl.volume(uid: uid),
+                muted: HALVolumeControl.isMuted(uid: uid)
+            )
+            if let key = resolved.displayKey,
+               let index = snapshots.firstIndex(where: { $0.id.persistentKey == key })
+            {
+                snapshots[index].volume = VolumeResolution.adoptingHAL(
+                    snapshots[index].volume,
+                    current: resolved.volume.current,
+                    muted: resolved.volume.isMuted
+                )
             }
             next = resolved
         }
         speaker = next
+        observeActiveSpeakerVolume()
     }
 
     func setSpeakerVolume(_ value: Double) {
@@ -157,6 +132,7 @@ extension DisplaySessionController {
         case .ddc, .none:
             break
         }
+        onChange?()
     }
 
     @discardableResult
