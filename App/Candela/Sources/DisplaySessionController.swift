@@ -83,6 +83,7 @@ final class DisplaySessionController {
                     self?.handleAudioRouteChange()
                 }
             }
+            observeActiveSpeakerVolume()
         }
     }
 
@@ -133,6 +134,7 @@ final class DisplaySessionController {
             boxes[key]?.setVolume(clamped)
         }
         refreshSpeaker()
+        onChange?()
     }
 
     func setMuted(key: String, muted: Bool) {
@@ -145,6 +147,7 @@ final class DisplaySessionController {
             applyLiveVolume(snapshots[index])
         }
         refreshSpeaker()
+        onChange?()
     }
 
     func setContrast(key: String, value: Double) {
@@ -1033,6 +1036,41 @@ final class DisplaySessionController {
         refreshAudioBindings()
         syncSoftwareVolumeSessions()
         onChange?()
+    }
+
+    func sampleLiveSpeakerVolume() {
+        if Self.shouldUseFakeHardware {
+            refreshSpeaker()
+            return
+        }
+        refreshSpeaker()
+        onChange?()
+    }
+
+    func observeActiveSpeakerVolume() {
+        guard !Self.shouldUseFakeHardware else { return }
+        audioRouteObserver?.observeVolume(uid: speaker?.uid)
+        persistAdoptedSpeakerVolume()
+    }
+
+    private func persistAdoptedSpeakerVolume() {
+        guard let speaker, let key = speaker.displayKey else { return }
+        guard speaker.volume.supportsVolume || speaker.volume.supportsMute else { return }
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        var changed = false
+        if speaker.volume.supportsVolume, record.lastVolume.map({ abs($0 - speaker.volume.current) > 0.02 }) ?? true {
+            record.lastVolume = speaker.volume.current
+            changed = true
+        }
+        if speaker.volume.supportsMute || speaker.volume.supportsVolume,
+           record.lastMuted != speaker.volume.isMuted
+        {
+            record.lastMuted = speaker.volume.isMuted
+            changed = true
+        }
+        if changed {
+            persistence.save(record)
+        }
     }
 
     private func reprobeAll() {
