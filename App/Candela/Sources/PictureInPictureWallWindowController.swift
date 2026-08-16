@@ -66,7 +66,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         panel.minSize = NSSize(width: PictureInPictureWallLayout.minWidth, height: 180)
-        panel.maxSize = NSSize(width: PictureInPictureWallLayout.maxWidth, height: 980)
+        panel.maxSize = NSSize(width: 20_000, height: 20_000)
         super.init(window: panel)
         panel.delegate = self
         panel.onCommandW = { [weak self] in
@@ -153,8 +153,10 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     }
 
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-        let width = min(max(frameSize.width, PictureInPictureWallLayout.minWidth), PictureInPictureWallLayout.maxWidth)
-        return NSSize(width: width, height: width / aspect + PictureInPictureLayout.chromeHeight)
+        let limits = currentSizeLimits(for: sender.frame)
+        let width = min(max(frameSize.width, limits.minWidth), limits.maxWidth)
+        let height = min(max(width / aspect + PictureInPictureLayout.chromeHeight, limits.minHeight), limits.maxHeight)
+        return NSSize(width: width, height: height)
     }
 
     private func makeContent() -> PictureInPictureRootView {
@@ -226,7 +228,11 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     private func resize(for count: Int) {
         guard let window else { return }
         let preferredWidth = window.frame.width
-        let content = PictureInPictureWallLayout.contentSize(displayCount: count, preferredWidth: preferredWidth)
+        let content = PictureInPictureWallLayout.contentSize(
+            displayCount: count,
+            preferredWidth: preferredWidth,
+            maxWidth: currentSizeLimits(for: window.frame).maxWidth
+        )
         aspect = max(content.width / max(content.height, 1), 0.2)
         let nextSize = PictureInPictureLayout.windowSize(forContent: content)
         var next = window.frame
@@ -398,12 +404,15 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     private func applyZoom(factor: CGFloat) {
         guard let window, factor > 0, abs(factor - 1) > 0.001 else { return }
         let visible = hostVisibleFrame(for: window.frame) ?? window.screen?.visibleFrame
+        let limits = currentSizeLimits(for: window.frame, visible: visible)
         let next = PictureInPictureLayout.zoomedFrame(
             current: window.frame,
             factor: factor,
             aspect: aspect,
             corner: placement.corner,
-            visible: visible
+            visible: visible,
+            minWidth: limits.minWidth,
+            maxWidth: limits.maxWidth
         )
         isApplying = true
         window.setFrame(next, display: true, animate: false)
@@ -466,6 +475,18 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         let center = CGPoint(x: window.frame.midX, y: window.frame.midY)
         return Self.screenDescriptors().first(where: { $0.visible.contains(center) })?.id
             ?? window.screen?.candelaDisplayID
+    }
+
+    private func currentSizeLimits(for frame: CGRect, visible: CGRect? = nil) -> (minWidth: CGFloat, maxWidth: CGFloat, minHeight: CGFloat, maxHeight: CGFloat) {
+        let host = visible ?? hostVisibleFrame(for: frame)
+        let maxWidth = max(host?.width ?? PictureInPictureWallLayout.maxWidth, PictureInPictureWallLayout.minWidth)
+        let maxHeight = max(host?.height ?? 980, 180)
+        return (
+            PictureInPictureWallLayout.minWidth,
+            maxWidth,
+            180,
+            maxHeight
+        )
     }
 
     private func hostVisibleFrame(for frame: CGRect) -> CGRect? {

@@ -174,6 +174,21 @@ public struct PictureInPictureWindowCandidate: Equatable, Sendable {
 }
 
 public enum PictureInPictureWindowMatching {
+    /// Desktop backdrop layers such as "Display 1 Backstop" are not capturable app windows.
+    public static func shouldOffer(_ candidate: PictureInPictureWindowCandidate) -> Bool {
+        !isSystemBackdrop(candidate)
+    }
+
+    public static func isSystemBackdrop(_ candidate: PictureInPictureWindowCandidate) -> Bool {
+        let title = normalize(candidate.title)
+        let owner = normalize(candidate.ownerName)
+        let bundle = normalize(candidate.bundleIdentifier)
+        if title.contains("backstop") { return true }
+        if owner == "windowserver" || owner == "window server" { return true }
+        if bundle == "com.apple.windowserver" { return true }
+        return false
+    }
+
     public static func match(
         identity: PictureInPictureWindowIdentity,
         candidates: [PictureInPictureWindowCandidate]
@@ -413,7 +428,7 @@ public enum PictureInPictureWallLayout {
     public static let gap: CGFloat = 8
     public static let defaultWidth: CGFloat = 720
     public static let minWidth: CGFloat = 360
-    public static let maxWidth: CGFloat = 1280
+    public static let maxWidth: CGFloat = 4096
 
     public static func snapshots(_ snapshots: [DisplaySnapshot]) -> [DisplaySnapshot] {
         snapshots.filter { PictureInPictureLayout.supports(kind: $0.kind) }
@@ -433,10 +448,14 @@ public enum PictureInPictureWallLayout {
         }
     }
 
-    public static func contentSize(displayCount: Int, preferredWidth: CGFloat = defaultWidth) -> CGSize {
+    public static func contentSize(
+        displayCount: Int,
+        preferredWidth: CGFloat = defaultWidth,
+        maxWidth: CGFloat = maxWidth
+    ) -> CGSize {
         let count = max(displayCount, 1)
         let grid = grid(for: count)
-        let width = min(max(preferredWidth, minWidth), maxWidth)
+        let width = min(max(preferredWidth, minWidth), max(maxWidth, minWidth))
         let tileWidth = (width - gap * CGFloat(max(grid.columns - 1, 0))) / CGFloat(max(grid.columns, 1))
         let tileHeight = tileWidth * 9 / 16
         let height = tileHeight * CGFloat(grid.rows) + gap * CGFloat(max(grid.rows - 1, 0))
@@ -467,7 +486,7 @@ public enum PictureInPictureLayout {
     public static let defaultWidth: CGFloat = 640
     public static let minWidth: CGFloat = 280
     public static let maxWidth: CGFloat = 1280
-    public static let chromeHeight: CGFloat = 56
+    public static let chromeHeight: CGFloat = 58
     public static let margin: CGFloat = 24
     public static let minimumCaptureWidth = 1280
     public static let minimumCaptureHeight = 720
@@ -642,6 +661,11 @@ public enum PictureInPictureLayout {
         !(mode == .magnifier && spaceHeld)
     }
 
+    /// Window mode without a chosen, resolvable window should keep showing the display.
+    public static func shouldFallBackToDisplay(mode: PictureInPictureMode, hasResolvedWindow: Bool) -> Bool {
+        mode == .window && !hasResolvedWindow
+    }
+
     /// Positive `deltaY` zooms in. Discrete wheels take one step; trackpads scale by distance.
     public static func zoomFactor(deltaY: CGFloat, precise: Bool) -> CGFloat {
         if precise {
@@ -673,10 +697,12 @@ public enum PictureInPictureLayout {
         factor: CGFloat,
         aspect: CGFloat,
         corner: PictureInPictureCorner? = nil,
-        visible: CGRect? = nil
+        visible: CGRect? = nil,
+        minWidth: CGFloat = minWidth,
+        maxWidth: CGFloat = maxWidth
     ) -> CGRect {
         _ = aspect
-        let nextWidth = min(max(current.width * factor, minWidth), maxWidth)
+        let nextWidth = min(max(current.width * factor, minWidth), max(maxWidth, minWidth))
         let scale = current.width > 1 ? nextWidth / current.width : 1
         let nextHeight = max(current.height * scale, chromeHeight + 80)
         var next = CGRect(x: current.origin.x, y: current.origin.y, width: nextWidth, height: nextHeight)

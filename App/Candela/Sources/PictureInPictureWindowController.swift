@@ -194,18 +194,36 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     private func applyCurrentTitle() {
+        let title = currentChromeTitle()
+        titleLabel.stringValue = title
+        window?.title = title
+    }
+
+    private func currentChromeTitle(windowSource: PictureInPictureWindowIdentity? = nil) -> String {
+        if placement.mode == .window, let source = windowSource ?? placement.window {
+            return composedTitle(composedWindowName(source), hint: String(localized: "Scroll to zoom"))
+        }
         if placement.mode == .magnifier {
-            titleLabel.stringValue = String(localized: "Magnifier · Space-drag to pan")
-            window?.title = titleLabel.stringValue
-            return
+            return composedTitle(displayTitle, hint: String(localized: "Space-drag to pan"))
         }
-        if placement.mode == .window, let source = placement.window {
-            titleLabel.stringValue = source.displayTitle
-            self.window?.title = source.displayTitle
-            return
-        }
-        titleLabel.stringValue = displayTitle
-        window?.title = displayTitle
+        return composedTitle(displayTitle, hint: String(localized: "Scroll to zoom"))
+    }
+
+    private func composedWindowName(_ source: PictureInPictureWindowIdentity) -> String {
+        let windowName = source.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if displayName.isEmpty { return windowName }
+        if windowName.isEmpty { return displayName }
+        if windowName == displayName { return displayName }
+        return "\(displayName) · \(windowName)"
+    }
+
+    private func composedTitle(_ name: String, hint: String) -> String {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedHint = hint.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedName.isEmpty { return trimmedHint }
+        if trimmedHint.isEmpty { return trimmedName }
+        return "\(trimmedName) · \(trimmedHint)"
     }
 
     func updateSourceDisplay(_ displayID: CGDirectDisplayID) {
@@ -546,7 +564,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             sourceRow.heightAnchor.constraint(equalToConstant: 24),
             preview.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8),
             preview.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
-            preview.topAnchor.constraint(equalTo: sourceRow.bottomAnchor, constant: 2),
+            preview.topAnchor.constraint(equalTo: sourceRow.bottomAnchor, constant: 4),
             preview.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             preview.widthAnchor.constraint(equalTo: preview.heightAnchor, multiplier: aspect),
             placeholder.centerXAnchor.constraint(equalTo: preview.centerXAnchor),
@@ -570,6 +588,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         applyClickThrough()
         applyMirror()
         applySourceChrome()
+        applyCurrentTitle()
         syncPinPopup()
         syncModePopup()
         syncZoomPopup()
@@ -833,6 +852,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private func startCapture() async {
         if usePlaceholder {
             applySourceChrome()
+            applyCurrentTitle()
             return
         }
         guard sourceDisplayID != 0 else {
@@ -852,28 +872,26 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             let captureHeight: Int
             var sourceRect: CGRect?
             var showsCursor = true
-            switch placement.mode {
-            case .window:
-                if let identity = placement.window,
-                   let match = Self.resolveWindow(identity, in: windowCandidates, displayID: sourceDisplayID),
-                   let window = PictureInPictureCapture.window(id: match.windowID, in: contentList)
-                {
-                    placement.window = match.identity
-                    filter = SCContentFilter(desktopIndependentWindow: window)
-                    let size = PictureInPictureLayout.captureSize(
-                        pixelWidth: match.pixelWidth,
-                        pixelHeight: match.pixelHeight
-                    )
-                    captureWidth = size.width
-                    captureHeight = size.height
-                    showsCursor = false
-                    titleLabel.stringValue = match.identity.displayTitle
-                } else {
-                    showPlaceholder(String(localized: "Could not find that window. Pick another one."))
-                    applySourceChrome()
-                    return
-                }
-            case .magnifier:
+            let resolvedWindow: PictureInPictureWindowCandidate? = {
+                guard placement.mode == .window, let identity = placement.window else { return nil }
+                return Self.resolveWindow(identity, in: windowCandidates, displayID: sourceDisplayID)
+            }()
+            if placement.mode == .window,
+               let match = resolvedWindow,
+               let window = PictureInPictureCapture.window(id: match.windowID, in: contentList)
+            {
+                placement.window = match.identity
+                filter = SCContentFilter(desktopIndependentWindow: window)
+                let size = PictureInPictureLayout.captureSize(
+                    pixelWidth: match.pixelWidth,
+                    pixelHeight: match.pixelHeight
+                )
+                captureWidth = size.width
+                captureHeight = size.height
+                showsCursor = false
+                titleLabel.stringValue = currentChromeTitle(windowSource: match.identity)
+                self.window?.title = titleLabel.stringValue
+            } else if placement.mode == .magnifier {
                 guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
                     showPlaceholder(String(localized: "Could not find this display for capture."))
                     return
@@ -894,7 +912,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 )
                 captureWidth = size.width
                 captureHeight = size.height
-            case .display:
+            } else {
+                if PictureInPictureLayout.shouldFallBackToDisplay(mode: placement.mode, hasResolvedWindow: resolvedWindow != nil) {
+                    applyCurrentTitle()
+                }
                 guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
                     showPlaceholder(String(localized: "Could not find this display for capture."))
                     return
@@ -921,6 +942,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             placeholder.isHidden = true
             applyMirror()
             applySourceChrome()
+            applyCurrentTitle()
         } catch {
             showPlaceholder(String(localized: "Screen Recording permission is required for Picture in Picture."))
         }

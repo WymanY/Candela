@@ -8,7 +8,7 @@ enum PictureInPictureCapture {
     static let ownBundleIdentifier = "app.candela.macos"
 
     static func shareableContent() async throws -> SCShareableContent {
-        try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
     }
 
     static func ownWindows(in content: SCShareableContent) -> [SCWindow] {
@@ -27,7 +27,7 @@ enum PictureInPictureCapture {
             let owner = window.owningApplication?.applicationName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if title.isEmpty && owner.isEmpty { return nil }
             if window.frame.width < 80 || window.frame.height < 80 { return nil }
-            return PictureInPictureWindowCandidate(
+            let candidate = PictureInPictureWindowCandidate(
                 windowID: UInt32(window.windowID),
                 bundleIdentifier: bundle,
                 title: title,
@@ -36,6 +36,7 @@ enum PictureInPictureCapture {
                 pixelWidth: UInt32(max(window.frame.width, 0).rounded()),
                 pixelHeight: UInt32(max(window.frame.height, 0).rounded())
             )
+            return PictureInPictureWindowMatching.shouldOffer(candidate) ? candidate : nil
         }
         return PictureInPictureWindowMatching.sorted(mapped, preferringDisplay: displayID)
     }

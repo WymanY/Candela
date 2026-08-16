@@ -195,6 +195,23 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(huge.width, PictureInPictureLayout.maxWidth, accuracy: 0.001)
     }
 
+    func testMonitorWallZoomCanExceedSinglePiPWidth() {
+        let current = CGRect(x: 80, y: 60, width: 1280, height: 760)
+        let visible = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let grown = PictureInPictureLayout.zoomedFrame(
+            current: current,
+            factor: 1.5,
+            aspect: 16 / 9,
+            visible: visible,
+            minWidth: PictureInPictureWallLayout.minWidth,
+            maxWidth: visible.width
+        )
+        XCTAssertGreaterThan(grown.width, PictureInPictureLayout.maxWidth)
+        XCTAssertEqual(grown.width, 1920, accuracy: 0.001)
+        XCTAssertLessThanOrEqual(grown.maxX, visible.maxX)
+        XCTAssertLessThanOrEqual(grown.maxY, visible.maxY)
+    }
+
     func testMouseOverWindowDetectsHoverForClickThroughZoom() {
         let frame = CGRect(x: 200, y: 120, width: 400, height: 260)
         XCTAssertTrue(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 250, y: 180), windowFrame: frame))
@@ -279,6 +296,30 @@ final class PictureInPictureTests: XCTestCase {
             in: [slackA, safari]
         )
         XCTAssertEqual(query?.bundleIdentifier, "com.apple.Safari")
+    }
+
+    func testWindowMenuHidesDesktopBackstopLayers() {
+        let slack = PictureInPictureWindowCandidate(
+            windowID: 11,
+            bundleIdentifier: "com.tinyspeck.slackmacgap",
+            title: "#design",
+            ownerName: "Slack"
+        )
+        let backstop = PictureInPictureWindowCandidate(
+            windowID: 31,
+            bundleIdentifier: "com.apple.WindowServer",
+            title: "Display 1 Backstop",
+            ownerName: ""
+        )
+        let otherBackstop = PictureInPictureWindowCandidate(
+            windowID: 32,
+            bundleIdentifier: "",
+            title: "Display 2 Backstop",
+            ownerName: "WindowServer"
+        )
+        XCTAssertTrue(PictureInPictureWindowMatching.shouldOffer(slack))
+        XCTAssertFalse(PictureInPictureWindowMatching.shouldOffer(backstop))
+        XCTAssertFalse(PictureInPictureWindowMatching.shouldOffer(otherBackstop))
     }
 
     func testMagnifierCropsAroundCursorAndStaysOnScreen() {
@@ -377,6 +418,11 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertFalse(PictureInPictureLayout.shouldMoveWindow(forMagnifierPan: true, mode: .magnifier))
         XCTAssertTrue(PictureInPictureLayout.shouldMoveWindow(forMagnifierPan: false, mode: .magnifier))
         XCTAssertTrue(PictureInPictureLayout.shouldMoveWindow(forMagnifierPan: true, mode: .display))
+
+        XCTAssertTrue(PictureInPictureLayout.shouldFallBackToDisplay(mode: .window, hasResolvedWindow: false))
+        XCTAssertFalse(PictureInPictureLayout.shouldFallBackToDisplay(mode: .window, hasResolvedWindow: true))
+        XCTAssertFalse(PictureInPictureLayout.shouldFallBackToDisplay(mode: .display, hasResolvedWindow: false))
+        XCTAssertFalse(PictureInPictureLayout.shouldFallBackToDisplay(mode: .magnifier, hasResolvedWindow: false))
     }
 
     func testMonitorWallSkipsVirtualScreensAndTilesFromTopLeft() {

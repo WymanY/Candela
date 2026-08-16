@@ -1399,19 +1399,36 @@
         }
       }
     },
-    "Magnifier · Space-drag to pan": {
+    "Scroll to zoom": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Magnifier · Space-drag to pan"
+            "value": "Scroll to zoom"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "放大镜 · 按住空格拖动平移"
+            "value": "可用鼠标滚轮缩放"
+          }
+        }
+      }
+    },
+    "Space-drag to pan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space-drag to pan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住空格拖动查看不同位置"
           }
         }
       }
