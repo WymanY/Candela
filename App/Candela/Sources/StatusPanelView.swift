@@ -12,9 +12,9 @@ final class StatusPanelView: NSView {
     private let markView = CandelaChrome.makeSymbol("sun.max.fill", size: 14)
     private let presets = NSSegmentedControl(
         labels: [
-            String(localized: "Night"),
-            String(localized: "Desk"),
-            String(localized: "Max"),
+            String(localized: "Dim"),
+            String(localized: "Normal"),
+            String(localized: "Full"),
         ],
         trackingMode: .selectOne,
         target: nil,
