@@ -4,6 +4,7 @@ import AppKit
 final class StatusPanel: NSPanel {
     var canvasPanActive = false
     var onCommandW: (() -> Void)?
+    var onCommandComma: (() -> Void)?
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -13,24 +14,39 @@ final class StatusPanel: NSPanel {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if isCommandW(event) {
-            onCommandW?()
+        if handleCommandShortcut(event) {
             return true
         }
         return super.performKeyEquivalent(with: event)
     }
 
     override func keyDown(with event: NSEvent) {
-        if isCommandW(event) {
-            onCommandW?()
+        if handleCommandShortcut(event) {
             return
         }
         super.keyDown(with: event)
     }
 
+    private func handleCommandShortcut(_ event: NSEvent) -> Bool {
+        if isCommandW(event) {
+            onCommandW?()
+            return true
+        }
+        if isCommandComma(event) {
+            onCommandComma?()
+            return true
+        }
+        return false
+    }
+
     private func isCommandW(_ event: NSEvent) -> Bool {
         event.modifierFlags.contains(.command)
             && event.charactersIgnoringModifiers?.lowercased() == "w"
+    }
+
+    private func isCommandComma(_ event: NSEvent) -> Bool {
+        event.modifierFlags.contains(.command)
+            && event.charactersIgnoringModifiers == ","
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -90,6 +106,7 @@ final class StatusPanelController {
     func bindActions(openSettings: @escaping () -> Void, quit: @escaping () -> Void) {
         panelView.onOpenSettings = openSettings
         panelView.onQuit = quit
+        panel.onCommandComma = openSettings
     }
 
     func show(relativeTo button: NSView) {

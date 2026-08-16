@@ -286,12 +286,17 @@ final class StatusItemController: NSObject {
                         self.hidePanel()
                     }
                 }
-            } else if event.type == .keyDown,
-                      event.keyCode == 53,
-                      self.panelController.isVisible
-            {
-                self.hidePanel()
-                return nil
+            } else if event.type == .keyDown, self.panelController.isVisible {
+                if event.keyCode == 53 {
+                    self.hidePanel()
+                    return nil
+                }
+                if event.modifierFlags.contains(.command),
+                   event.charactersIgnoringModifiers == ","
+                {
+                    self.openSettings()
+                    return nil
+                }
             }
             return event
         }
