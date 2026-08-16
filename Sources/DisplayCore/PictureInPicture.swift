@@ -297,6 +297,11 @@ public enum PictureInPictureWindowMatching {
 }
 
 public enum PictureInPictureMirror {
+    /// Scale X for a layer whose anchor is already at the center of its bounds.
+    public static func centeredAffineTransform(mirrored: Bool) -> CGAffineTransform {
+        CGAffineTransform(scaleX: mirrored ? -1 : 1, y: 1)
+    }
+
     /// Flip horizontally around the center of `bounds` so the preview stays in place.
     public static func affineTransform(mirrored: Bool, bounds: CGRect) -> CGAffineTransform {
         guard mirrored, bounds.width > 1, bounds.height > 1 else { return .identity }

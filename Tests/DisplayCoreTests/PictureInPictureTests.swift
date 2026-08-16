@@ -305,6 +305,7 @@ final class PictureInPictureTests: XCTestCase {
     func testMirrorKeepsThePreviewCentered() {
         let bounds = CGRect(x: 0, y: 0, width: 640, height: 360)
         XCTAssertEqual(PictureInPictureMirror.affineTransform(mirrored: false, bounds: bounds), .identity)
+        XCTAssertEqual(PictureInPictureMirror.centeredAffineTransform(mirrored: false), .identity)
 
         let flipped = PictureInPictureMirror.affineTransform(mirrored: true, bounds: bounds)
         let left = CGPoint(x: 0, y: 180).applying(flipped)
@@ -314,5 +315,12 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(right.x, 0, accuracy: 0.001)
         XCTAssertEqual(center.x, 320, accuracy: 0.001)
         XCTAssertEqual(center.y, 180, accuracy: 0.001)
+
+        let centered = PictureInPictureMirror.centeredAffineTransform(mirrored: true)
+        XCTAssertEqual(CGPoint(x: -160, y: 20).applying(centered), CGPoint(x: 160, y: 20))
+        XCTAssertEqual(centered.a, -1, accuracy: 0.0001)
+        XCTAssertEqual(centered.d, 1, accuracy: 0.0001)
+        XCTAssertEqual(centered.tx, 0, accuracy: 0.0001)
+        XCTAssertEqual(centered.ty, 0, accuracy: 0.0001)
     }
 }

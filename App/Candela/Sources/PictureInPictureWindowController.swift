@@ -928,7 +928,8 @@ final class PictureInPictureRootView: NSView {
 }
 
 final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegate {
-    private let displayLayer = AVSampleBufferDisplayLayer()
+    private let hostLayer = CALayer()
+    private var displayLayer = AVSampleBufferDisplayLayer()
     private var mirrored = false
 
     override init(frame frameRect: NSRect) {
@@ -937,14 +938,12 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         layer = CALayer()
         layer?.masksToBounds = true
         layer?.backgroundColor = NSColor.black.cgColor
-        displayLayer.videoGravity = .resizeAspect
-        displayLayer.backgroundColor = NSColor.black.cgColor
-        displayLayer.contentsGravity = .resizeAspect
-        displayLayer.magnificationFilter = .linear
-        displayLayer.minificationFilter = .trilinear
-        displayLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
-        displayLayer.anchorPoint = CGPoint(x: 0, y: 0)
-        layer?.addSublayer(displayLayer)
+        hostLayer.masksToBounds = true
+        hostLayer.backgroundColor = NSColor.black.cgColor
+        hostLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        layer?.addSublayer(hostLayer)
+        configureDisplayLayer(displayLayer)
+        hostLayer.addSublayer(displayLayer)
     }
 
     @available(*, unavailable)
@@ -954,11 +953,7 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
 
     override func layout() {
         super.layout()
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        displayLayer.frame = bounds
-        displayLayer.setAffineTransform(PictureInPictureMirror.affineTransform(mirrored: mirrored, bounds: bounds))
-        CATransaction.commit()
+        applyPreviewGeometry()
     }
 
     func setMirrored(_ mirrored: Bool) {
@@ -974,7 +969,7 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .screen, sampleBuffer.isValid else { return }
         if displayLayer.status == .failed {
-            displayLayer.flush()
+            recreateDisplayLayer()
         }
         displayLayer.enqueue(sampleBuffer)
     }
@@ -983,5 +978,37 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         DispatchQueue.main.async { [weak self] in
             self?.flush()
         }
+    }
+
+    private func applyPreviewGeometry() {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hostLayer.bounds = CGRect(origin: .zero, size: bounds.size)
+        hostLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        hostLayer.setAffineTransform(PictureInPictureMirror.centeredAffineTransform(mirrored: mirrored))
+        displayLayer.frame = hostLayer.bounds
+        displayLayer.setAffineTransform(.identity)
+        CATransaction.commit()
+    }
+
+    private func recreateDisplayLayer() {
+        displayLayer.flushAndRemoveImage()
+        displayLayer.removeFromSuperlayer()
+        let replacement = AVSampleBufferDisplayLayer()
+        configureDisplayLayer(replacement)
+        replacement.frame = hostLayer.bounds
+        hostLayer.addSublayer(replacement)
+        displayLayer = replacement
+    }
+
+    private func configureDisplayLayer(_ layer: AVSampleBufferDisplayLayer) {
+        layer.videoGravity = .resizeAspect
+        layer.backgroundColor = NSColor.black.cgColor
+        layer.contentsGravity = .resizeAspect
+        layer.magnificationFilter = .linear
+        layer.minificationFilter = .trilinear
+        layer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
+        layer.anchorPoint = CGPoint(x: 0, y: 0)
+        layer.setAffineTransform(.identity)
     }
 }
