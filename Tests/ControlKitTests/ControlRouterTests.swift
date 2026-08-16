@@ -311,6 +311,71 @@ final class ControlRouterTests: XCTestCase {
         XCTAssertTrue(deleted.ok)
         XCTAssertTrue(scenes.isEmpty)
     }
+
+    func testConfigurePictureInPictureAndWall() {
+        var snapshots = FakeSnapshots.standard()
+        var wallOpen = false
+        var configured: (String, PictureInPictureMode?, Bool?, String?)?
+        let backend = ControlBackend(
+            snapshots: { snapshots },
+            setBrightness: { _, _ in },
+            setVolume: { _, _ in },
+            setMuted: { _, _ in },
+            setContrast: { _, _ in },
+            setInput: { _, _ in },
+            setRotation: { _, _ in },
+            setPictureInPicture: { key, enabled in
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    snapshots[index].pictureInPictureActive = enabled
+                }
+                return true
+            },
+            configurePictureInPicture: { key, mode, mirrored, window, zoom in
+                configured = (key, mode, mirrored, window?.title)
+                if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+                    if let mode { snapshots[index].pictureInPictureMode = mode }
+                    if let mirrored { snapshots[index].pictureInPictureMirrored = mirrored }
+                    snapshots[index].pictureInPictureWindow = window
+                    snapshots[index].pictureInPictureActive = true
+                }
+                return true
+            },
+            setPictureInPictureWall: { enabled in
+                wallOpen = enabled
+                return true
+            },
+            isPictureInPictureWallOpen: { wallOpen },
+            rename: { _, _ in true },
+            applyPreset: { _, _ in },
+            matchAll: { _ in },
+            dump: { _ in "" }
+        )
+        let configuredResponse = ControlRouter.apply(
+            ControlRequest(
+                action: .configurePictureInPicture,
+                display: FakeSnapshots.dellName,
+                pictureInPicture: true,
+                pictureInPictureMode: "window",
+                pictureInPictureMirrored: true,
+                pictureInPictureWindow: "Slack"
+            ),
+            backend: backend
+        )
+        XCTAssertTrue(configuredResponse.ok)
+        XCTAssertEqual(configured?.1, .window)
+        XCTAssertEqual(configured?.2, true)
+        XCTAssertEqual(configured?.3, "Slack")
+        XCTAssertEqual(snapshots[1].pictureInPictureMode, .window)
+        XCTAssertEqual(snapshots[1].pictureInPictureMirrored, true)
+
+        let wall = ControlRouter.apply(
+            ControlRequest(action: .setPictureInPictureWall, pictureInPicture: true),
+            backend: backend
+        )
+        XCTAssertTrue(wall.ok)
+        XCTAssertEqual(wall.pictureInPictureWall, true)
+        XCTAssertTrue(wallOpen)
+    }
 }
 
 final class DisplayQueryTests: XCTestCase {

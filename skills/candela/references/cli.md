@@ -24,6 +24,9 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 | `rename-scene Night --name Late` | `renameScene` | Rename a saved scene |
 | `delete-scene Night` | `deleteScene` | Delete a saved scene |
 | `set-pip --display Q --enabled true` | `setPictureInPicture` | Floating display mirror |
+| `set-pip --display Q --mode window --window Slack --mirror true` | `configurePictureInPicture` | Follow a window and/or flip |
+| `set-pip --display Q --mode magnifier --zoom 3` | `configurePictureInPicture` | Cursor magnifier |
+| `set-pip-wall --enabled true` | `setPictureInPictureWall` | Multi-display wall |
 | `dump` | `dump` | Redacted unless `--no-redact` |
 
 ## MCP tools
@@ -46,6 +49,7 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 - `candela_rename_scene`
 - `candela_delete_scene`
 - `candela_set_picture_in_picture`
+- `candela_set_picture_in_picture_wall`
 - `candela_debug_dump`
 
 stdio JSON-RPC, protocol `2024-11-05`.

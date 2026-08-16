@@ -73,7 +73,7 @@ let package = Package(
             dependencies: ["DisplayCore"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
-        .testTarget(name: "DisplayCoreTests", dependencies: ["DisplayCore"]),
+        .testTarget(name: "DisplayCoreTests", dependencies: ["DisplayCore", "TestSupport"]),
         .testTarget(name: "BrightnessKitTests", dependencies: ["BrightnessKit", "TestSupport"]),
         .testTarget(name: "AudioKitTests", dependencies: ["AudioKit", "TestSupport"]),
         .testTarget(name: "PersistenceKitTests", dependencies: ["PersistenceKit"]),

@@ -45,29 +45,366 @@ public struct PictureInPicturePlacement: Codable, Equatable, Sendable {
     public var corner: PictureInPictureCorner?
     public var frame: PictureInPictureFrame?
     public var hostDisplayID: UInt32?
+    public var mirrored: Bool
+    public var mode: PictureInPictureMode
+    public var window: PictureInPictureWindowIdentity?
+    public var magnifierZoom: Double
 
     public init(
         opacity: Double = 1,
         clickThrough: Bool = false,
         corner: PictureInPictureCorner? = nil,
         frame: PictureInPictureFrame? = nil,
-        hostDisplayID: UInt32? = nil
+        hostDisplayID: UInt32? = nil,
+        mirrored: Bool = false,
+        mode: PictureInPictureMode = .display,
+        window: PictureInPictureWindowIdentity? = nil,
+        magnifierZoom: Double = PictureInPictureMagnifier.defaultZoom
     ) {
         self.opacity = PictureInPictureLayout.clampedOpacity(opacity)
         self.clickThrough = clickThrough
         self.corner = corner
         self.frame = frame
         self.hostDisplayID = hostDisplayID
+        self.mirrored = mirrored
+        self.mode = mode
+        self.window = window
+        self.magnifierZoom = PictureInPictureMagnifier.clampedZoom(magnifierZoom)
     }
 
     public static let `default` = PictureInPicturePlacement()
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        opacity = PictureInPictureLayout.clampedOpacity(try container.decodeIfPresent(Double.self, forKey: .opacity) ?? 1)
+        clickThrough = try container.decodeIfPresent(Bool.self, forKey: .clickThrough) ?? false
+        corner = try container.decodeIfPresent(PictureInPictureCorner.self, forKey: .corner)
+        frame = try container.decodeIfPresent(PictureInPictureFrame.self, forKey: .frame)
+        hostDisplayID = try container.decodeIfPresent(UInt32.self, forKey: .hostDisplayID)
+        mirrored = try container.decodeIfPresent(Bool.self, forKey: .mirrored) ?? false
+        mode = try container.decodeIfPresent(PictureInPictureMode.self, forKey: .mode) ?? .display
+        window = try container.decodeIfPresent(PictureInPictureWindowIdentity.self, forKey: .window)
+        magnifierZoom = PictureInPictureMagnifier.clampedZoom(
+            try container.decodeIfPresent(Double.self, forKey: .magnifierZoom) ?? PictureInPictureMagnifier.defaultZoom
+        )
+    }
+}
+
+
+
+public enum PictureInPictureMode: String, Codable, CaseIterable, Sendable {
+    case display
+    case window
+    case magnifier
+
+    public var title: String {
+        switch self {
+        case .display: return "Display"
+        case .window: return "Window"
+        case .magnifier: return "Magnifier"
+        }
+    }
+
+    public static func from(query: String) -> PictureInPictureMode? {
+        switch query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "display", "screen", "monitor":
+            return .display
+        case "window", "app":
+            return .window
+        case "magnifier", "loupe", "zoom":
+            return .magnifier
+        default:
+            return nil
+        }
+    }
+}
+
+public struct PictureInPictureWindowIdentity: Codable, Equatable, Sendable {
+    public var bundleIdentifier: String
+    public var title: String
+    public var ownerName: String
+
+    public init(bundleIdentifier: String, title: String, ownerName: String = "") {
+        self.bundleIdentifier = bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.ownerName = ownerName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    public var displayTitle: String {
+        if title.isEmpty { return ownerName.isEmpty ? bundleIdentifier : ownerName }
+        if ownerName.isEmpty || title.hasPrefix(ownerName) { return title }
+        return "\(ownerName) - \(title)"
+    }
+}
+
+public struct PictureInPictureWindowCandidate: Equatable, Sendable {
+    public var windowID: UInt32
+    public var bundleIdentifier: String
+    public var title: String
+    public var ownerName: String
+    public var displayID: UInt32?
+    public var pixelWidth: UInt32
+    public var pixelHeight: UInt32
+
+    public init(
+        windowID: UInt32,
+        bundleIdentifier: String,
+        title: String,
+        ownerName: String,
+        displayID: UInt32? = nil,
+        pixelWidth: UInt32 = 0,
+        pixelHeight: UInt32 = 0
+    ) {
+        self.windowID = windowID
+        self.bundleIdentifier = bundleIdentifier
+        self.title = title
+        self.ownerName = ownerName
+        self.displayID = displayID
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+    }
+
+    public var identity: PictureInPictureWindowIdentity {
+        PictureInPictureWindowIdentity(
+            bundleIdentifier: bundleIdentifier,
+            title: title,
+            ownerName: ownerName
+        )
+    }
+}
+
+public enum PictureInPictureWindowMatching {
+    public static func match(
+        identity: PictureInPictureWindowIdentity,
+        candidates: [PictureInPictureWindowCandidate]
+    ) -> PictureInPictureWindowCandidate? {
+        let pool = sameApp(as: identity, in: candidates)
+        guard !pool.isEmpty else { return nil }
+        if let exact = pool.first(where: { normalize($0.title) == normalize(identity.title) && !identity.title.isEmpty }) {
+            return exact
+        }
+        if !identity.title.isEmpty {
+            let title = normalize(identity.title)
+            if let contains = pool.first(where: {
+                let candidate = normalize($0.title)
+                return candidate.contains(title) || title.contains(candidate) || sharesTokens(title, candidate)
+            }) {
+                return contains
+            }
+        }
+        if pool.count == 1 { return pool[0] }
+        return pool.first
+    }
+
+    public static func query(
+        _ raw: String,
+        bundleIdentifier: String? = nil,
+        preferringDisplay displayID: UInt32? = nil,
+        in candidates: [PictureInPictureWindowCandidate]
+    ) -> PictureInPictureWindowCandidate? {
+        let query = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bundle = bundleIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var pool = candidates
+        if !bundle.isEmpty {
+            pool = pool.filter { $0.bundleIdentifier.compare(bundle, options: .caseInsensitive) == .orderedSame }
+        }
+        if query.isEmpty {
+            return preferred(pool, displayID: displayID)
+        }
+        let needle = normalize(query)
+        let scored = pool.compactMap { candidate -> (PictureInPictureWindowCandidate, Int)? in
+            let title = normalize(candidate.title)
+            let owner = normalize(candidate.ownerName)
+            let identifier = normalize(candidate.bundleIdentifier)
+            var score = 0
+            if title == needle { score += 80 }
+            else if title.contains(needle) || needle.contains(title) { score += 50 }
+            if owner == needle { score += 40 }
+            else if owner.contains(needle) { score += 20 }
+            if identifier.contains(needle) { score += 15 }
+            if score == 0 { return nil }
+            if let displayID, candidate.displayID == displayID { score += 5 }
+            return (candidate, score)
+        }
+        .sorted { lhs, rhs in
+            if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+            return lhs.0.title.localizedCaseInsensitiveCompare(rhs.0.title) == .orderedAscending
+        }
+        return scored.first?.0
+    }
+
+    public static func preferred(
+        _ candidates: [PictureInPictureWindowCandidate],
+        displayID: UInt32?
+    ) -> PictureInPictureWindowCandidate? {
+        if let displayID, let match = candidates.first(where: { $0.displayID == displayID }) {
+            return match
+        }
+        return candidates.first
+    }
+
+    public static func sorted(
+        _ candidates: [PictureInPictureWindowCandidate],
+        preferringDisplay displayID: UInt32?
+    ) -> [PictureInPictureWindowCandidate] {
+        candidates.sorted { lhs, rhs in
+            let leftSame = displayID != nil && lhs.displayID == displayID
+            let rightSame = displayID != nil && rhs.displayID == displayID
+            if leftSame != rightSame { return leftSame && !rightSame }
+            let owner = lhs.ownerName.localizedCaseInsensitiveCompare(rhs.ownerName)
+            if owner != .orderedSame { return owner == .orderedAscending }
+            return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+        }
+    }
+
+    private static func sameApp(
+        as identity: PictureInPictureWindowIdentity,
+        in candidates: [PictureInPictureWindowCandidate]
+    ) -> [PictureInPictureWindowCandidate] {
+        if !identity.bundleIdentifier.isEmpty {
+            let matches = candidates.filter {
+                $0.bundleIdentifier.compare(identity.bundleIdentifier, options: .caseInsensitive) == .orderedSame
+            }
+            if !matches.isEmpty { return matches }
+        }
+        if !identity.ownerName.isEmpty {
+            return candidates.filter {
+                $0.ownerName.compare(identity.ownerName, options: .caseInsensitive) == .orderedSame
+            }
+        }
+        return []
+    }
+
+
+    private static func sharesTokens(_ lhs: String, _ rhs: String) -> Bool {
+        let left = tokens(in: lhs)
+        let right = tokens(in: rhs)
+        return !left.isEmpty && !left.isDisjoint(with: right)
+    }
+
+    private static func tokens(in raw: String) -> Set<String> {
+        Set(
+            raw.split { !$0.isLetter && !$0.isNumber }
+                .map(String.init)
+                .filter { $0.count >= 3 }
+        )
+    }
+
+    private static func normalize(_ raw: String) -> String {
+        raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+    }
+}
+
+public enum PictureInPictureMagnifier {
+    public static let defaultZoom: Double = 2
+    public static let minZoom: Double = 1.5
+    public static let maxZoom: Double = 4
+    public static let zoomStops: [Double] = [1.5, 2, 3, 4]
+
+    public static func clampedZoom(_ value: Double) -> Double {
+        min(max(value, minZoom), maxZoom)
+    }
+
+    public static func nearestStop(_ value: Double) -> Double {
+        let zoom = clampedZoom(value)
+        return zoomStops.min(by: { abs($0 - zoom) < abs($1 - zoom) }) ?? defaultZoom
+    }
+
+    /// Cursor and returned crop use source-pixel space with the origin at the top-left.
+    public static func cropRect(
+        sourceWidth: Double,
+        sourceHeight: Double,
+        cursor: CGPoint,
+        zoom: Double
+    ) -> CGRect {
+        let width = max(sourceWidth, 1)
+        let height = max(sourceHeight, 1)
+        let cropWidth = max(width / clampedZoom(zoom), 32)
+        let cropHeight = max(height / clampedZoom(zoom), 32)
+        let x = min(max(cursor.x - cropWidth / 2, 0), max(width - cropWidth, 0))
+        let y = min(max(cursor.y - cropHeight / 2, 0), max(height - cropHeight, 0))
+        return CGRect(x: x, y: y, width: min(cropWidth, width), height: min(cropHeight, height))
+    }
+
+    /// Convert an AppKit mouse point into source pixels for the display that owns `screenFrame`.
+    public static func cursorInSourcePixels(
+        mouse: CGPoint,
+        screenFrame: CGRect,
+        pixelWidth: Double,
+        pixelHeight: Double
+    ) -> CGPoint? {
+        guard screenFrame.width > 1, screenFrame.height > 1 else { return nil }
+        let inset = screenFrame.insetBy(dx: -1, dy: -1)
+        guard inset.contains(mouse) else { return nil }
+        let localX = mouse.x - screenFrame.minX
+        let localYFromTop = screenFrame.maxY - mouse.y
+        return CGPoint(
+            x: localX / screenFrame.width * max(pixelWidth, 1),
+            y: localYFromTop / screenFrame.height * max(pixelHeight, 1)
+        )
+    }
+}
+
+public enum PictureInPictureWallLayout {
+    public static let gap: CGFloat = 8
+    public static let defaultWidth: CGFloat = 720
+    public static let minWidth: CGFloat = 360
+    public static let maxWidth: CGFloat = 1280
+
+    public static func snapshots(_ snapshots: [DisplaySnapshot]) -> [DisplaySnapshot] {
+        snapshots.filter { PictureInPictureLayout.supports(kind: $0.kind) }
+    }
+
+    public static func grid(for count: Int) -> (columns: Int, rows: Int) {
+        switch max(count, 0) {
+        case 0: return (0, 0)
+        case 1: return (1, 1)
+        case 2: return (2, 1)
+        case 3, 4: return (2, 2)
+        case 5, 6: return (3, 2)
+        default:
+            let columns = 3
+            let rows = Int(ceil(Double(count) / Double(columns)))
+            return (columns, rows)
+        }
+    }
+
+    public static func contentSize(displayCount: Int, preferredWidth: CGFloat = defaultWidth) -> CGSize {
+        let count = max(displayCount, 1)
+        let grid = grid(for: count)
+        let width = min(max(preferredWidth, minWidth), maxWidth)
+        let tileWidth = (width - gap * CGFloat(max(grid.columns - 1, 0))) / CGFloat(max(grid.columns, 1))
+        let tileHeight = tileWidth * 9 / 16
+        let height = tileHeight * CGFloat(grid.rows) + gap * CGFloat(max(grid.rows - 1, 0))
+        return CGSize(width: width, height: max(height, 80))
+    }
+
+    public static func tileFrames(count: Int, in bounds: CGRect, gap: CGFloat = gap) -> [CGRect] {
+        let grid = grid(for: count)
+        guard count > 0, grid.columns > 0, grid.rows > 0, bounds.width > 1, bounds.height > 1 else {
+            return []
+        }
+        let tileWidth = (bounds.width - gap * CGFloat(grid.columns - 1)) / CGFloat(grid.columns)
+        let tileHeight = (bounds.height - gap * CGFloat(grid.rows - 1)) / CGFloat(grid.rows)
+        return (0..<count).map { index in
+            let column = index % grid.columns
+            let row = index / grid.columns
+            return CGRect(
+                x: bounds.minX + CGFloat(column) * (tileWidth + gap),
+                y: bounds.maxY - CGFloat(row + 1) * tileHeight - CGFloat(row) * gap,
+                width: tileWidth,
+                height: tileHeight
+            )
+        }
+    }
 }
 
 public enum PictureInPictureLayout {
     public static let defaultWidth: CGFloat = 640
     public static let minWidth: CGFloat = 280
     public static let maxWidth: CGFloat = 1280
-    public static let chromeHeight: CGFloat = 32
+    public static let chromeHeight: CGFloat = 56
     public static let margin: CGFloat = 24
     public static let minimumCaptureWidth = 1280
     public static let minimumCaptureHeight = 720

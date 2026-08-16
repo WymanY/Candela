@@ -12,6 +12,7 @@
 		28544AC3C17324B984A50B02 /* SpeakerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */; };
 		38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */; };
 		3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5705532336236260D9C43BA /* StatusItemController.swift */; };
+		431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */; };
 		479649E80C10E3EEAEC137BA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */; };
 		5D26A0F4FE898DAEBFFAD35B /* ControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = AE981E167F2C87818BFE05A1 /* ControlKit */; };
 		637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */; };
@@ -34,6 +35,7 @@
 		F2E0057792E18EAAA8FBFD04 /* DisplayCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2CD3413AF063E87EA5861281 /* DisplayCore */; };
 		F828F475CF94725A8FEABE29 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A699CD75329BE53EC461E7A5 /* Assets.xcassets */; };
 		F999A81BF392E44AABEF45BD /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */; };
+		FDC2756D29258B397D38AF69 /* PictureInPictureCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,8 +54,10 @@
 		86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWindowController.swift; sourceTree = "<group>"; };
 		8D5455D272FE6AB3D2C088B2 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Candela.swift"; sourceTree = "<group>"; };
+		A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureCapture.swift; sourceTree = "<group>"; };
 		A699CD75329BE53EC461E7A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWallWindowController.swift; sourceTree = "<group>"; };
 		BF47ABA59743DE249AC5488F /* DisplayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowView.swift; sourceTree = "<group>"; };
 		CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySessionController.swift; sourceTree = "<group>"; };
 		D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDisplaysView.swift; sourceTree = "<group>"; };
@@ -93,6 +97,8 @@
 				8D5455D272FE6AB3D2C088B2 /* main.swift */,
 				2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */,
 				97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */,
+				A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */,
+				B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */,
 				86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */,
 				236871E20297EA15E8B19C30 /* SettingsAboutView.swift */,
 				D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */,
@@ -258,6 +264,8 @@
 				1794505AFB46B3BFB9F7F4D3 /* HotPlugObserver.swift in Sources */,
 				9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */,
 				93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */,
+				FDC2756D29258B397D38AF69 /* PictureInPictureCapture.swift in Sources */,
+				431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */,
 				38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */,
 				148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */,
 				637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */,

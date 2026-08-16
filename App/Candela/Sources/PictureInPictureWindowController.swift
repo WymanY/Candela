@@ -9,6 +9,10 @@ import ScreenCaptureKit
 final class PictureInPictureWindowController: NSWindowController, NSWindowDelegate {
     let persistentKey: String
     private let titleLabel = CandelaChrome.makeTitle("", size: 12, weight: .semibold)
+    private let modePopup = NSPopUpButton()
+    private let windowPopup = NSPopUpButton()
+    private let mirrorButton: NSButton
+    private let zoomPopup = NSPopUpButton()
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
     private let pinPopup = NSPopUpButton()
@@ -16,19 +20,24 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private let preview = PictureInPicturePreviewView()
     private let placeholder = CandelaChrome.makeCaption(String(localized: "Waiting for display…"))
     private let chrome = NSStackView()
+    private let sourceRow = NSStackView()
     private var stream: SCStream?
     private let streamQueue = DispatchQueue(label: "candela.pip.stream")
     private var aspect: CGFloat = 16 / 9
     private var placement: PictureInPicturePlacement
     private var isApplying = false
     private var clickThroughTimer: Timer?
+    private var magnifierTimer: Timer?
     private var clickThroughScrollMonitor: Any?
     private var sourceDisplayID: CGDirectDisplayID
+    private var windowCandidates: [PictureInPictureWindowCandidate] = []
+    private var lastMagnifierRect: CGRect = .null
     var onClose: (() -> Void)?
     var onPlacementChange: ((PictureInPicturePlacement) -> Void)?
 
-    private let sourcePixelWidth: UInt32
-    private let sourcePixelHeight: UInt32
+    private var sourcePixelWidth: UInt32
+    private var sourcePixelHeight: UInt32
+    private let usePlaceholder: Bool
 
     init(
         key: String,
@@ -43,16 +52,25 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         self.sourceDisplayID = displayID
         self.sourcePixelWidth = pixelWidth
         self.sourcePixelHeight = pixelHeight
+        self.usePlaceholder = usePlaceholder
         self.placement = PictureInPicturePlacement(
             opacity: placement.opacity,
             clickThrough: placement.clickThrough,
             corner: placement.corner,
             frame: placement.frame,
-            hostDisplayID: placement.hostDisplayID
+            hostDisplayID: placement.hostDisplayID,
+            mirrored: placement.mirrored,
+            mode: placement.mode,
+            window: placement.window,
+            magnifierZoom: placement.magnifierZoom
         )
         clickThroughButton = CandelaChrome.makeIconButton(
             symbolName: "cursorarrow.slash",
             help: String(localized: "Click Through")
+        )
+        mirrorButton = CandelaChrome.makeIconButton(
+            symbolName: "arrow.left.and.right.righttriangle.left.righttriangle.right",
+            help: String(localized: "Mirror")
         )
         let preferredWidth = CGFloat(placement.frame?.width ?? PictureInPictureLayout.defaultWidth)
         let content = PictureInPictureLayout.contentSize(
@@ -85,8 +103,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
-        panel.minSize = NSSize(width: PictureInPictureLayout.minWidth, height: 140)
-        panel.maxSize = NSSize(width: PictureInPictureLayout.maxWidth, height: 900)
+        panel.minSize = NSSize(width: PictureInPictureLayout.minWidth, height: 180)
+        panel.maxSize = NSSize(width: PictureInPictureLayout.maxWidth, height: 980)
         super.init(window: panel)
         panel.delegate = self
         let root = makeContent(title: title, contentSize: content)
@@ -107,8 +125,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         )
         if usePlaceholder {
             showPlaceholder(String(localized: "Preview only in fake-hardware mode."))
+            windowCandidates = PictureInPictureCapture.fakeCandidates(displayID: displayID)
+            reloadWindowMenu()
+            applyMirror()
         } else {
-            Task { await self.startCapture(displayID: displayID) }
+            Task { await self.startCapture() }
         }
     }
 
@@ -119,6 +140,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     deinit {
         clickThroughTimer?.invalidate()
+        magnifierTimer?.invalidate()
         if let clickThroughScrollMonitor {
             NSEvent.removeMonitor(clickThroughScrollMonitor)
         }
@@ -126,13 +148,46 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     func updateTitle(_ title: String) {
+        if placement.mode == .window, let source = placement.window {
+            titleLabel.stringValue = source.displayTitle
+            self.window?.title = source.displayTitle
+            return
+        }
         titleLabel.stringValue = title
         window?.title = title
     }
 
     func updateSourceDisplay(_ displayID: CGDirectDisplayID) {
+        guard sourceDisplayID != displayID else { return }
         sourceDisplayID = displayID
+        Task { await self.startCapture() }
     }
+
+    func updateSourcePixels(width: UInt32, height: UInt32) {
+        if width > 0 { sourcePixelWidth = width }
+        if height > 0 { sourcePixelHeight = height }
+    }
+
+    func applyConfiguration(
+        mode: PictureInPictureMode? = nil,
+        mirrored: Bool? = nil,
+        window: PictureInPictureWindowIdentity? = nil,
+        magnifierZoom: Double? = nil
+    ) {
+        if let mode { placement.mode = mode }
+        if let mirrored { placement.mirrored = mirrored }
+        if window != nil || mode == .display || mode == .magnifier {
+            placement.window = window
+        }
+        if let magnifierZoom {
+            placement.magnifierZoom = PictureInPictureMagnifier.clampedZoom(magnifierZoom)
+        }
+        applyPlacementToWindow()
+        persistCurrentPlacement()
+        Task { await startCapture() }
+    }
+
+    var currentPlacement: PictureInPicturePlacement { placement }
 
     func capturePlacement() {
         persistCurrentPlacement()
@@ -141,12 +196,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     func stop() {
         clickThroughTimer?.invalidate()
         clickThroughTimer = nil
+        magnifierTimer?.invalidate()
+        magnifierTimer = nil
         removeClickThroughScrollMonitor()
         persistCurrentPlacement()
-        streamQueue.sync {
-            try? stream?.stopCapture()
-            stream = nil
-        }
+        stopStream()
         preview.flush()
         window?.delegate = nil
         window?.ignoresMouseEvents = false
@@ -221,6 +275,12 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         persistCurrentPlacement()
     }
 
+    @objc private func toggleMirror() {
+        placement.mirrored.toggle()
+        applyMirror()
+        persistCurrentPlacement()
+    }
+
     @objc private func pinChanged(_ sender: NSPopUpButton) {
         guard !isApplying else { return }
         if let raw = sender.selectedItem?.representedObject as? String,
@@ -232,6 +292,48 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             placement.corner = nil
         }
         persistCurrentPlacement()
+    }
+
+    @objc private func modeChanged(_ sender: NSPopUpButton) {
+        guard !isApplying else { return }
+        guard let raw = sender.selectedItem?.representedObject as? String,
+              let mode = PictureInPictureMode(rawValue: raw)
+        else { return }
+        placement.mode = mode
+        if mode != .window {
+            placement.window = nil
+        }
+        applySourceChrome()
+        persistCurrentPlacement()
+        Task { await startCapture() }
+    }
+
+    @objc private func windowChanged(_ sender: NSPopUpButton) {
+        guard !isApplying else { return }
+        guard let raw = sender.selectedItem?.representedObject as? String, !raw.isEmpty else {
+            placement.window = nil
+            persistCurrentPlacement()
+            Task { await startCapture() }
+            return
+        }
+        let parts = raw.split(separator: "\u{1e}", maxSplits: 2, omittingEmptySubsequences: false).map(String.init)
+        let identity = PictureInPictureWindowIdentity(
+            bundleIdentifier: parts.count > 0 ? parts[0] : "",
+            title: parts.count > 1 ? parts[1] : "",
+            ownerName: parts.count > 2 ? parts[2] : ""
+        )
+        placement.window = identity
+        persistCurrentPlacement()
+        Task { await startCapture() }
+    }
+
+    @objc private func zoomChanged(_ sender: NSPopUpButton) {
+        guard !isApplying else { return }
+        if let raw = sender.selectedItem?.representedObject as? String, let value = Double(raw) {
+            placement.magnifierZoom = PictureInPictureMagnifier.clampedZoom(value)
+            persistCurrentPlacement()
+            Task { await startCapture() }
+        }
     }
 
     @objc private func screensChanged() {
@@ -274,6 +376,33 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         clickThroughButton.target = self
         clickThroughButton.action = #selector(toggleClickThrough)
 
+        mirrorButton.setButtonType(.toggle)
+        mirrorButton.target = self
+        mirrorButton.action = #selector(toggleMirror)
+
+        configurePopup(modePopup, label: String(localized: "Source"))
+        modePopup.removeAllItems()
+        for mode in PictureInPictureMode.allCases {
+            modePopup.addItem(withTitle: localizedModeTitle(mode))
+            modePopup.lastItem?.representedObject = mode.rawValue
+        }
+        modePopup.target = self
+        modePopup.action = #selector(modeChanged(_:))
+
+        configurePopup(windowPopup, label: String(localized: "Window"))
+        windowPopup.target = self
+        windowPopup.action = #selector(windowChanged(_:))
+
+        configurePopup(zoomPopup, label: String(localized: "Magnifier Zoom"))
+        zoomPopup.removeAllItems()
+        for stop in PictureInPictureMagnifier.zoomStops {
+            let title = stop == stop.rounded() ? String(format: "%.0fx", stop) : String(format: "%.1fx", stop)
+            zoomPopup.addItem(withTitle: title)
+            zoomPopup.lastItem?.representedObject = String(stop)
+        }
+        zoomPopup.target = self
+        zoomPopup.action = #selector(zoomChanged(_:))
+
         pinPopup.controlSize = .small
         pinPopup.font = .systemFont(ofSize: 11, weight: .medium)
         pinPopup.target = self
@@ -299,6 +428,16 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         chrome.addArrangedSubview(pinPopup)
         chrome.addArrangedSubview(closeButton)
 
+        sourceRow.orientation = .horizontal
+        sourceRow.alignment = .centerY
+        sourceRow.spacing = 6
+        sourceRow.translatesAutoresizingMaskIntoConstraints = false
+        sourceRow.addArrangedSubview(modePopup)
+        sourceRow.addArrangedSubview(windowPopup)
+        sourceRow.addArrangedSubview(zoomPopup)
+        sourceRow.addArrangedSubview(mirrorButton)
+        sourceRow.addArrangedSubview(NSView())
+
         preview.translatesAutoresizingMaskIntoConstraints = false
         preview.wantsLayer = true
         preview.layerContentsRedrawPolicy = .onSetNeedsDisplay
@@ -312,16 +451,21 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         placeholder.isHidden = true
 
         root.addSubview(chrome)
+        root.addSubview(sourceRow)
         root.addSubview(preview)
         root.addSubview(placeholder)
         NSLayoutConstraint.activate([
             chrome.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 10),
             chrome.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -6),
             chrome.topAnchor.constraint(equalTo: root.topAnchor, constant: 4),
-            chrome.heightAnchor.constraint(equalToConstant: PictureInPictureLayout.chromeHeight - 4),
+            chrome.heightAnchor.constraint(equalToConstant: 26),
+            sourceRow.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 10),
+            sourceRow.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -6),
+            sourceRow.topAnchor.constraint(equalTo: chrome.bottomAnchor),
+            sourceRow.heightAnchor.constraint(equalToConstant: 24),
             preview.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8),
             preview.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
-            preview.topAnchor.constraint(equalTo: chrome.bottomAnchor, constant: 2),
+            preview.topAnchor.constraint(equalTo: sourceRow.bottomAnchor, constant: 2),
             preview.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
             preview.widthAnchor.constraint(equalTo: preview.heightAnchor, multiplier: aspect),
             placeholder.centerXAnchor.constraint(equalTo: preview.centerXAnchor),
@@ -331,12 +475,24 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         return root
     }
 
+    private func configurePopup(_ popup: NSPopUpButton, label: String) {
+        popup.controlSize = .small
+        popup.font = .systemFont(ofSize: 11, weight: .medium)
+        popup.setAccessibilityLabel(label)
+        popup.setContentHuggingPriority(.required, for: .horizontal)
+    }
+
     private func applyPlacementToWindow() {
         isApplying = true
         opacitySlider.doubleValue = placement.opacity * 100
         applyOpacity()
         applyClickThrough()
+        applyMirror()
+        applySourceChrome()
         syncPinPopup()
+        syncModePopup()
+        syncZoomPopup()
+        reloadWindowMenu()
         isApplying = false
     }
 
@@ -344,6 +500,27 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         window?.alphaValue = CGFloat(placement.opacity)
         opacitySlider.toolTip = "\(String(localized: "Opacity")) \(Int((placement.opacity * 100).rounded()))%"
         opacitySlider.setAccessibilityValueDescription("\(Int((placement.opacity * 100).rounded()))%")
+    }
+
+    private func applyMirror() {
+        mirrorButton.state = placement.mirrored ? .on : .off
+        mirrorButton.contentTintColor = placement.mirrored ? CandelaChrome.accent : .secondaryLabelColor
+        mirrorButton.toolTip = placement.mirrored
+            ? String(localized: "Mirrored. Flip back to the original view.")
+            : String(localized: "Mirror")
+        mirrorButton.setAccessibilityLabel(mirrorButton.toolTip)
+        preview.setMirrored(placement.mirrored)
+    }
+
+    private func applySourceChrome() {
+        windowPopup.isHidden = placement.mode != .window
+        zoomPopup.isHidden = placement.mode != .magnifier
+        if placement.mode == .magnifier {
+            startMagnifierTimer()
+        } else {
+            magnifierTimer?.invalidate()
+            magnifierTimer = nil
+        }
     }
 
     private func applyClickThrough() {
@@ -378,11 +555,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             window?.ignoresMouseEvents = false
             return
         }
-        let hoveringChrome = window.convertToScreen(chrome.convert(chrome.bounds, to: nil))
+        let chromeRect = window.convertToScreen(chrome.convert(chrome.bounds, to: nil))
             .insetBy(dx: -10, dy: -10)
-            .contains(NSEvent.mouseLocation)
-        // Preview stays click-through. Scroll-zoom uses a global monitor so it
-        // still works while the window is ignoring mouse events.
+        let sourceRect = window.convertToScreen(sourceRow.convert(sourceRow.bounds, to: nil))
+            .insetBy(dx: -10, dy: -10)
+        let hoveringChrome = chromeRect.contains(NSEvent.mouseLocation) || sourceRect.contains(NSEvent.mouseLocation)
         window.ignoresMouseEvents = !hoveringChrome
     }
 
@@ -423,6 +600,50 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         } else {
             pinPopup.selectItem(at: 0)
         }
+    }
+
+    private func syncModePopup() {
+        if let index = modePopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == placement.mode.rawValue }) {
+            modePopup.selectItem(at: index)
+        }
+    }
+
+    private func syncZoomPopup() {
+        let selected = String(PictureInPictureMagnifier.nearestStop(placement.magnifierZoom))
+        if let index = zoomPopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == selected }) {
+            zoomPopup.selectItem(at: index)
+        }
+    }
+
+    private func reloadWindowMenu() {
+        let previous = windowPopup.selectedItem?.representedObject as? String
+        windowPopup.removeAllItems()
+        windowPopup.addItem(withTitle: String(localized: "Choose Window"))
+        windowPopup.lastItem?.representedObject = ""
+        for candidate in windowCandidates {
+            windowPopup.addItem(withTitle: candidate.identity.displayTitle)
+            windowPopup.lastItem?.representedObject = token(for: candidate.identity)
+        }
+        if let identity = placement.window {
+            let token = token(for: identity)
+            if let index = windowPopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == token }) {
+                windowPopup.selectItem(at: index)
+            } else if windowCandidates.isEmpty == false {
+                windowPopup.addItem(withTitle: identity.displayTitle)
+                windowPopup.lastItem?.representedObject = token
+                windowPopup.selectItem(at: windowPopup.numberOfItems - 1)
+            } else {
+                windowPopup.selectItem(at: 0)
+            }
+        } else if let previous, let index = windowPopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == previous }) {
+            windowPopup.selectItem(at: index)
+        } else {
+            windowPopup.selectItem(at: 0)
+        }
+    }
+
+    private func token(for identity: PictureInPictureWindowIdentity) -> String {
+        "\(identity.bundleIdentifier)\u{1e}\(identity.title)\u{1e}\(identity.ownerName)"
     }
 
     private func snapToPinnedCorner() {
@@ -489,6 +710,14 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         }
     }
 
+    private func localizedModeTitle(_ mode: PictureInPictureMode) -> String {
+        switch mode {
+        case .display: return String(localized: "Display")
+        case .window: return String(localized: "Window")
+        case .magnifier: return String(localized: "Magnifier")
+        }
+    }
+
     private static func screenDescriptors() -> [(id: CGDirectDisplayID, visible: CGRect)] {
         NSScreen.screens.map { ($0.candelaDisplayID, $0.visibleFrame) }
     }
@@ -498,8 +727,31 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         placeholder.isHidden = false
     }
 
-    private func startCapture(displayID: CGDirectDisplayID) async {
-        guard displayID != 0 else {
+    private func startMagnifierTimer() {
+        guard magnifierTimer == nil else { return }
+        let timer = Timer(timeInterval: 0.08, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.refreshMagnifierIfNeeded()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        magnifierTimer = timer
+    }
+
+    private func stopStream() {
+        streamQueue.sync {
+            try? stream?.stopCapture()
+            stream = nil
+        }
+        lastMagnifierRect = .null
+    }
+
+    private func startCapture() async {
+        if usePlaceholder {
+            applySourceChrome()
+            return
+        }
+        guard sourceDisplayID != 0 else {
             showPlaceholder(String(localized: "This display is not available."))
             return
         }
@@ -507,38 +759,155 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             _ = CGRequestScreenCaptureAccess()
         }
         do {
-            let contentList = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-            guard let display = contentList.displays.first(where: { $0.displayID == displayID }) else {
-                showPlaceholder(String(localized: "Could not find this display for capture."))
-                return
+            let contentList = try await PictureInPictureCapture.shareableContent()
+            windowCandidates = PictureInPictureCapture.candidates(in: contentList, preferringDisplay: sourceDisplayID)
+            reloadWindowMenu()
+            let ownWindows = PictureInPictureCapture.ownWindows(in: contentList)
+            let filter: SCContentFilter
+            let captureWidth: Int
+            let captureHeight: Int
+            var sourceRect: CGRect?
+            var showsCursor = true
+            switch placement.mode {
+            case .window:
+                if let identity = placement.window,
+                   let match = Self.resolveWindow(identity, in: windowCandidates, displayID: sourceDisplayID),
+                   let window = PictureInPictureCapture.window(id: match.windowID, in: contentList)
+                {
+                    placement.window = match.identity
+                    filter = SCContentFilter(desktopIndependentWindow: window)
+                    let size = PictureInPictureLayout.captureSize(
+                        pixelWidth: match.pixelWidth,
+                        pixelHeight: match.pixelHeight
+                    )
+                    captureWidth = size.width
+                    captureHeight = size.height
+                    showsCursor = false
+                    titleLabel.stringValue = match.identity.displayTitle
+                } else {
+                    showPlaceholder(String(localized: "Could not find that window. Pick another one."))
+                    applySourceChrome()
+                    return
+                }
+            case .magnifier:
+                guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
+                    showPlaceholder(String(localized: "Could not find this display for capture."))
+                    return
+                }
+                filter = SCContentFilter(display: display, excludingWindows: ownWindows)
+                let crop = currentMagnifierCrop(display: display)
+                lastMagnifierRect = crop
+                sourceRect = PictureInPictureCapture.sourceRect(
+                    crop: crop,
+                    pixelWidth: Double(sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width)),
+                    pixelHeight: Double(sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height)),
+                    pointWidth: Double(display.width),
+                    pointHeight: Double(display.height)
+                )
+                let size = PictureInPictureLayout.captureSize(
+                    pixelWidth: UInt32(crop.width.rounded()),
+                    pixelHeight: UInt32(crop.height.rounded())
+                )
+                captureWidth = size.width
+                captureHeight = size.height
+            case .display:
+                guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
+                    showPlaceholder(String(localized: "Could not find this display for capture."))
+                    return
+                }
+                filter = SCContentFilter(display: display, excludingWindows: ownWindows)
+                let size = PictureInPictureLayout.captureSize(
+                    pixelWidth: sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width),
+                    pixelHeight: sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height)
+                )
+                captureWidth = size.width
+                captureHeight = size.height
             }
-            let ownWindows = contentList.windows.filter {
-                $0.owningApplication?.bundleIdentifier == "app.candela.macos"
-            }
-            let filter = SCContentFilter(display: display, excludingWindows: ownWindows)
-            let capture = PictureInPictureLayout.captureSize(
-                pixelWidth: sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width),
-                pixelHeight: sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height)
+            let configuration = PictureInPictureCapture.streamConfiguration(
+                width: captureWidth,
+                height: captureHeight,
+                sourceRect: sourceRect,
+                showsCursor: showsCursor
             )
-            let configuration = SCStreamConfiguration()
-            configuration.width = capture.width
-            configuration.height = capture.height
-            configuration.scalesToFit = false
-            configuration.minimumFrameInterval = CMTime(value: 1, timescale: 30)
-            configuration.queueDepth = 8
-            configuration.showsCursor = true
-            configuration.capturesAudio = false
-            configuration.pixelFormat = kCVPixelFormatType_32BGRA
-            if #available(macOS 14.0, *) {
-                configuration.captureResolution = .best
-            }
+            stopStream()
             let stream = SCStream(filter: filter, configuration: configuration, delegate: preview)
             try stream.addStreamOutput(preview, type: .screen, sampleHandlerQueue: streamQueue)
             try await stream.startCapture()
             self.stream = stream
             placeholder.isHidden = true
+            applyMirror()
+            applySourceChrome()
         } catch {
             showPlaceholder(String(localized: "Screen Recording permission is required for Picture in Picture."))
+        }
+    }
+
+
+    private static func resolveWindow(
+        _ identity: PictureInPictureWindowIdentity,
+        in candidates: [PictureInPictureWindowCandidate],
+        displayID: CGDirectDisplayID
+    ) -> PictureInPictureWindowCandidate? {
+        if let match = PictureInPictureWindowMatching.match(identity: identity, candidates: candidates) {
+            return match
+        }
+        let query = identity.title.isEmpty ? identity.ownerName : identity.title
+        let bundle = identity.bundleIdentifier.isEmpty ? nil : identity.bundleIdentifier
+        return PictureInPictureWindowMatching.query(
+            query,
+            bundleIdentifier: bundle,
+            preferringDisplay: displayID,
+            in: candidates
+        )
+    }
+
+    private func currentMagnifierCrop(display: SCDisplay) -> CGRect {
+        let pixelWidth = Double(sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width))
+        let pixelHeight = Double(sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height))
+        let screen = NSScreen.candelaScreen(for: sourceDisplayID)?.frame
+            ?? CGRect(x: 0, y: 0, width: display.width, height: display.height)
+        let cursor = PictureInPictureMagnifier.cursorInSourcePixels(
+            mouse: NSEvent.mouseLocation,
+            screenFrame: screen,
+            pixelWidth: pixelWidth,
+            pixelHeight: pixelHeight
+        ) ?? CGPoint(x: pixelWidth / 2, y: pixelHeight / 2)
+        return PictureInPictureMagnifier.cropRect(
+            sourceWidth: pixelWidth,
+            sourceHeight: pixelHeight,
+            cursor: cursor,
+            zoom: placement.magnifierZoom
+        )
+    }
+
+    private func refreshMagnifierIfNeeded() async {
+        guard placement.mode == .magnifier, !usePlaceholder else { return }
+        do {
+            let contentList = try await PictureInPictureCapture.shareableContent()
+            guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else { return }
+            let crop = currentMagnifierCrop(display: display)
+            guard crop.integral != lastMagnifierRect.integral else { return }
+            lastMagnifierRect = crop
+            let sourceRect = PictureInPictureCapture.sourceRect(
+                crop: crop,
+                pixelWidth: Double(sourcePixelWidth > 0 ? sourcePixelWidth : UInt32(display.width)),
+                pixelHeight: Double(sourcePixelHeight > 0 ? sourcePixelHeight : UInt32(display.height)),
+                pointWidth: Double(display.width),
+                pointHeight: Double(display.height)
+            )
+            let size = PictureInPictureLayout.captureSize(
+                pixelWidth: UInt32(crop.width.rounded()),
+                pixelHeight: UInt32(crop.height.rounded())
+            )
+            let configuration = PictureInPictureCapture.streamConfiguration(
+                width: size.width,
+                height: size.height,
+                sourceRect: sourceRect,
+                showsCursor: true
+            )
+            try await stream?.updateConfiguration(configuration)
+        } catch {
+            return
         }
     }
 }
@@ -571,11 +940,18 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         displayLayer.magnificationFilter = .linear
         displayLayer.minificationFilter = .trilinear
         displayLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
+        displayLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    func setMirrored(_ mirrored: Bool) {
+        displayLayer.transform = mirrored
+            ? CATransform3DMakeScale(-1, 1, 1)
+            : CATransform3DIdentity
     }
 
     func flush() {

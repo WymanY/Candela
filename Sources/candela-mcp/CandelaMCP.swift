@@ -117,7 +117,21 @@ final class MCPStdioTransport {
         case "candela_set_rotation":
             return ControlRequest(action: .setRotation, display: try required(object, "display"), rotation: try required(object, "rotation"))
         case "candela_set_picture_in_picture":
+            if object["mode"] != nil || object["window"] != nil || object["bundle"] != nil || object["zoom"] != nil || object["mirrored"] != nil {
+                return ControlRequest(
+                    action: .configurePictureInPicture,
+                    display: try required(object, "display"),
+                    pictureInPicture: object["enabled"]?.boolValue ?? true,
+                    pictureInPictureMode: object["mode"]?.stringValue,
+                    pictureInPictureMirrored: object["mirrored"]?.boolValue,
+                    pictureInPictureWindow: object["window"]?.stringValue,
+                    pictureInPictureBundle: object["bundle"]?.stringValue,
+                    pictureInPictureZoom: object["zoom"]?.doubleValue
+                )
+            }
             return ControlRequest(action: .setPictureInPicture, display: try required(object, "display"), pictureInPicture: try requiredBool(object, "enabled"))
+        case "candela_set_picture_in_picture_wall":
+            return ControlRequest(action: .setPictureInPictureWall, pictureInPicture: try requiredBool(object, "enabled"))
         case "candela_rename_display":
             return ControlRequest(action: .rename, display: try required(object, "display"), name: object["name"]?.stringValue)
         case "candela_apply_preset":
@@ -188,10 +202,18 @@ final class MCPStdioTransport {
             "display": schema("string", "Display query"),
             "rotation": schema("string", "0, 90, 180, 270, landscape, or portrait"),
         ], ["display", "rotation"]),
-        tool("candela_set_picture_in_picture", "Open or close a floating Picture in Picture window for a display.", [
+        tool("candela_set_picture_in_picture", "Open, close, or configure a floating Picture in Picture window for a display.", [
             "display": schema("string", "Display query"),
             "enabled": schema("boolean", "true to open, false to close"),
-        ], ["display", "enabled"]),
+            "mode": schema("string", "display, window, or magnifier"),
+            "mirrored": schema("boolean", "Flip the preview horizontally"),
+            "window": schema("string", "Window title or app name"),
+            "bundle": schema("string", "Bundle identifier for window follow"),
+            "zoom": schema("number", "Magnifier zoom from 1.5 to 4"),
+        ], ["display"]),
+        tool("candela_set_picture_in_picture_wall", "Open or close the multi-display monitor wall.", [
+            "enabled": schema("boolean", "true to open, false to close"),
+        ], ["enabled"]),
         tool("candela_rename_display", "Set or clear a custom display name.", [
             "display": schema("string", "Display query"),
             "name": schema("string", "Custom name; omit or empty to reset"),

@@ -1,4 +1,5 @@
 import XCTest
+import TestSupport
 @testable import DisplayCore
 
 final class PictureInPictureTests: XCTestCase {
@@ -161,5 +162,143 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertTrue(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 250, y: 180), windowFrame: frame))
         XCTAssertFalse(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 20, y: 20), windowFrame: frame))
         XCTAssertTrue(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 198, y: 180), windowFrame: frame, inset: 4))
+    }
+
+    func testWindowMatchingPrefersSameAppAndTitle() {
+        let slackA = PictureInPictureWindowCandidate(
+            windowID: 11,
+            bundleIdentifier: "com.tinyspeck.slackmacgap",
+            title: "#design",
+            ownerName: "Slack",
+            displayID: 2
+        )
+        let slackB = PictureInPictureWindowCandidate(
+            windowID: 12,
+            bundleIdentifier: "com.tinyspeck.slackmacgap",
+            title: "#general",
+            ownerName: "Slack",
+            displayID: 1
+        )
+        let safari = PictureInPictureWindowCandidate(
+            windowID: 21,
+            bundleIdentifier: "com.apple.Safari",
+            title: "Reference",
+            ownerName: "Safari",
+            displayID: 2
+        )
+        let identity = PictureInPictureWindowIdentity(
+            bundleIdentifier: "com.tinyspeck.slackmacgap",
+            title: "#design",
+            ownerName: "Slack"
+        )
+        let match = PictureInPictureWindowMatching.match(
+            identity: identity,
+            candidates: [safari, slackB, slackA]
+        )
+        XCTAssertEqual(match?.windowID, 11)
+
+        let retitled = PictureInPictureWindowMatching.match(
+            identity: PictureInPictureWindowIdentity(
+                bundleIdentifier: "com.tinyspeck.slackmacgap",
+                title: "design review",
+                ownerName: "Slack"
+            ),
+            candidates: [slackB, slackA]
+        )
+        XCTAssertEqual(retitled?.windowID, 11)
+
+        let query = PictureInPictureWindowMatching.query(
+            "safari",
+            preferringDisplay: 2,
+            in: [slackA, safari]
+        )
+        XCTAssertEqual(query?.bundleIdentifier, "com.apple.Safari")
+    }
+
+    func testMagnifierCropsAroundCursorAndStaysOnScreen() {
+        let crop = PictureInPictureMagnifier.cropRect(
+            sourceWidth: 1920,
+            sourceHeight: 1080,
+            cursor: CGPoint(x: 960, y: 540),
+            zoom: 2
+        )
+        XCTAssertEqual(crop.width, 960, accuracy: 0.001)
+        XCTAssertEqual(crop.height, 540, accuracy: 0.001)
+        XCTAssertEqual(crop.midX, 960, accuracy: 0.001)
+        XCTAssertEqual(crop.midY, 540, accuracy: 0.001)
+
+        let edge = PictureInPictureMagnifier.cropRect(
+            sourceWidth: 1920,
+            sourceHeight: 1080,
+            cursor: CGPoint(x: 10, y: 10),
+            zoom: 2
+        )
+        XCTAssertEqual(edge.minX, 0, accuracy: 0.001)
+        XCTAssertEqual(edge.minY, 0, accuracy: 0.001)
+        XCTAssertEqual(PictureInPictureMagnifier.clampedZoom(8), 4, accuracy: 0.0001)
+        XCTAssertEqual(PictureInPictureMagnifier.nearestStop(2.4), 2, accuracy: 0.0001)
+
+        let screen = CGRect(x: 1920, y: 0, width: 1512, height: 982)
+        let cursor = PictureInPictureMagnifier.cursorInSourcePixels(
+            mouse: CGPoint(x: 1920 + 756, y: 491),
+            screenFrame: screen,
+            pixelWidth: 3024,
+            pixelHeight: 1964
+        )
+        XCTAssertEqual(cursor?.x ?? -1, 1512, accuracy: 1)
+        XCTAssertEqual(cursor?.y ?? -1, 982, accuracy: 1)
+        XCTAssertNil(
+            PictureInPictureMagnifier.cursorInSourcePixels(
+                mouse: CGPoint(x: 10, y: 10),
+                screenFrame: screen,
+                pixelWidth: 3024,
+                pixelHeight: 1964
+            )
+        )
+    }
+
+    func testMonitorWallSkipsVirtualScreensAndTilesFromTopLeft() {
+        let snapshots = FakeSnapshots.standard()
+        let wall = PictureInPictureWallLayout.snapshots(snapshots)
+        XCTAssertEqual(wall.map(\.name), [FakeSnapshots.builtInName, FakeSnapshots.dellName, FakeSnapshots.hdmiTVName])
+        XCTAssertEqual(PictureInPictureWallLayout.grid(for: 2).columns, 2)
+        XCTAssertEqual(PictureInPictureWallLayout.grid(for: 2).rows, 1)
+        XCTAssertEqual(PictureInPictureWallLayout.grid(for: 3).columns, 2)
+        XCTAssertEqual(PictureInPictureWallLayout.grid(for: 3).rows, 2)
+
+        let frames = PictureInPictureWallLayout.tileFrames(
+            count: 3,
+            in: CGRect(x: 0, y: 0, width: 200, height: 200),
+            gap: 0
+        )
+        XCTAssertEqual(frames.count, 3)
+        XCTAssertEqual(frames[0].origin.x, 0, accuracy: 0.001)
+        XCTAssertEqual(frames[0].maxY, 200, accuracy: 0.001)
+        XCTAssertEqual(frames[1].origin.x, 100, accuracy: 0.001)
+        XCTAssertEqual(frames[2].origin.y, 0, accuracy: 0.001)
+        XCTAssertEqual(frames[2].origin.x, 0, accuracy: 0.001)
+
+        let grown = PictureInPictureWallLayout.tileFrames(
+            count: 2,
+            in: CGRect(x: 0, y: 0, width: 1280, height: 400),
+            gap: 8
+        )
+        XCTAssertEqual(grown.count, 2)
+        XCTAssertEqual(grown[0].width, 636, accuracy: 0.001)
+        XCTAssertEqual(grown[0].height, 400, accuracy: 0.001)
+        XCTAssertEqual(grown[0].minY, 0, accuracy: 0.001)
+        XCTAssertEqual(grown[0].maxY, 400, accuracy: 0.001)
+        XCTAssertEqual(grown[1].minX, 644, accuracy: 0.001)
+        XCTAssertEqual(grown[1].maxX, 1280, accuracy: 0.001)
+    }
+
+    func testLegacyPlacementDecodesAsDisplayMode() throws {
+        let data = Data(#"{"opacity":0.4,"clickThrough":true,"corner":"topLeft"}"#.utf8)
+        let placement = try JSONDecoder().decode(PictureInPicturePlacement.self, from: data)
+        XCTAssertEqual(placement.opacity, 0.4, accuracy: 0.0001)
+        XCTAssertEqual(placement.mode, .display)
+        XCTAssertFalse(placement.mirrored)
+        XCTAssertEqual(placement.magnifierZoom, 2, accuracy: 0.0001)
+        XCTAssertEqual(PictureInPictureMode.from(query: "loupe"), .magnifier)
     }
 }
