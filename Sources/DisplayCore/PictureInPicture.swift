@@ -605,13 +605,13 @@ public enum PictureInPictureLayout {
         current: CGRect,
         factor: CGFloat,
         aspect: CGFloat,
-        anchor: CGPoint? = nil,
         corner: PictureInPictureCorner? = nil,
         visible: CGRect? = nil
     ) -> CGRect {
-        let safeAspect = max(aspect, 0.2)
+        _ = aspect
         let nextWidth = min(max(current.width * factor, minWidth), maxWidth)
-        let nextHeight = nextWidth / safeAspect + chromeHeight
+        let scale = current.width > 1 ? nextWidth / current.width : 1
+        let nextHeight = max(current.height * scale, chromeHeight + 80)
         var next = CGRect(x: current.origin.x, y: current.origin.y, width: nextWidth, height: nextHeight)
         if abs(nextWidth - current.width) < 0.5, abs(nextHeight - current.height) < 0.5 {
             return visible.map { clampedFrame(current, in: $0) } ?? current
@@ -620,15 +620,8 @@ public enum PictureInPictureLayout {
             next.origin = snapOrigin(windowSize: next.size, corner: corner, visible: visible)
             return clampedFrame(next, in: visible)
         }
-        if let anchor, current.width > 1, current.height > 1 {
-            let tx = (anchor.x - current.minX) / current.width
-            let ty = (anchor.y - current.minY) / current.height
-            next.origin.x = anchor.x - tx * next.width
-            next.origin.y = anchor.y - ty * next.height
-        } else {
-            next.origin.x += (current.width - next.width) / 2
-            next.origin.y += (current.height - next.height) / 2
-        }
+        next.origin.x += (current.width - next.width) / 2
+        next.origin.y += (current.height - next.height) / 2
         if let visible {
             return clampedFrame(next, in: visible)
         }

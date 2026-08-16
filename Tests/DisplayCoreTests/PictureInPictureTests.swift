@@ -120,9 +120,9 @@ final class PictureInPictureTests: XCTestCase {
             aspect: 400 / 225
         )
         XCTAssertEqual(zoomed.width, 432, accuracy: 0.001)
-        XCTAssertEqual(zoomed.height, 432 / (400 / 225) + PictureInPictureLayout.chromeHeight, accuracy: 0.001)
-        XCTAssertEqual(zoomed.origin.x, 84, accuracy: 0.001)
-        XCTAssertEqual(zoomed.origin.y, 80 + (257 - zoomed.height) / 2, accuracy: 0.001)
+        XCTAssertEqual(zoomed.height, 257 * 1.08, accuracy: 0.001)
+        XCTAssertEqual(zoomed.midX, current.midX, accuracy: 0.001)
+        XCTAssertEqual(zoomed.midY, current.midY, accuracy: 0.001)
 
         let visible = CGRect(x: 0, y: 0, width: 1512, height: 982)
         let pinned = CGRect(
@@ -139,6 +139,28 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(grown.maxX, visible.maxX - PictureInPictureLayout.margin, accuracy: 0.001)
         XCTAssertEqual(grown.minY, visible.minY + PictureInPictureLayout.margin, accuracy: 0.001)
         XCTAssertGreaterThan(grown.width, pinned.width)
+    }
+
+    func testScrollZoomInThenOutReturnsToTheSameFrame() {
+        let current = CGRect(x: 180, y: 140, width: 400, height: 305)
+        let zoomed = PictureInPictureLayout.zoomedFrame(
+            current: current,
+            factor: 1.08,
+            aspect: 16 / 10
+        )
+        let restored = PictureInPictureLayout.zoomedFrame(
+            current: zoomed,
+            factor: 1 / 1.08,
+            aspect: 16 / 10
+        )
+        XCTAssertEqual(zoomed.midX, current.midX, accuracy: 0.001)
+        XCTAssertEqual(zoomed.midY, current.midY, accuracy: 0.001)
+        XCTAssertEqual(restored.origin.x, current.origin.x, accuracy: 0.001)
+        XCTAssertEqual(restored.origin.y, current.origin.y, accuracy: 0.001)
+        XCTAssertEqual(restored.midX, current.midX, accuracy: 0.001)
+        XCTAssertEqual(restored.midY, current.midY, accuracy: 0.001)
+        XCTAssertEqual(restored.width, current.width, accuracy: 0.001)
+        XCTAssertEqual(restored.height, current.height, accuracy: 0.001)
     }
 
     func testZoomStopsAtWidthLimits() {

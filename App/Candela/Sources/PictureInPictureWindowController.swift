@@ -252,8 +252,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             visible: visible
         )
         guard next != window.frame else { return }
+        let wasMovable = window.isMovableByWindowBackground
         isApplying = true
+        window.isMovableByWindowBackground = false
         window.setFrame(next, display: true, animate: false)
+        window.isMovableByWindowBackground = wasMovable
         isApplying = false
         persistCurrentPlacement()
     }
@@ -924,6 +927,10 @@ final class PictureInPictureRootView: NSView {
 
     override func magnify(with event: NSEvent) {
         onMagnify?(event)
+    }
+
+    override func wantsScrollEventsForSwipeTracking(on axis: NSEvent.GestureAxis) -> Bool {
+        true
     }
 }
 
