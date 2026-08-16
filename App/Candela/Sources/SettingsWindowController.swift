@@ -19,7 +19,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
 
     init(session: DisplaySessionController) {
         self.session = session
-        let window = NSWindow(
+        let window = SettingsWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 500),
             styleMask: [.titled, .closable],
             backing: .buffered,
@@ -164,5 +164,19 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
     func selectTab(identifier: NSToolbarItem.Identifier) {
         tabView.selectTabViewItem(withIdentifier: identifier.rawValue)
         window?.toolbar?.selectedItemIdentifier = identifier
+    }
+}
+
+private final class SettingsWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) {
+        performClose(sender)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {
+            performClose(nil)
+            return
+        }
+        super.keyDown(with: event)
     }
 }

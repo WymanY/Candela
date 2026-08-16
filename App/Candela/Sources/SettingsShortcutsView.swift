@@ -37,6 +37,12 @@ final class SettingsShortcutsView: NSView {
             ]
         ))
         stack.addArrangedSubview(makeGroup(
+            title: String(localized: "Settings"),
+            rows: [
+                (String(localized: "Close Settings"), "Esc"),
+            ]
+        ))
+        stack.addArrangedSubview(makeGroup(
             title: String(localized: "Picture in Picture"),
             rows: [
                 (String(localized: "Close Picture in Picture"), "⌘W"),
