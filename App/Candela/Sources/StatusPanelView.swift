@@ -338,14 +338,14 @@ final class StatusPanelView: NSView {
         settingsButton.action = #selector(openSettings)
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
         sizeFooterButton(settingsButton)
-        let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Wall"), symbolName: "rectangle.split.2x2")
+        let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Overview"), symbolName: "rectangle.split.2x2")
         wallButton.target = self
         wallButton.action = #selector(toggleWall)
         wallButton.translatesAutoresizingMaskIntoConstraints = false
         sizeFooterButton(wallButton)
         wallButton.toolTip = session.isPictureInPictureWallOpen
-            ? String(localized: "Close Monitor Wall")
-            : String(localized: "Open Monitor Wall")
+            ? String(localized: "Close Display Overview")
+            : String(localized: "Open Display Overview")
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
@@ -433,11 +433,11 @@ final class StatusPanelView: NSView {
             return
         }
         wallButton.toolTip = session.isPictureInPictureWallOpen
-            ? String(localized: "Close Monitor Wall")
-            : String(localized: "Open Monitor Wall")
+            ? String(localized: "Close Display Overview")
+            : String(localized: "Open Display Overview")
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
-        wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Wall") : String(localized: "Wall")
+        wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Overview") : String(localized: "Overview")
         sizeFooterButton(wallButton)
     }
 

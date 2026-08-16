@@ -7,11 +7,11 @@ import ScreenCaptureKit
 
 @MainActor
 final class PictureInPictureWallWindowController: NSWindowController, NSWindowDelegate {
-    private let titleLabel = CandelaChrome.makeTitle(String(localized: "Monitor Wall"), size: 12, weight: .semibold)
+    private let titleLabel = CandelaChrome.makeTitle(String(localized: "Display Overview"), size: 12, weight: .semibold)
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
     private let pinPopup = NSPopUpButton()
-    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Monitor Wall"))
+    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Display Overview"))
     private let chrome = NSStackView()
     private let tilesHost = WallTilesHost()
     private var tiles: [WallTile] = []
@@ -255,9 +255,9 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         tilesHost.tileViews = tiles.map(\.view)
         layoutTiles()
         if snapshots.isEmpty {
-            titleLabel.stringValue = String(localized: "Monitor Wall")
+            titleLabel.stringValue = String(localized: "Display Overview")
         } else {
-            titleLabel.stringValue = String(localized: "Monitor Wall") + " · \(snapshots.count)"
+            titleLabel.stringValue = String(localized: "Display Overview") + " · \(snapshots.count)"
         }
     }
 
