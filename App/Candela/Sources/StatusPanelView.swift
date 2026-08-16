@@ -333,7 +333,7 @@ final class StatusPanelView: NSView {
         content.addSubview(footer)
 
         let line = CandelaChrome.makeHairline()
-        let settingsButton = CandelaChrome.makeQuietButton(title: String(localized: "Settings…"), symbolName: "gearshape")
+        let settingsButton = CandelaChrome.makeQuietButton(title: String(localized: "Settings"), symbolName: "gearshape")
         settingsButton.target = self
         settingsButton.action = #selector(openSettings)
         settingsButton.translatesAutoresizingMaskIntoConstraints = false

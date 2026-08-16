@@ -35,23 +35,6 @@
         }
       }
     },
-    "Settings…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Settings…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置…"
-          }
-        }
-      }
-    },
     "Brightness": {
       "extractionState": "manual",
       "localizations": {
@@ -2530,6 +2513,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "未命名场景"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
           }
         }
       }

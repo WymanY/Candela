@@ -166,7 +166,7 @@ final class StatusItemController: NSObject {
     private func showContextMenu() {
         let menu = NSMenu()
         let settingsItem = NSMenuItem(
-            title: String(localized: "Settings…"),
+            title: String(localized: "Settings"),
             action: #selector(openSettings),
             keyEquivalent: ","
         )

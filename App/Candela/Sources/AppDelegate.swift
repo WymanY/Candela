@@ -63,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         let settings = NSMenuItem(
-            title: String(localized: "Settings…"),
+            title: String(localized: "Settings"),
             action: #selector(StatusItemController.openSettings),
             keyEquivalent: ""
         )
