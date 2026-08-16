@@ -301,4 +301,18 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(placement.magnifierZoom, 2, accuracy: 0.0001)
         XCTAssertEqual(PictureInPictureMode.from(query: "loupe"), .magnifier)
     }
+
+    func testMirrorKeepsThePreviewCentered() {
+        let bounds = CGRect(x: 0, y: 0, width: 640, height: 360)
+        XCTAssertEqual(PictureInPictureMirror.affineTransform(mirrored: false, bounds: bounds), .identity)
+
+        let flipped = PictureInPictureMirror.affineTransform(mirrored: true, bounds: bounds)
+        let left = CGPoint(x: 0, y: 180).applying(flipped)
+        let right = CGPoint(x: 640, y: 180).applying(flipped)
+        let center = CGPoint(x: 320, y: 180).applying(flipped)
+        XCTAssertEqual(left.x, 640, accuracy: 0.001)
+        XCTAssertEqual(right.x, 0, accuracy: 0.001)
+        XCTAssertEqual(center.x, 320, accuracy: 0.001)
+        XCTAssertEqual(center.y, 180, accuracy: 0.001)
+    }
 }

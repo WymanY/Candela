@@ -929,18 +929,22 @@ final class PictureInPictureRootView: NSView {
 
 final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegate {
     private let displayLayer = AVSampleBufferDisplayLayer()
+    private var mirrored = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer = displayLayer
+        layer = CALayer()
+        layer?.masksToBounds = true
+        layer?.backgroundColor = NSColor.black.cgColor
         displayLayer.videoGravity = .resizeAspect
         displayLayer.backgroundColor = NSColor.black.cgColor
         displayLayer.contentsGravity = .resizeAspect
         displayLayer.magnificationFilter = .linear
         displayLayer.minificationFilter = .trilinear
         displayLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
-        displayLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        displayLayer.anchorPoint = CGPoint(x: 0, y: 0)
+        layer?.addSublayer(displayLayer)
     }
 
     @available(*, unavailable)
@@ -948,10 +952,19 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        displayLayer.frame = bounds
+        displayLayer.setAffineTransform(PictureInPictureMirror.affineTransform(mirrored: mirrored, bounds: bounds))
+        CATransaction.commit()
+    }
+
     func setMirrored(_ mirrored: Bool) {
-        displayLayer.transform = mirrored
-            ? CATransform3DMakeScale(-1, 1, 1)
-            : CATransform3DIdentity
+        self.mirrored = mirrored
+        needsLayout = true
+        layoutSubtreeIfNeeded()
     }
 
     func flush() {

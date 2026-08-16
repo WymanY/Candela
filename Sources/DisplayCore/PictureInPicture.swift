@@ -296,6 +296,16 @@ public enum PictureInPictureWindowMatching {
     }
 }
 
+public enum PictureInPictureMirror {
+    /// Flip horizontally around the center of `bounds` so the preview stays in place.
+    public static func affineTransform(mirrored: Bool, bounds: CGRect) -> CGAffineTransform {
+        guard mirrored, bounds.width > 1, bounds.height > 1 else { return .identity }
+        return CGAffineTransform(translationX: bounds.midX, y: bounds.midY)
+            .scaledBy(x: -1, y: 1)
+            .translatedBy(x: -bounds.midX, y: -bounds.midY)
+    }
+}
+
 public enum PictureInPictureMagnifier {
     public static let defaultZoom: Double = 2
     public static let minZoom: Double = 1.5
