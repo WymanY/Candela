@@ -12,7 +12,7 @@ final class SpeakerRowView: NSView {
     private let metaLabel = CandelaChrome.makeMeta()
     private let outputPopup = NSPopUpButton()
     private let volumeIcon = CandelaChrome.makeSymbol("speaker.wave.2")
-    private let volumeSlider: NSSlider
+    private let volumeSlider: CandelaSlider
     private let volumePercent = CandelaChrome.makePercent()
     private let muteButton: NSButton
     private let volumeRow = NSStackView()
@@ -25,7 +25,7 @@ final class SpeakerRowView: NSView {
     override init(frame frameRect: NSRect) {
         volumeSlider = CandelaChrome.makeSlider()
         muteButton = CandelaChrome.makeIconButton(
-            symbolName: "speaker.wave.2.fill",
+            symbolName: "speaker.slash",
             help: String(localized: "Mute")
         )
         super.init(frame: frameRect)
@@ -202,13 +202,19 @@ final class SpeakerRowView: NSView {
         muteButton.toolTip = isMuted ? String(localized: "Unmute") : String(localized: "Mute")
         muteButton.setAccessibilityLabel(isMuted ? String(localized: "Unmute") : String(localized: "Mute"))
         muteButton.setAccessibilityHelp(name)
+        muteButton.wantsLayer = true
+        muteButton.layer?.cornerRadius = 7
+        muteButton.layer?.cornerCurve = .continuous
+        muteButton.layer?.backgroundColor = isMuted
+            ? CandelaChrome.accentSoft.cgColor
+            : NSColor.clear.cgColor
         muteButton.contentTintColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
-        muteButton.image = CandelaChrome.symbol(isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: 13)
-        volumeIcon.image = CandelaChrome.symbol(isMuted ? "speaker.slash.fill" : "speaker.wave.2", size: CandelaChrome.iconSize)
-        volumeIcon.contentTintColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
-        volumeSlider.alphaValue = isMuted ? 0.38 : 1
-        volumeSlider.trackFillColor = isMuted ? NSColor.secondaryLabelColor : CandelaChrome.accent
-        volumePercent.textColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
+        muteButton.image = CandelaChrome.symbol(isMuted ? "speaker.slash.fill" : "speaker.slash", size: 13)
+        volumeIcon.image = CandelaChrome.symbol("speaker.wave.2", size: CandelaChrome.iconSize)
+        volumeIcon.contentTintColor = isMuted ? .tertiaryLabelColor : .secondaryLabelColor
+        volumeSlider.appearsMuted = isMuted
+        volumeSlider.alphaValue = 1
+        volumePercent.textColor = isMuted ? .tertiaryLabelColor : .secondaryLabelColor
         metaLabel.textColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
         metaLabel.stringValue = isMuted
             ? String(localized: "Muted · Current output")

@@ -112,8 +112,8 @@ enum CandelaChrome {
         return image
     }
 
-    static func makeSlider() -> NSSlider {
-        let slider = NSSlider()
+    static func makeSlider() -> CandelaSlider {
+        let slider = CandelaSlider()
         slider.minValue = 0
         slider.maxValue = 100
         slider.doubleValue = 50
@@ -122,7 +122,6 @@ enum CandelaChrome {
         slider.controlSize = .regular
         slider.setContentHuggingPriority(.defaultLow, for: .horizontal)
         slider.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        slider.trackFillColor = accent
         return slider
     }
 
@@ -215,6 +214,93 @@ enum CandelaChrome {
     }
 }
 
+
+final class CandelaSlider: NSSlider {
+    var appearsMuted = false {
+        didSet {
+            (cell as? CandelaSliderCell)?.appearsMuted = appearsMuted
+            needsDisplay = true
+        }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configure()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configure()
+    }
+
+    private func configure() {
+        cell = CandelaSliderCell()
+        sliderType = .linear
+    }
+}
+
+private final class CandelaSliderCell: NSSliderCell {
+    var appearsMuted = false
+
+    override func barRect(flipped: Bool) -> NSRect {
+        var rect = super.barRect(flipped: flipped)
+        rect.origin.y += (rect.height - trackHeight) / 2
+        rect.size.height = trackHeight
+        return rect
+    }
+
+    override func drawBar(inside aRect: NSRect, flipped: Bool) {
+        let track = NSBezierPath(roundedRect: aRect, xRadius: aRect.height / 2, yRadius: aRect.height / 2)
+        NSColor.labelColor.withAlphaComponent(0.26).setFill()
+        track.fill()
+
+        let span = max(maxValue - minValue, 0.0001)
+        let fraction = CGFloat((doubleValue - minValue) / span)
+        guard fraction > 0 else { return }
+        var fillRect = aRect
+        fillRect.size.width = max(aRect.height, aRect.width * fraction)
+        let fill = NSBezierPath(roundedRect: fillRect, xRadius: aRect.height / 2, yRadius: aRect.height / 2)
+        (appearsMuted ? NSColor.labelColor.withAlphaComponent(0.42) : CandelaChrome.accent).setFill()
+        fill.fill()
+    }
+
+    override func drawKnob(_ knobRect: NSRect) {
+        let size = knobDiameter
+        let rect = NSRect(
+            x: knobRect.midX - size / 2,
+            y: knobRect.midY - size / 2,
+            width: size,
+            height: size
+        )
+        let knob = NSBezierPath(ovalIn: rect)
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.22)
+        shadow.shadowBlurRadius = 1.5
+        shadow.shadowOffset = NSSize(width: 0, height: -0.5)
+        shadow.set()
+        NSColor.white.setFill()
+        knob.fill()
+        NSGraphicsContext.restoreGraphicsState()
+        NSColor.black.withAlphaComponent(0.10).setStroke()
+        knob.lineWidth = 0.5
+        knob.stroke()
+    }
+
+    private var trackHeight: CGFloat {
+        switch controlSize {
+        case .mini, .small: return 3
+        default: return 4
+        }
+    }
+
+    private var knobDiameter: CGFloat {
+        switch controlSize {
+        case .mini, .small: return 12
+        default: return 14
+        }
+    }
+}
 
 @MainActor
 final class CandelaBadge: NSView {
