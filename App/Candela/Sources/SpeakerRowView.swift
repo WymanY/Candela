@@ -117,6 +117,7 @@ final class SpeakerRowView: NSView {
         volumePercent.isHidden = !showsVolume
         if showsVolume {
             volumeSlider.doubleValue = speaker.volume.current * 100
+            volumeSlider.needsDisplay = true
             updateVolumePercent(speaker.volume.current)
             applyMutedAppearance(isMuted: speaker.volume.isMuted, name: speaker.name)
             volumeSlider.setAccessibilityLabel("\(String(localized: "Volume")), \(speaker.name)")
