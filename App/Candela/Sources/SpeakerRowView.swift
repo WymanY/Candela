@@ -178,6 +178,10 @@ final class SpeakerRowView: NSView {
         let value = sender.doubleValue / 100
         updateVolumePercent(value)
         sender.setAccessibilityValueDescription(percentPhrase(value))
+        if isMuted {
+            applyMutedAppearance(isMuted: false, name: nameLabel.stringValue)
+            onMute?(false)
+        }
         onVolume?(value)
     }
 
