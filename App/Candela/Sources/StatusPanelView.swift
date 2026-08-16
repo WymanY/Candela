@@ -337,10 +337,12 @@ final class StatusPanelView: NSView {
         settingsButton.target = self
         settingsButton.action = #selector(openSettings)
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        sizeFooterButton(settingsButton)
         let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Wall"), symbolName: "rectangle.split.2x2")
         wallButton.target = self
         wallButton.action = #selector(toggleWall)
         wallButton.translatesAutoresizingMaskIntoConstraints = false
+        sizeFooterButton(wallButton)
         wallButton.toolTip = session.isPictureInPictureWallOpen
             ? String(localized: "Close Monitor Wall")
             : String(localized: "Open Monitor Wall")
@@ -351,22 +353,28 @@ final class StatusPanelView: NSView {
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
         quitButton.translatesAutoresizingMaskIntoConstraints = false
+        sizeFooterButton(quitButton)
         footer.addSubview(line)
-        footer.addSubview(settingsButton)
-        footer.addSubview(wallButton)
         footer.addSubview(quitButton)
+
+        let actions = NSStackView(views: [settingsButton, wallButton])
+        actions.orientation = .horizontal
+        actions.alignment = .centerY
+        actions.spacing = 10
+        actions.translatesAutoresizingMaskIntoConstraints = false
+        actions.setHuggingPriority(.required, for: .horizontal)
+        footer.addSubview(actions)
 
         NSLayoutConstraint.activate([
             footer.heightAnchor.constraint(equalToConstant: 28),
             line.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
             line.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
             line.topAnchor.constraint(equalTo: footer.topAnchor),
-            settingsButton.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
-            settingsButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
-            wallButton.leadingAnchor.constraint(equalTo: settingsButton.trailingAnchor, constant: 10),
-            wallButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
+            actions.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
+            actions.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
             quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
-            quitButton.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
+            quitButton.centerYAnchor.constraint(equalTo: actions.centerYAnchor),
+            quitButton.leadingAnchor.constraint(greaterThanOrEqualTo: actions.trailingAnchor, constant: 8),
         ])
     }
 
@@ -430,5 +438,19 @@ final class StatusPanelView: NSView {
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Wall") : String(localized: "Wall")
+        sizeFooterButton(wallButton)
+    }
+
+    private func sizeFooterButton(_ button: NSButton) {
+        button.sizeToFit()
+        let fitting = button.fittingSize
+        let width = max(fitting.width + 4, 44)
+        if let existing = button.constraints.first(where: { $0.firstAttribute == .width && $0.secondItem == nil }) {
+            existing.constant = width
+        } else {
+            button.widthAnchor.constraint(equalToConstant: width).isActive = true
+        }
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
 }

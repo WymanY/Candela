@@ -150,16 +150,22 @@ enum CandelaChrome {
 
     static func makeQuietButton(title: String, symbolName: String? = nil) -> NSButton {
         let button = NSButton(title: title, target: nil, action: nil)
-        button.bezelStyle = .inline
-        button.controlSize = .small
         button.isBordered = false
+        button.bezelStyle = .regularSquare
+        button.controlSize = .small
         button.font = .systemFont(ofSize: 11, weight: .semibold)
         button.contentTintColor = .secondaryLabelColor
         button.imagePosition = symbolName == nil ? .noImage : .imageLeading
         if let symbolName {
             button.image = symbol(symbolName, size: 11)
         }
+        if #available(macOS 11.0, *) {
+            button.imageHugsTitle = true
+        }
+        button.lineBreakMode = .byClipping
+        button.setButtonType(.momentaryChange)
         button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
         return button
     }
 
