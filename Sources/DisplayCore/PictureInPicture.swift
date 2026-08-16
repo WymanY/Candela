@@ -375,8 +375,10 @@ public enum PictureInPictureMagnifier {
         return CGPoint(x: crop.midX, y: crop.midY)
     }
 
-    /// Space-drag pans the crop. Preview-space deltas are flipped so the canvas
-    /// follows the pointer the way a map does.
+    /// Space-drag pans the crop like grabbing the canvas.
+    /// Dragging the pointer up should reveal content below, so the crop
+    /// moves down in source space. AppKit's deltaY is positive for that
+    /// movement, and ScreenCaptureKit's sourceRect grows downward.
     public static func pannedFocus(
         current: CGPoint,
         deltaX: Double,
@@ -398,7 +400,7 @@ public enum PictureInPictureMagnifier {
         return clampedFocus(
             CGPoint(
                 x: current.x - deltaX * scaleX,
-                y: current.y + deltaY * scaleY
+                y: current.y - deltaY * scaleY
             ),
             sourceWidth: sourceWidth,
             sourceHeight: sourceHeight,

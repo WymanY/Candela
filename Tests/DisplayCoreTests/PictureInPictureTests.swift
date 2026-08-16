@@ -308,7 +308,7 @@ final class PictureInPictureTests: XCTestCase {
         let panned = PictureInPictureMagnifier.pannedFocus(
             current: start,
             deltaX: 100,
-            deltaY: 0,
+            deltaY: 50,
             previewWidth: 400,
             previewHeight: 225,
             sourceWidth: 1920,
@@ -316,12 +316,24 @@ final class PictureInPictureTests: XCTestCase {
             zoom: 2
         )
         XCTAssertEqual(panned.x, 720, accuracy: 0.001)
-        XCTAssertEqual(panned.y, 540, accuracy: 0.001)
+        XCTAssertEqual(panned.y, 420, accuracy: 0.001)
+
+        let upward = PictureInPictureMagnifier.pannedFocus(
+            current: start,
+            deltaX: 0,
+            deltaY: 50,
+            previewWidth: 400,
+            previewHeight: 225,
+            sourceWidth: 1920,
+            sourceHeight: 1080,
+            zoom: 2
+        )
+        XCTAssertLessThan(upward.y, start.y)
 
         let edge = PictureInPictureMagnifier.pannedFocus(
             current: CGPoint(x: 100, y: 100),
             deltaX: 400,
-            deltaY: -400,
+            deltaY: 400,
             previewWidth: 400,
             previewHeight: 225,
             sourceWidth: 1920,
