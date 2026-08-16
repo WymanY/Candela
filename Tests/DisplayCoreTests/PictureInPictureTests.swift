@@ -163,6 +163,22 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(restored.height, current.height, accuracy: 0.001)
     }
 
+    func testCenteredFrameFixesHeightChangedByLayout() {
+        let current = CGRect(x: 180, y: 140, width: 400, height: 305)
+        let zoomed = PictureInPictureLayout.zoomedFrame(
+            current: current,
+            factor: 1.08,
+            aspect: 16 / 10
+        )
+        var settled = zoomed
+        settled.size.height = current.height * 1.08 + 18
+        let recentered = PictureInPictureLayout.centeredFrame(settled, around: current)
+        XCTAssertEqual(recentered.midX, current.midX, accuracy: 0.001)
+        XCTAssertEqual(recentered.midY, current.midY, accuracy: 0.001)
+        XCTAssertEqual(recentered.width, settled.width, accuracy: 0.001)
+        XCTAssertEqual(recentered.height, settled.height, accuracy: 0.001)
+    }
+
     func testZoomStopsAtWidthLimits() {
         let tiny = PictureInPictureLayout.zoomedFrame(
             current: CGRect(x: 40, y: 40, width: PictureInPictureLayout.minWidth, height: 200),

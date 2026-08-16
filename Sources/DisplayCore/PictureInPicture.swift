@@ -620,8 +620,20 @@ public enum PictureInPictureLayout {
             next.origin = snapOrigin(windowSize: next.size, corner: corner, visible: visible)
             return clampedFrame(next, in: visible)
         }
-        next.origin.x += (current.width - next.width) / 2
-        next.origin.y += (current.height - next.height) / 2
+        return centeredFrame(next, around: current, visible: visible)
+    }
+
+    /// AppKit / Auto Layout can change the height after `setFrame`.
+    /// Re-center the settled size on the pre-zoom midpoint so zoom-in/out
+    /// does not walk the window.
+    public static func centeredFrame(
+        _ frame: CGRect,
+        around current: CGRect,
+        visible: CGRect? = nil
+    ) -> CGRect {
+        var next = frame
+        next.origin.x = current.midX - next.width / 2
+        next.origin.y = current.midY - next.height / 2
         if let visible {
             return clampedFrame(next, in: visible)
         }

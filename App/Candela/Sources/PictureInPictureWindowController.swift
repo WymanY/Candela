@@ -243,19 +243,27 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     private func applyZoom(factor: CGFloat, event: NSEvent) {
         guard let window, factor > 0, abs(factor - 1) > 0.001 else { return }
-        let visible = hostVisibleFrame(for: window.frame) ?? window.screen?.visibleFrame
+        let current = window.frame
+        let visible = hostVisibleFrame(for: current) ?? window.screen?.visibleFrame
         let next = PictureInPictureLayout.zoomedFrame(
-            current: window.frame,
+            current: current,
             factor: factor,
             aspect: aspect,
             corner: placement.corner,
             visible: visible
         )
-        guard next != window.frame else { return }
+        guard next != current else { return }
         let wasMovable = window.isMovableByWindowBackground
         isApplying = true
         window.isMovableByWindowBackground = false
         window.setFrame(next, display: true, animate: false)
+        window.layoutIfNeeded()
+        if placement.corner == nil {
+            let settled = PictureInPictureLayout.centeredFrame(window.frame, around: current, visible: visible)
+            if settled != window.frame {
+                window.setFrame(settled, display: true, animate: false)
+            }
+        }
         window.isMovableByWindowBackground = wasMovable
         isApplying = false
         persistCurrentPlacement()
