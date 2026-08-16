@@ -10,6 +10,8 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
     public var hasShownGammaInterferenceAlert: Bool
     public var hasOpenedPanelOnce: Bool
     public var pictureInPictureWall: PictureInPicturePlacement?
+    /// Empty string follows the system language. Otherwise a language identifier such as `en` or `zh-Hans`.
+    public var preferredLanguage: String
 
     public init(
         schemaVersion: Int = 1,
@@ -20,7 +22,8 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         showPercentText: Bool = true,
         hasShownGammaInterferenceAlert: Bool = false,
         hasOpenedPanelOnce: Bool = false,
-        pictureInPictureWall: PictureInPicturePlacement? = nil
+        pictureInPictureWall: PictureInPicturePlacement? = nil,
+        preferredLanguage: String = ""
     ) {
         self.schemaVersion = schemaVersion
         self.launchAtLogin = launchAtLogin
@@ -31,6 +34,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         self.hasShownGammaInterferenceAlert = hasShownGammaInterferenceAlert
         self.hasOpenedPanelOnce = hasOpenedPanelOnce
         self.pictureInPictureWall = pictureInPictureWall
+        self.preferredLanguage = preferredLanguage
     }
 
     public init(from decoder: Decoder) throws {
@@ -44,6 +48,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         hasShownGammaInterferenceAlert = try container.decodeIfPresent(Bool.self, forKey: .hasShownGammaInterferenceAlert) ?? false
         hasOpenedPanelOnce = try container.decodeIfPresent(Bool.self, forKey: .hasOpenedPanelOnce) ?? false
         pictureInPictureWall = try container.decodeIfPresent(PictureInPicturePlacement.self, forKey: .pictureInPictureWall)
+        preferredLanguage = try container.decodeIfPresent(String.self, forKey: .preferredLanguage) ?? ""
     }
 }
 

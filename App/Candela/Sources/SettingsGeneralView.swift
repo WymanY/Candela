@@ -8,6 +8,7 @@ final class SettingsGeneralView: NSView {
     private let softwareDimming = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let allowDimToBlack = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let showPercent = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let languagePopup = NSPopUpButton()
     private let errorLabel = CandelaChrome.makeCaption()
 
     init(session: DisplaySessionController) {
@@ -41,6 +42,13 @@ final class SettingsGeneralView: NSView {
             button.setContentHuggingPriority(.required, for: .horizontal)
         }
 
+        languagePopup.controlSize = .regular
+        languagePopup.font = .systemFont(ofSize: 13, weight: .medium)
+        languagePopup.target = self
+        languagePopup.action = #selector(languageChanged(_:))
+        languagePopup.setContentHuggingPriority(.required, for: .horizontal)
+        reloadLanguageMenu()
+
         errorLabel.textColor = .systemRed
         errorLabel.isHidden = true
 
@@ -61,6 +69,7 @@ final class SettingsGeneralView: NSView {
             title: String(localized: "Panel"),
             rows: [(showPercent, String(localized: "Show percent next to sliders"), String(localized: "Show 50% beside each slider."))]
         ))
+        stack.addArrangedSubview(makeLanguageGroup())
         stack.addArrangedSubview(errorLabel)
 
         let document = NSView()
@@ -97,6 +106,7 @@ final class SettingsGeneralView: NSView {
         softwareDimming.state = settings.softwareDimmingEnabled ? .on : .off
         allowDimToBlack.state = settings.allowDimToBlack ? .on : .off
         showPercent.state = settings.showPercentText ? .on : .off
+        reloadLanguageMenu()
         if let error = session.launchAtLoginError, !error.isEmpty {
             errorLabel.stringValue = error
             errorLabel.isHidden = false
@@ -114,6 +124,58 @@ final class SettingsGeneralView: NSView {
         next.showPercentText = showPercent.state == .on
         session.saveSettings(next)
         reload()
+    }
+
+    @objc private func languageChanged(_ sender: NSPopUpButton) {
+        guard let raw = sender.selectedItem?.representedObject as? String else { return }
+        var next = session.settings
+        if next.preferredLanguage == raw { return }
+        next.preferredLanguage = raw
+        AppLanguage.apply(raw)
+        session.saveSettings(next)
+        reload()
+    }
+
+    private func reloadLanguageMenu() {
+        languagePopup.removeAllItems()
+        let selected = AppLanguage(rawValue: session.settings.preferredLanguage) ?? .system
+        for language in AppLanguage.allCases {
+            languagePopup.addItem(withTitle: language.menuTitle)
+            languagePopup.lastItem?.representedObject = language.rawValue
+            if language == selected {
+                languagePopup.select(languagePopup.lastItem)
+            }
+        }
+    }
+
+    private func makeLanguageGroup() -> NSView {
+        let heading = CandelaChrome.makeCaption(String(localized: "Language").uppercased())
+        heading.font = .systemFont(ofSize: 11, weight: .semibold)
+        heading.textColor = CandelaChrome.accent
+        let card = CandelaChrome.makeModule()
+        let titleField = CandelaChrome.makeTitle(String(localized: "App Language"), size: 13, weight: .medium)
+        let caption = CandelaChrome.makeCaption(String(localized: "Defaults to the language set in System Settings."))
+        let texts = NSStackView(views: [titleField, caption])
+        texts.orientation = .vertical
+        texts.alignment = .leading
+        texts.spacing = 2
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let row = NSStackView(views: [texts, spacer, languagePopup])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.edgeInsets = NSEdgeInsets(top: 11, left: 0, bottom: 11, right: 0)
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.widthAnchor.constraint(equalToConstant: 556).isActive = true
+        CandelaChrome.pin(row, to: card, insets: NSEdgeInsets(top: 4, left: 14, bottom: 4, right: 14))
+        let wrap = NSStackView(views: [heading, card])
+        wrap.orientation = .vertical
+        wrap.alignment = .leading
+        wrap.spacing = 6
+        wrap.translatesAutoresizingMaskIntoConstraints = false
+        card.widthAnchor.constraint(equalTo: wrap.widthAnchor).isActive = true
+        wrap.widthAnchor.constraint(equalToConstant: 584).isActive = true
+        return wrap
     }
 
     private func makeGroup(title: String, rows: [(NSButton, String, String?)]) -> NSView {

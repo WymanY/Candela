@@ -54,7 +54,7 @@ final class StatusPanel: NSPanel {
 final class StatusPanelController {
     let panel: StatusPanel
     private let session: DisplaySessionController
-    private let panelView: StatusPanelView
+    private var panelView: StatusPanelView
 
     var isVisible: Bool {
         panel.isVisible
@@ -109,6 +109,15 @@ final class StatusPanelController {
 
     func hide() {
         panel.orderOut(nil)
+    }
+
+    func rebuild() {
+        let next = StatusPanelView(session: session)
+        next.onOpenSettings = panelView.onOpenSettings
+        next.onQuit = panelView.onQuit
+        panelView = next
+        panel.contentView = next
+        reload()
     }
 
     func reload() {

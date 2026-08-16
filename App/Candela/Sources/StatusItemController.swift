@@ -8,12 +8,13 @@ final class StatusItemController: NSObject {
     private let session: DisplaySessionController
     private let statusItem: NSStatusItem
     private let panelController: StatusPanelController
-    private let settingsController: SettingsWindowController
+    private var settingsController: SettingsWindowController
     private let guideController = MenuBarGuideController()
     private let log = Logger(subsystem: "app.candela.macos", category: "ui")
     private var globalMonitor: Any?
     private var localMonitor: Any?
     private var suppressDismissUntil: Date?
+    private var appliedLanguage: String
 
     init(session: DisplaySessionController) {
         Self.forceSystemVisible()
@@ -21,13 +22,11 @@ final class StatusItemController: NSObject {
         self.statusItem = Self.makeStatusItem()
         self.panelController = StatusPanelController(session: session)
         self.settingsController = SettingsWindowController(session: session)
+        self.appliedLanguage = session.settings.preferredLanguage
         super.init()
-        settingsController.onClose = { [weak self] in
-            self?.settingsDidClose()
-        }
+        bindSettingsController()
         session.onChange = { [weak self] in
-            self?.panelController.reload()
-            self?.settingsController.reload()
+            self?.handleSessionChange()
         }
         panelController.bindActions(
             openSettings: { [weak self] in self?.openSettings() },
@@ -184,6 +183,45 @@ final class StatusItemController: NSObject {
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
+    }
+
+    private func bindSettingsController() {
+        settingsController.onClose = { [weak self] in
+            self?.settingsDidClose()
+        }
+    }
+
+    private func handleSessionChange() {
+        let language = session.settings.preferredLanguage
+        if language != appliedLanguage {
+            appliedLanguage = language
+            panelController.rebuild()
+            if settingsController.window?.isVisible == true {
+                rebuildSettingsWindow()
+            }
+        } else {
+            panelController.reload()
+            settingsController.reload()
+        }
+    }
+
+    private func rebuildSettingsWindow() {
+        guard let window = settingsController.window, window.isVisible else { return }
+        let selected = window.toolbar?.selectedItemIdentifier
+        let frame = window.frame
+        settingsController.onClose = nil
+        let replacement = SettingsWindowController(session: session)
+        settingsController = replacement
+        bindSettingsController()
+        replacement.showWindow(nil)
+        if let next = replacement.window {
+            next.setFrame(frame, display: true)
+            if let selected {
+                replacement.selectTab(identifier: selected)
+            }
+            next.makeKeyAndOrderFront(nil)
+        }
+        window.close()
     }
 
     @objc func openSettings() {

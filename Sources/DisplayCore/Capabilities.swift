@@ -154,10 +154,10 @@ public enum DisplayRotation: Int, Codable, Sendable, CaseIterable {
 
     public var orientationTitle: String {
         switch self {
-        case .deg0: return "Landscape"
-        case .deg90: return "Portrait"
-        case .deg180: return "Landscape flipped"
-        case .deg270: return "Portrait flipped"
+        case .deg0: return String(localized: "Landscape", bundle: .module)
+        case .deg90: return String(localized: "Portrait", bundle: .module)
+        case .deg180: return String(localized: "Landscape flipped", bundle: .module)
+        case .deg270: return String(localized: "Portrait flipped", bundle: .module)
         }
     }
 

@@ -165,7 +165,7 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
         guard let id = sender.identifier?.rawValue, let scene = session.scene(matching: id) else { return }
         let alert = NSAlert()
         alert.messageText = String(localized: "Delete Scene")
-        alert.informativeText = String(localized: "Remove “\(scene.displayName)”? This cannot be undone.")
+        alert.informativeText = String(format: String(localized: "Remove “%@”? This cannot be undone."), scene.displayName)
         alert.addButton(withTitle: String(localized: "Delete"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }

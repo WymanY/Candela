@@ -558,7 +558,7 @@ final class DisplaySessionController {
             }
         }
         #endif
-        return enabled ? "Launch at Login requires macOS 13 or later." : nil
+        return enabled ? String(localized: "Launch at Login requires macOS 13 or later.") : nil
     }
 
     func syncLaunchAtLoginFromSystem() {

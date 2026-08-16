@@ -141,7 +141,15 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
     }
 
     @objc private func selectTab(_ sender: NSToolbarItem) {
-        tabView.selectTabViewItem(withIdentifier: sender.itemIdentifier.rawValue)
-        window?.toolbar?.selectedItemIdentifier = sender.itemIdentifier
+        selectTab(identifier: sender.itemIdentifier)
+    }
+
+    @objc func selectTabForIdentifier(_ sender: NSToolbarItem) {
+        selectTab(identifier: sender.itemIdentifier)
+    }
+
+    func selectTab(identifier: NSToolbarItem.Identifier) {
+        tabView.selectTabViewItem(withIdentifier: identifier.rawValue)
+        window?.toolbar?.selectedItemIdentifier = identifier
     }
 }
