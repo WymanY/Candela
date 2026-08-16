@@ -31,14 +31,25 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private var clickThroughScrollMonitor: Any?
     private var spaceKeyMonitor: Any?
     private var localSpaceKeyMonitor: Any?
+    private var commandWMonitor: Any?
     private var sourceDisplayID: CGDirectDisplayID
     private var windowCandidates: [PictureInPictureWindowCandidate] = []
     private var lastMagnifierRect: CGRect = .null
     private var magnifierFocus: CGPoint?
     private var isPanningMagnifier = false
     private var spaceHeld = false
+    private var dragStateBeforeMagnifierCanvasPan: MagnifierCanvasPanDragState?
     var onClose: (() -> Void)?
     var onPlacementChange: ((PictureInPicturePlacement) -> Void)?
+
+    private struct MagnifierCanvasPanDragState {
+        let windowIsMovable: Bool
+        let windowIsMovableByBackground: Bool
+        let panelCanvasPanActive: Bool
+        let rootAllowsWindowDrag: Bool
+        let rootSwallowsScroll: Bool
+        let previewAllowsWindowDrag: Bool
+    }
 
     private var sourcePixelWidth: UInt32
     private var sourcePixelHeight: UInt32
@@ -114,6 +125,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         panel.maxSize = NSSize(width: PictureInPictureLayout.maxWidth, height: 980)
         super.init(window: panel)
         panel.delegate = self
+        panel.onCommandW = { [weak self] in
+            self?.closeIfHovered()
+        }
         let root = makeContent(title: title, contentSize: content)
         root.onMagnify = { [weak self] event in
             self?.handleMagnify(event)
@@ -134,6 +148,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         applyPlacementToWindow()
         persistCurrentPlacement()
         installSpaceMonitor()
+        installCommandWMonitor()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screensChanged),
@@ -166,6 +181,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         }
         if let localSpaceKeyMonitor {
             NSEvent.removeMonitor(localSpaceKeyMonitor)
+        }
+        if let commandWMonitor {
+            NSEvent.removeMonitor(commandWMonitor)
         }
         NotificationCenter.default.removeObserver(self)
     }
@@ -232,7 +250,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         magnifierTimer?.invalidate()
         magnifierTimer = nil
         removeClickThroughScrollMonitor()
-        endMagnifierPan()
+        endMagnifierPan(force: true)
         persistCurrentPlacement()
         stopStream()
         preview.flush()
@@ -315,6 +333,13 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     @objc private func closePictureInPicture() {
         window?.close()
+    }
+
+    private func closeIfHovered() {
+        guard let window, PictureInPictureLayout.isMouseOverWindow(mouse: NSEvent.mouseLocation, windowFrame: window.frame) else {
+            return
+        }
+        window.close()
     }
 
     @objc private func opacityChanged(_ sender: NSSlider) {
@@ -577,9 +602,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             magnifierTimer?.invalidate()
             magnifierTimer = nil
             magnifierFocus = nil
-            endMagnifierPan()
+            isPanningMagnifier = false
         }
-        updateMagnifierCursor()
+        syncMagnifierCanvasPanState()
     }
 
     private func applyClickThrough() {
@@ -966,7 +991,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     private func handlePreviewMouseDragged(_ event: NSEvent) -> Bool {
-        guard isPanningMagnifier else { return false }
+        guard isPanningMagnifier, shouldPanMagnifierCanvas else { return false }
         panMagnifier(deltaX: event.deltaX, deltaY: event.deltaY)
         return true
     }
@@ -983,15 +1008,16 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     private var shouldPanMagnifierCanvas: Bool {
-        placement.mode == .magnifier && (spaceHeld || isPanningMagnifier)
+        !PictureInPictureLayout.shouldMoveWindow(
+            forMagnifierPan: spaceHeld,
+            mode: placement.mode
+        )
     }
 
     private func beginMagnifierPanSession() {
-        guard placement.mode == .magnifier else { return }
+        guard shouldPanMagnifierCanvas else { return }
         isPanningMagnifier = true
-        window?.isMovable = false
-        window?.isMovableByWindowBackground = false
-        (window as? StatusPanel)?.canvasPanActive = true
+        setMagnifierCanvasPanActive(true)
         updateMagnifierCursor()
     }
 
@@ -1013,16 +1039,61 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         Task { await refreshMagnifierIfNeeded() }
     }
 
-    private func endMagnifierPan() {
+    private func endMagnifierPan(force: Bool = false) {
         isPanningMagnifier = false
-        window?.isMovable = true
-        window?.isMovableByWindowBackground = true
-        (window as? StatusPanel)?.canvasPanActive = false
+        if force {
+            setMagnifierCanvasPanActive(false)
+            preview.updatePanCursor(false)
+        } else {
+            syncMagnifierCanvasPanState()
+        }
+    }
+
+    private func syncMagnifierCanvasPanState() {
+        let active = shouldPanMagnifierCanvas
+        isPanningMagnifier = active
+        setMagnifierCanvasPanActive(active)
         updateMagnifierCursor()
     }
 
+    private func setMagnifierCanvasPanActive(_ active: Bool) {
+        if active {
+            guard dragStateBeforeMagnifierCanvasPan == nil,
+                  let window,
+                  let panel = window as? StatusPanel,
+                  let root = window.contentView as? PictureInPictureRootView
+            else { return }
+            dragStateBeforeMagnifierCanvasPan = MagnifierCanvasPanDragState(
+                windowIsMovable: window.isMovable,
+                windowIsMovableByBackground: window.isMovableByWindowBackground,
+                panelCanvasPanActive: panel.canvasPanActive,
+                rootAllowsWindowDrag: root.allowsWindowDrag,
+                rootSwallowsScroll: root.swallowScrollForCanvasPan,
+                previewAllowsWindowDrag: preview.allowsWindowDrag
+            )
+            window.isMovable = false
+            window.isMovableByWindowBackground = false
+            panel.canvasPanActive = true
+            root.allowsWindowDrag = false
+            root.swallowScrollForCanvasPan = true
+            preview.allowsWindowDrag = false
+            return
+        }
+
+        guard let previous = dragStateBeforeMagnifierCanvasPan else { return }
+        dragStateBeforeMagnifierCanvasPan = nil
+        window?.isMovable = previous.windowIsMovable
+        window?.isMovableByWindowBackground = previous.windowIsMovableByBackground
+        (window as? StatusPanel)?.canvasPanActive = previous.panelCanvasPanActive
+        if let root = window?.contentView as? PictureInPictureRootView {
+            root.allowsWindowDrag = previous.rootAllowsWindowDrag
+            root.swallowScrollForCanvasPan = previous.rootSwallowsScroll
+        }
+        preview.allowsWindowDrag = previous.previewAllowsWindowDrag
+    }
+
     private func updateMagnifierCursor() {
-        preview.updatePanCursor(spaceHeld || isPanningMagnifier)
+        preview.updatePanCursor(shouldPanMagnifierCanvas)
     }
 
     private func installSpaceMonitor() {
@@ -1042,6 +1113,21 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         }
     }
 
+    private func installCommandWMonitor() {
+        guard commandWMonitor == nil else { return }
+        commandWMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            guard event.modifierFlags.contains(.command),
+                  event.charactersIgnoringModifiers?.lowercased() == "w"
+            else { return event }
+            guard let window = self.window,
+                  PictureInPictureLayout.isMouseOverWindow(mouse: NSEvent.mouseLocation, windowFrame: window.frame)
+            else { return event }
+            self.closePictureInPicture()
+            return nil
+        }
+    }
+
     private func noteSpaceKey(_ event: NSEvent) {
         if event.keyCode == 49 {
             setSpaceHeld(event.type != .keyUp)
@@ -1054,11 +1140,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             return
         }
         spaceHeld = held
-        if held {
-            beginMagnifierPanSession()
-        } else {
-            endMagnifierPan()
-        }
+        syncMagnifierCanvasPanState()
     }
 
     private func refreshMagnifierIfNeeded() async {
@@ -1099,14 +1181,19 @@ final class PictureInPictureRootView: NSView {
     var onMouseDown: ((NSEvent) -> Bool)?
     var onMouseDragged: ((NSEvent) -> Bool)?
     var onMouseUp: ((NSEvent) -> Bool)?
+    var allowsWindowDrag = true
 
     override var acceptsFirstResponder: Bool { true }
+    override var mouseDownCanMoveWindow: Bool { allowsWindowDrag }
+
+    var swallowScrollForCanvasPan = false
 
     override func scrollWheel(with event: NSEvent) {
         onScrollWheel?(event)
+        if !swallowScrollForCanvasPan {
+            super.scrollWheel(with: event)
+        }
     }
-
-    override var mouseDownCanMoveWindow: Bool { false }
 
     override func magnify(with event: NSEvent) {
         onMagnify?(event)
@@ -1136,8 +1223,9 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
     private let hostLayer = CALayer()
     private var displayLayer = AVSampleBufferDisplayLayer()
     private var mirrored = false
+    var allowsWindowDrag = true
 
-    override var mouseDownCanMoveWindow: Bool { false }
+    override var mouseDownCanMoveWindow: Bool { allowsWindowDrag }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)

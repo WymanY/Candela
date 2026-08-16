@@ -659,6 +659,15 @@ public enum PictureInPictureLayout {
         windowFrame.insetBy(dx: -inset, dy: -inset).contains(mouse)
     }
 
+    public static func shouldCloseOnCommandW(
+        mouse: CGPoint,
+        windowFrame: CGRect,
+        commandPressed: Bool,
+        key: String
+    ) -> Bool {
+        commandPressed && key.lowercased() == "w" && isMouseOverWindow(mouse: mouse, windowFrame: windowFrame)
+    }
+
     public static func zoomedFrame(
         current: CGRect,
         factor: CGFloat,

@@ -3,6 +3,7 @@ import AppKit
 @MainActor
 final class StatusPanel: NSPanel {
     var canvasPanActive = false
+    var onCommandW: (() -> Void)?
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -11,8 +12,33 @@ final class StatusPanel: NSPanel {
         orderOut(sender)
     }
 
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if isCommandW(event) {
+            onCommandW?()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if isCommandW(event) {
+            onCommandW?()
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    private func isCommandW(_ event: NSEvent) -> Bool {
+        event.modifierFlags.contains(.command)
+            && event.charactersIgnoringModifiers?.lowercased() == "w"
+    }
+
     override func scrollWheel(with event: NSEvent) {
-        contentView?.scrollWheel(with: event)
+        if canvasPanActive {
+            contentView?.scrollWheel(with: event)
+            return
+        }
+        super.scrollWheel(with: event)
     }
 
     override func mouseDragged(with event: NSEvent) {

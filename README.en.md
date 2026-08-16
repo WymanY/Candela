@@ -45,7 +45,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - The source can be the whole display, one window, or a magnifier that follows the cursor. Hold Space and drag or scroll the preview to pan around the magnified region. That gesture does not resize the PiP window.
 - Flip the preview horizontally for a teleprompter.
 - Scroll or pinch to zoom. Width stays between 280 and 1280. A pinned window grows from that corner.
-- The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel.
+- The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. ⌘W closes the hovered PiP.
 - Pin it to top-left, top-right, bottom-left, or bottom-right. Dragging it off that corner unpins it.
 - Each display remembers the last place, size, opacity, click-through, pin, flip, mode, and window identity. Closing and opening the window brings that layout back.
 - The monitor wall tiles every real display into one floating window and remembers its own placement. Virtual screens stay out.

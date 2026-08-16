@@ -202,6 +202,34 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertTrue(PictureInPictureLayout.isMouseOverWindow(mouse: CGPoint(x: 198, y: 180), windowFrame: frame, inset: 4))
     }
 
+    func testCommandWClosesOnlyTheHoveredWindow() {
+        let frame = CGRect(x: 200, y: 120, width: 400, height: 260)
+        XCTAssertTrue(
+            PictureInPictureLayout.shouldCloseOnCommandW(
+                mouse: CGPoint(x: 250, y: 180),
+                windowFrame: frame,
+                commandPressed: true,
+                key: "w"
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureLayout.shouldCloseOnCommandW(
+                mouse: CGPoint(x: 20, y: 20),
+                windowFrame: frame,
+                commandPressed: true,
+                key: "w"
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureLayout.shouldCloseOnCommandW(
+                mouse: CGPoint(x: 250, y: 180),
+                windowFrame: frame,
+                commandPressed: false,
+                key: "w"
+            )
+        )
+    }
+
     func testWindowMatchingPrefersSameAppAndTitle() {
         let slackA = PictureInPictureWindowCandidate(
             windowID: 11,

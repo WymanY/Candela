@@ -69,6 +69,9 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         panel.maxSize = NSSize(width: PictureInPictureWallLayout.maxWidth, height: 980)
         super.init(window: panel)
         panel.delegate = self
+        panel.onCommandW = { [weak self] in
+            self?.closeIfHovered()
+        }
         let root = makeContent()
         root.onMagnify = { [weak self] event in
             self?.handleMagnify(event)
@@ -258,6 +261,13 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
 
     @objc private func closeWall() {
         window?.close()
+    }
+
+    private func closeIfHovered() {
+        guard let window, PictureInPictureLayout.isMouseOverWindow(mouse: NSEvent.mouseLocation, windowFrame: window.frame) else {
+            return
+        }
+        window.close()
     }
 
     @objc private func opacityChanged(_ sender: NSSlider) {
