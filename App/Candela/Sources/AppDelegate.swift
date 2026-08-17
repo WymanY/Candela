@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let session = DisplaySessionController.makeDefault()
         self.session = session
         statusItem = StatusItemController(session: session)
+        installApplicationMenu()
         statusItem?.revealOnLaunch()
         session.start()
         controlServer = ControlServer { [weak session] request in
@@ -76,6 +77,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controlServer?.stop()
         controlServer = nil
         session?.prepareToQuit()
+    }
+
+    private func installApplicationMenu() {
+        let menu = NSMenu()
+        let appMenuItem = NSMenuItem()
+        menu.addItem(appMenuItem)
+
+        let appMenu = NSMenu()
+        let settings = NSMenuItem(
+            title: String(localized: "Settings"),
+            action: #selector(StatusItemController.openSettings),
+            keyEquivalent: ","
+        )
+        settings.target = statusItem
+        appMenu.addItem(settings)
+        appMenu.addItem(.separator())
+        let quit = NSMenuItem(
+            title: String(localized: "Quit"),
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        appMenu.addItem(quit)
+        appMenuItem.submenu = appMenu
+        NSApp.mainMenu = menu
     }
 
     private func terminateExtraInstances() {
