@@ -41,7 +41,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 ### Picture in Picture
 
 - Each real display has a PiP button in the menu-bar panel. The footer also opens a monitor wall.
-- Opens a floating, resizable mirror of that screen, preferably on another display.
+- Opens a floating, resizable mirror of that screen on the display under the pointer.
 - The source can be the whole display, one window, or a magnifier that follows the cursor. Until a window is chosen, Window mode still shows that display.
 - The title bar shows the display name, then the window name in Window mode. Display and Window hint that you can scroll to zoom. Magnifier hints that Space-drag pans the canvas.
 - In Magnifier, hold Space and drag or scroll the preview to pan around the magnified region. That gesture does not resize the PiP window.
@@ -196,6 +196,7 @@ CI also builds the Candela app on macOS 14.
 
 ## 1.2
 
+- Picture in Picture now opens on the display under the pointer.
 - Picture in Picture can follow a window, not just a whole display. Until a window is chosen, it keeps showing that display.
 - Flip the preview horizontally for a teleprompter.
 - Magnifier mode crops a sharp region around the cursor. Hold Space and drag or scroll the preview to pan the canvas. That gesture does not resize the PiP window.
