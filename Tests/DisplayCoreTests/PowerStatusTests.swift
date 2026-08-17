@@ -3,18 +3,33 @@ import IOKit.ps
 import XCTest
 
 final class PowerStatusTests: XCTestCase {
-    func testHidesDesktopAndPluggedInMacs() {
+    func testHidesDesktopsWithoutAnInternalBattery() {
+        XCTAssertFalse(PowerStatusReader.snapshot(from: []).showsInPanel)
         XCTAssertFalse(PowerStatusReader.snapshot(from: []).showsOnBattery)
-        XCTAssertFalse(
-            PowerStatusReader.snapshot(from: [
-                [
-                    kIOPSTypeKey: kIOPSInternalBatteryType,
-                    kIOPSIsPresentKey: true,
-                    kIOPSPowerSourceStateKey: kIOPSACPowerValue,
-                    kIOPSCurrentCapacityKey: 80,
-                    kIOPSMaxCapacityKey: 100,
-                ],
-            ]).showsOnBattery
+        XCTAssertFalse(PowerStatusReader.snapshot(from: []).showsOnPower)
+    }
+
+    func testShowsChargingSymbolWhenPluggedIn() {
+        let status = PowerStatusReader.snapshot(from: [
+            [
+                kIOPSTypeKey: kIOPSInternalBatteryType,
+                kIOPSIsPresentKey: true,
+                kIOPSPowerSourceStateKey: kIOPSACPowerValue,
+                kIOPSCurrentCapacityKey: 80,
+                kIOPSMaxCapacityKey: 100,
+                kIOPSIsChargingKey: true,
+            ],
+        ])
+
+        XCTAssertTrue(status.showsInPanel)
+        XCTAssertTrue(status.showsOnPower)
+        XCTAssertFalse(status.showsOnBattery)
+        XCTAssertTrue(status.isCharging)
+        XCTAssertNil(PowerStatusPresentation.title(for: status))
+        XCTAssertEqual(PowerStatusPresentation.symbolName(for: status), "battery.100percent.bolt")
+        XCTAssertEqual(
+            PowerStatusPresentation.accessibilityTitle(for: status),
+            "Charging, Battery 80 percent"
         )
     }
 

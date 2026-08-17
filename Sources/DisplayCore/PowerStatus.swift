@@ -13,6 +13,7 @@ public struct PowerStatus: Equatable, Sendable {
     public var isPresent: Bool
     public var percent: Int?
     public var minutesToEmpty: Int?
+    public var isCharging: Bool
     public var isLowPowerModeEnabled: Bool
 
     public init(
@@ -20,17 +21,27 @@ public struct PowerStatus: Equatable, Sendable {
         isPresent: Bool,
         percent: Int?,
         minutesToEmpty: Int? = nil,
+        isCharging: Bool = false,
         isLowPowerModeEnabled: Bool = false
     ) {
         self.source = source
         self.isPresent = isPresent
         self.percent = percent.map { min(100, max(0, $0)) }
         self.minutesToEmpty = minutesToEmpty.flatMap { $0 > 0 ? $0 : nil }
+        self.isCharging = isCharging
         self.isLowPowerModeEnabled = isLowPowerModeEnabled
     }
 
     public var showsOnBattery: Bool {
         isPresent && source == .battery && percent != nil
+    }
+
+    public var showsOnPower: Bool {
+        isPresent && source == .ac && percent != nil
+    }
+
+    public var showsInPanel: Bool {
+        showsOnBattery || showsOnPower
     }
 }
 
@@ -65,6 +76,7 @@ public enum PowerStatusReader {
             isPresent: true,
             percent: percent(from: battery),
             minutesToEmpty: int(battery[kIOPSTimeToEmptyKey]),
+            isCharging: bool(battery[kIOPSIsChargingKey]) ?? false,
             isLowPowerModeEnabled: isLowPowerModeEnabled
         )
     }
@@ -154,8 +166,16 @@ public enum PowerStatusPresentation {
     }
 
     public static func accessibilityTitle(for status: PowerStatus) -> String? {
-        guard status.showsOnBattery, let percent = status.percent else { return nil }
-        var parts = [String(localized: "Battery \(percent) percent", bundle: .module)]
+        guard status.showsInPanel, let percent = status.percent else { return nil }
+        var parts: [String] = []
+        if status.showsOnPower {
+            parts.append(
+                status.isCharging
+                    ? String(localized: "Charging", bundle: .module)
+                    : String(localized: "Plugged In", bundle: .module)
+            )
+        }
+        parts.append(String(localized: "Battery \(percent) percent", bundle: .module))
         if let remaining = remainingTitle(for: status) {
             parts.append(remaining)
         }
@@ -181,6 +201,9 @@ public enum PowerStatusPresentation {
     }
 
     public static func symbolName(for status: PowerStatus) -> String {
+        if status.showsOnPower {
+            return "battery.100percent.bolt"
+        }
         guard let percent = status.percent else { return "battery.100percent" }
         switch percent {
         case 0..<13:

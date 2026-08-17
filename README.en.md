@@ -66,9 +66,9 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 
 ### Battery
 
-- When a MacBook is unplugged, the menu-bar panel shows the current battery percent beside the title.
-- If macOS reports a time estimate, that remaining time is shown next to the percent.
-- The chip hides again on AC power, desktops, or when no internal battery is present.
+- When a MacBook is unplugged, the menu-bar panel shows the current battery percent and remaining time beside the title.
+- On AC power the chip switches to a charging bolt so the plugged-in state stays visible.
+- The chip hides on desktops, or when no internal battery is present.
 
 ### Settings
 

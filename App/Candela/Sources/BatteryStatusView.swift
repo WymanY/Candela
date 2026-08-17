@@ -53,7 +53,7 @@ final class BatteryStatusView: NSView {
     }
 
     func apply(_ status: PowerStatus) {
-        guard status.showsOnBattery, let title = PowerStatusPresentation.title(for: status) else {
+        guard status.showsInPanel else {
             isHidden = true
             collapsedWidth?.isActive = true
             toolTip = nil
@@ -63,17 +63,24 @@ final class BatteryStatusView: NSView {
 
         isHidden = false
         collapsedWidth?.isActive = false
-        percentLabel.stringValue = title
+        let title = PowerStatusPresentation.title(for: status)
+        percentLabel.stringValue = title ?? ""
+        percentLabel.isHidden = title == nil
         icon.image = CandelaChrome.symbol(PowerStatusPresentation.symbolName(for: status), size: 12)
         remainingLabel.stringValue = PowerStatusPresentation.remainingTitle(for: status) ?? ""
         remainingLabel.isHidden = remainingLabel.stringValue.isEmpty
 
-        let low = (status.percent ?? 100) <= 20
+        let low = status.showsOnBattery && (status.percent ?? 100) <= 20
         if low {
             layer?.backgroundColor = NSColor.systemRed.withAlphaComponent(0.16).cgColor
             icon.contentTintColor = .systemRed
             percentLabel.textColor = .systemRed
             remainingLabel.textColor = .systemRed
+        } else if status.showsOnPower {
+            layer?.backgroundColor = CandelaChrome.accentSoft.cgColor
+            icon.contentTintColor = CandelaChrome.accent
+            percentLabel.textColor = CandelaChrome.accent
+            remainingLabel.textColor = CandelaChrome.accent
         } else if status.isLowPowerModeEnabled {
             layer?.backgroundColor = CandelaChrome.accentSoft.cgColor
             icon.contentTintColor = CandelaChrome.accent
