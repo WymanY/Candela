@@ -10,6 +10,7 @@ final class StatusPanelView: NSView {
     private let header = NSView()
     private let titleLabel = CandelaChrome.makeTitle(String(localized: "Candela"), size: 14, weight: .semibold)
     private let markView = CandelaChrome.makeSymbol("sun.max.fill", size: 14)
+    private let batteryView = BatteryStatusView()
     private let presets = NSSegmentedControl(
         labels: [
             String(localized: "Dim"),
@@ -125,6 +126,7 @@ final class StatusPanelView: NSView {
                 row.apply(snapshot, showPercent: session.settings.showPercentText, showMatchAll: snapshots.count > 1)
             }
             applySpeaker()
+            applyBattery()
             syncPresetSelection(with: snapshots)
             reloadScenes()
             syncWallButton()
@@ -140,6 +142,7 @@ final class StatusPanelView: NSView {
             empty.font = .systemFont(ofSize: 13, weight: .medium)
             rowsStack.addArrangedSubview(empty)
             applySpeaker()
+            applyBattery()
             syncPresetSelection(with: snapshots)
             reloadScenes()
             syncWallButton()
@@ -181,6 +184,7 @@ final class StatusPanelView: NSView {
             rows.append(row)
         }
         applySpeaker()
+        applyBattery()
         syncPresetSelection(with: snapshots)
         reloadScenes()
         syncWallButton()
@@ -190,6 +194,10 @@ final class StatusPanelView: NSView {
         speakerRow.apply(session.speaker, choices: session.speakerChoices, showPercent: session.settings.showPercentText)
         speakerCollapsedHeight.isActive = speakerRow.isHidden
         speakerTop.constant = speakerRow.isHidden ? 0 : 8
+    }
+
+    private func applyBattery() {
+        batteryView.apply(session.powerStatus)
     }
 
     private func configureHeader() {
@@ -206,6 +214,10 @@ final class StatusPanelView: NSView {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(markView)
         header.addSubview(titleLabel)
+        batteryView.translatesAutoresizingMaskIntoConstraints = false
+        batteryView.setContentHuggingPriority(.required, for: .horizontal)
+        batteryView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        header.addSubview(batteryView)
 
         NSLayoutConstraint.activate([
             header.heightAnchor.constraint(equalToConstant: 20),
@@ -214,6 +226,9 @@ final class StatusPanelView: NSView {
             titleLabel.leadingAnchor.constraint(equalTo: markView.trailingAnchor, constant: 6),
             titleLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
             titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor),
+            batteryView.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            batteryView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            batteryView.leadingAnchor.constraint(greaterThanOrEqualTo: titleLabel.trailingAnchor, constant: 8),
         ])
     }
 

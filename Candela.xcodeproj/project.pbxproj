@@ -31,6 +31,7 @@
 		93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */; };
 		9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */; };
 		99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */; };
+		9C935A90DBDA4AFA0666686E /* BatteryStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */; };
 		ACD5F998D2F9CEFAAFEFE68B /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = D0CD76F44137A01270AA98F8 /* AudioKit */; };
 		AE38CB5DB255A317F0F09C79 /* PersistenceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A3433947766DA220FA1639C /* PersistenceKit */; };
 		CAF5FD8F9BE2B3C3943E408F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD764C727BD56351F6A07A8 /* AppDelegate.swift */; };
@@ -63,17 +64,18 @@
 		A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureCapture.swift; sourceTree = "<group>"; };
 		A699CD75329BE53EC461E7A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B26CD1B386264937826B8D04 /* candela-panel-battery-status */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "candela-panel-battery-status"; path = .; sourceTree = SOURCE_ROOT; };
 		B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWallWindowController.swift; sourceTree = "<group>"; };
 		BF47ABA59743DE249AC5488F /* DisplayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowView.swift; sourceTree = "<group>"; };
 		CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySessionController.swift; sourceTree = "<group>"; };
 		D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDisplaysView.swift; sourceTree = "<group>"; };
+		DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryStatusView.swift; sourceTree = "<group>"; };
 		E5705532336236260D9C43BA /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		EBD764C727BD56351F6A07A8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DisplaySessionController+Audio.swift"; sourceTree = "<group>"; };
 		EE08E062782DE20F87A30B88 /* StatusPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelView.swift; sourceTree = "<group>"; };
 		F8025C56D2F05F5E8F195926 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsShortcutsView.swift; sourceTree = "<group>"; };
-		FC86E6BCBA869D8AC1D3E059 /* betterDisplay */ = {isa = PBXFileReference; lastKnownFileType = folder; name = betterDisplay; path = .; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 			children = (
 				EBD764C727BD56351F6A07A8 /* AppDelegate.swift */,
 				86C13464143DB251CFC1D652 /* AppLanguage.swift */,
+				DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */,
 				84C65B68A38C3CFB42408055 /* CandelaChrome.swift */,
 				BF47ABA59743DE249AC5488F /* DisplayRowView.swift */,
 				CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */,
@@ -163,7 +166,7 @@
 		A36B3454BC4467585648D1B3 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				FC86E6BCBA869D8AC1D3E059 /* betterDisplay */,
+				B26CD1B386264937826B8D04 /* candela-panel-battery-status */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -272,6 +275,7 @@
 			files = (
 				CAF5FD8F9BE2B3C3943E408F /* AppDelegate.swift in Sources */,
 				7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */,
+				9C935A90DBDA4AFA0666686E /* BatteryStatusView.swift in Sources */,
 				8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */,
 				69A43BA8D4A1E133A1EDB4EA /* DisplayRowView.swift in Sources */,
 				99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */,
