@@ -124,11 +124,14 @@ extension DisplaySessionController {
         notify: Bool
     ) {
         let clamped = min(1, max(0, value))
-        let shouldUnmute = speaker?.volume.isMuted == true
+        let mutedChange = VolumeInteractionPolicy.mutedState(
+            forVolume: clamped,
+            currentlyMuted: speaker?.volume.isMuted == true
+        )
         let writeLive = forceLiveWrite || VolumeInteractionPolicy.shouldWriteLiveVolume(lastWrite: lastLiveVolumeWrite)
         if let key = speaker?.displayKey {
-            if shouldUnmute {
-                applySpeakerMute(key: key, muted: false, persist: true, notify: false, writeLive: false)
+            if let mutedChange {
+                applySpeakerMute(key: key, muted: mutedChange, persist: true, notify: false, writeLive: false)
             }
             applySpeakerVolume(
                 key: key,
@@ -141,8 +144,8 @@ extension DisplaySessionController {
         }
         applyStandaloneSpeaker(
             volume: clamped,
-            muted: shouldUnmute ? false : nil,
-            persist: persist || shouldUnmute,
+            muted: mutedChange,
+            persist: persist || mutedChange != nil,
             notify: notify,
             writeLive: writeLive
         )

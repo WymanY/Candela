@@ -102,4 +102,12 @@ public enum VolumeInteractionPolicy {
         guard let previous else { return true }
         return abs(previous - next) > delta
     }
+
+    /// Dragging the slider to zero should look and act muted.
+    public static func mutedState(forVolume value: Double, currentlyMuted: Bool) -> Bool? {
+        if value <= 0 {
+            return currentlyMuted ? nil : true
+        }
+        return currentlyMuted ? false : nil
+    }
 }

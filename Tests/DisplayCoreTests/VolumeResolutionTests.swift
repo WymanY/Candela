@@ -201,4 +201,11 @@ final class VolumeResolutionTests: XCTestCase {
         XCTAssertFalse(VolumeInteractionPolicy.shouldPersist(previous: 0.40, next: 0.41))
         XCTAssertTrue(VolumeInteractionPolicy.shouldPersist(previous: 0.40, next: 0.45))
     }
+
+    func testZeroVolumeLooksMutedAndLeavingZeroUnmutes() {
+        XCTAssertEqual(VolumeInteractionPolicy.mutedState(forVolume: 0, currentlyMuted: false), true)
+        XCTAssertNil(VolumeInteractionPolicy.mutedState(forVolume: 0, currentlyMuted: true))
+        XCTAssertEqual(VolumeInteractionPolicy.mutedState(forVolume: 0.01, currentlyMuted: true), false)
+        XCTAssertNil(VolumeInteractionPolicy.mutedState(forVolume: 0.25, currentlyMuted: false))
+    }
 }
