@@ -917,7 +917,10 @@ final class DisplaySessionController {
 
     private func mergeVolume(key: String, capabilities: VolumeCapabilities) {
         guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
-        var next = capabilities
+        var next = VolumeResolution.preferringExistingHAL(
+            existing: snapshots[index].volume,
+            probed: capabilities
+        )
         let record = persistence.record(for: key)
         if let last = record?.lastVolume,
            next.supportsVolume,
@@ -1049,12 +1052,7 @@ final class DisplaySessionController {
     }
 
     func sampleLiveSpeakerVolume() {
-        if Self.shouldUseFakeHardware {
-            refreshSpeaker()
-            return
-        }
         refreshSpeaker()
-        onChange?()
     }
 
     func observeActiveSpeakerVolume() {

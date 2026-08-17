@@ -48,6 +48,36 @@ public enum VolumeResolution {
         return volume
     }
 
+    /// Keep a live HAL binding if a later DDC probe tries to replace it.
+    public static func preferringExistingHAL(
+        existing: VolumeCapabilities,
+        probed: VolumeCapabilities
+    ) -> VolumeCapabilities {
+        if existing.backend == .coreAudio, existing.supportsVolume {
+            return existing
+        }
+        return probed
+    }
+
+    /// Prefer a readable HAL value for the current output over DDC or lastVolume.
+    public static func adoptingLiveOutput(
+        _ volume: VolumeCapabilities,
+        deviceUID: String?,
+        hasHALVolume: Bool,
+        current: Double?,
+        muted: Bool?
+    ) -> VolumeCapabilities {
+        guard hasHALVolume || current != nil else { return volume }
+        var next = volume
+        next.backend = .coreAudio
+        next.supportsVolume = true
+        next.supportsMute = muted != nil || next.supportsMute
+        if let deviceUID, !deviceUID.isEmpty {
+            next.audioDeviceUID = deviceUID
+        }
+        return adoptingHAL(next, current: current, muted: muted)
+    }
+
     /// Overlay a live HAL read onto an already-bound volume. Does not invent values.
     public static func adoptingHAL(
         _ volume: VolumeCapabilities,

@@ -157,4 +157,67 @@ final class VolumeResolutionTests: XCTestCase {
         XCTAssertEqual(clamped.current, 1, accuracy: 0.0001)
         XCTAssertFalse(clamped.isMuted)
     }
+
+    func testPreferringExistingHALKeepsCoreAudioOverDDC() {
+        let existing = VolumeCapabilities(
+            backend: .coreAudio,
+            supportsVolume: true,
+            supportsMute: true,
+            current: 0.47,
+            isMuted: false,
+            audioDeviceUID: "BuiltInSpeakerDevice"
+        )
+        let probed = VolumeCapabilities(
+            backend: .ddc,
+            supportsVolume: true,
+            supportsMute: true,
+            current: 0.25,
+            isMuted: false
+        )
+        let kept = VolumeResolution.preferringExistingHAL(existing: existing, probed: probed)
+        XCTAssertEqual(kept.backend, .coreAudio)
+        XCTAssertEqual(kept.current, 0.47, accuracy: 0.0001)
+        XCTAssertEqual(kept.audioDeviceUID, "BuiltInSpeakerDevice")
+    }
+
+    func testAdoptingLiveOutputPromotesReadableHALOverDDC() {
+        let existing = VolumeCapabilities(
+            backend: .ddc,
+            supportsVolume: true,
+            supportsMute: true,
+            current: 0.25,
+            isMuted: true
+        )
+        let live = VolumeResolution.adoptingLiveOutput(
+            existing,
+            deviceUID: "BuiltInSpeakerDevice",
+            hasHALVolume: true,
+            current: 0.47,
+            muted: false
+        )
+        XCTAssertEqual(live.backend, .coreAudio)
+        XCTAssertEqual(live.current, 0.47, accuracy: 0.0001)
+        XCTAssertFalse(live.isMuted)
+        XCTAssertEqual(live.audioDeviceUID, "BuiltInSpeakerDevice")
+    }
+
+    func testAdoptingLiveOutputLeavesDDCWhenHALIsUnavailable() {
+        let existing = VolumeCapabilities(
+            backend: .ddc,
+            supportsVolume: true,
+            supportsMute: true,
+            current: 0.25,
+            isMuted: false
+        )
+        let unchanged = VolumeResolution.adoptingLiveOutput(
+            existing,
+            deviceUID: "hdmi-dell",
+            hasHALVolume: false,
+            current: nil,
+            muted: nil
+        )
+        XCTAssertEqual(unchanged.backend, .ddc)
+        XCTAssertEqual(unchanged.current, 0.25, accuracy: 0.0001)
+        XCTAssertNil(unchanged.audioDeviceUID)
+    }
 }
