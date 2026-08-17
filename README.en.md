@@ -64,6 +64,12 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Missing displays are skipped and applied again when they return.
 - Candela does not ship built-in scene templates. Saved scenes live in local preferences and survive app relaunch.
 
+### Battery
+
+- When a MacBook is unplugged, the menu-bar panel shows the current battery percent and remaining time beside the title.
+- On AC power the chip switches to a charging bolt so the plugged-in state stays visible.
+- The chip hides on desktops, or when no internal battery is present.
+
 ### Settings
 
 - Launch at Login

@@ -27,7 +27,10 @@ let package = Package(
         .target(
             name: "DisplayCore",
             resources: [.process("Localizable.xcstrings")],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [
+                .linkedFramework("IOKit"),
+            ]
         ),
         .target(
             name: "PersistenceKit",
