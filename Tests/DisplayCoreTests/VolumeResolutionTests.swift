@@ -157,4 +157,48 @@ final class VolumeResolutionTests: XCTestCase {
         XCTAssertEqual(clamped.current, 1, accuracy: 0.0001)
         XCTAssertFalse(clamped.isMuted)
     }
+
+    func testIgnoresHALEchoWhileAdjusting() {
+        XCTAssertTrue(VolumeInteractionPolicy.shouldIgnoreHALEcho(isAdjusting: true, lastWrite: nil))
+        XCTAssertFalse(VolumeInteractionPolicy.shouldIgnoreHALEcho(isAdjusting: false, lastWrite: nil))
+
+        let now = Date()
+        XCTAssertTrue(
+            VolumeInteractionPolicy.shouldIgnoreHALEcho(
+                isAdjusting: false,
+                lastWrite: now.addingTimeInterval(-0.1),
+                now: now
+            )
+        )
+        XCTAssertFalse(
+            VolumeInteractionPolicy.shouldIgnoreHALEcho(
+                isAdjusting: false,
+                lastWrite: now.addingTimeInterval(-0.4),
+                now: now
+            )
+        )
+    }
+
+    func testLiveWritesAreThrottledDuringADrag() {
+        let now = Date()
+        XCTAssertTrue(VolumeInteractionPolicy.shouldWriteLiveVolume(lastWrite: nil, now: now))
+        XCTAssertFalse(
+            VolumeInteractionPolicy.shouldWriteLiveVolume(
+                lastWrite: now.addingTimeInterval(-0.02),
+                now: now
+            )
+        )
+        XCTAssertTrue(
+            VolumeInteractionPolicy.shouldWriteLiveVolume(
+                lastWrite: now.addingTimeInterval(-0.06),
+                now: now
+            )
+        )
+    }
+
+    func testPersistSkipsTinyVolumeJitter() {
+        XCTAssertTrue(VolumeInteractionPolicy.shouldPersist(previous: nil, next: 0.4))
+        XCTAssertFalse(VolumeInteractionPolicy.shouldPersist(previous: 0.40, next: 0.41))
+        XCTAssertTrue(VolumeInteractionPolicy.shouldPersist(previous: 0.40, next: 0.45))
+    }
 }

@@ -91,27 +91,131 @@ extension DisplaySessionController {
         observeActiveSpeakerVolume()
     }
 
+    func beginSpeakerVolumeAdjustment() {
+        isAdjustingSpeakerVolume = true
+    }
+
+    func endSpeakerVolumeAdjustment(_ value: Double) {
+        isAdjustingSpeakerVolume = false
+        applyInteractiveSpeakerVolume(value, persist: true, forceLiveWrite: true, notify: false)
+    }
+
     func setSpeakerVolume(_ value: Double) {
-        let clamped = min(1, max(0, value))
-        if let key = speaker?.displayKey {
-            if speaker?.volume.isMuted == true {
-                setMuted(key: key, muted: false)
-            }
-            setVolume(key: key, value: clamped)
-            return
-        }
-        applyStandaloneSpeaker(volume: clamped, muted: false)
+        applyInteractiveSpeakerVolume(
+            value,
+            persist: !isAdjustingSpeakerVolume,
+            forceLiveWrite: !isAdjustingSpeakerVolume,
+            notify: !isAdjustingSpeakerVolume
+        )
     }
 
     func setSpeakerMuted(_ muted: Bool) {
         if let key = speaker?.displayKey {
-            setMuted(key: key, muted: muted)
+            applySpeakerMute(key: key, muted: muted, persist: true, notify: true)
             return
         }
-        applyStandaloneSpeaker(volume: speaker?.volume.current, muted: muted)
+        applyStandaloneSpeaker(volume: speaker?.volume.current, muted: muted, persist: true, notify: true)
     }
 
-    private func applyStandaloneSpeaker(volume: Double?, muted: Bool?) {
+    private func applyInteractiveSpeakerVolume(
+        _ value: Double,
+        persist: Bool,
+        forceLiveWrite: Bool,
+        notify: Bool
+    ) {
+        let clamped = min(1, max(0, value))
+        let shouldUnmute = speaker?.volume.isMuted == true
+        let writeLive = forceLiveWrite || VolumeInteractionPolicy.shouldWriteLiveVolume(lastWrite: lastLiveVolumeWrite)
+        if let key = speaker?.displayKey {
+            if shouldUnmute {
+                applySpeakerMute(key: key, muted: false, persist: true, notify: false, writeLive: false)
+            }
+            applySpeakerVolume(
+                key: key,
+                value: clamped,
+                persist: persist,
+                notify: notify,
+                writeLive: writeLive
+            )
+            return
+        }
+        applyStandaloneSpeaker(
+            volume: clamped,
+            muted: shouldUnmute ? false : nil,
+            persist: persist || shouldUnmute,
+            notify: notify,
+            writeLive: writeLive
+        )
+    }
+
+    func applySpeakerVolume(
+        key: String,
+        value: Double,
+        persist: Bool,
+        notify: Bool,
+        writeLive: Bool = true
+    ) {
+        let clamped = min(1, max(0, value))
+        if persist {
+            var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+            if VolumeInteractionPolicy.shouldPersist(previous: record.lastVolume, next: clamped) {
+                record.lastVolume = clamped
+                persistence.save(record)
+            }
+        }
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].volume.current = clamped
+            boxes[key]?.setVolume(clamped)
+            if writeLive {
+                applyLiveVolume(snapshots[index])
+                lastLiveVolumeWrite = Date()
+            }
+        } else {
+            boxes[key]?.setVolume(clamped)
+        }
+        if var current = speaker, current.displayKey == key {
+            current.volume.current = clamped
+            speaker = current
+        }
+        if notify {
+            refreshSpeaker()
+            onChange?()
+        }
+    }
+
+    func applySpeakerMute(key: String, muted: Bool, persist: Bool, notify: Bool, writeLive: Bool = true) {
+        if persist {
+            var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+            if record.lastMuted != muted {
+                record.lastMuted = muted
+                persistence.save(record)
+            }
+        }
+        boxes[key]?.setMuted(muted)
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
+            snapshots[index].volume.isMuted = muted
+            if writeLive {
+                applyLiveVolume(snapshots[index])
+                lastLiveVolumeWrite = Date()
+            }
+        }
+        if var current = speaker, current.displayKey == key {
+            current.volume.isMuted = muted
+            speaker = current
+        }
+        if notify {
+            refreshSpeaker()
+            onChange?()
+        }
+    }
+
+    private func applyStandaloneSpeaker(
+        volume: Double?,
+        muted: Bool?,
+        persist: Bool,
+        notify: Bool,
+        writeLive: Bool = true
+    ) {
         guard var current = speaker, let uid = current.uid else { return }
         if let volume {
             current.volume.current = min(1, max(0, volume))
@@ -120,22 +224,29 @@ extension DisplaySessionController {
             current.volume.isMuted = muted
         }
         speaker = current
-        switch current.volume.backend {
-        case .coreAudio:
-            HALVolumeControl.setVolume(uid: uid, value: current.volume.current)
-            if current.volume.supportsMute {
-                HALVolumeControl.setMuted(uid: uid, muted: current.volume.isMuted)
+        if writeLive {
+            switch current.volume.backend {
+            case .coreAudio:
+                HALVolumeControl.setVolume(uid: uid, value: current.volume.current)
+                if current.volume.supportsMute {
+                    HALVolumeControl.setMuted(uid: uid, muted: current.volume.isMuted)
+                }
+                lastLiveVolumeWrite = Date()
+            case .software:
+                SoftwareVolumeControl.shared.apply(
+                    uid: uid,
+                    volume: current.volume.current,
+                    muted: current.volume.isMuted
+                )
+                lastLiveVolumeWrite = Date()
+            case .ddc, .none:
+                break
             }
-        case .software:
-            SoftwareVolumeControl.shared.apply(
-                uid: uid,
-                volume: current.volume.current,
-                muted: current.volume.isMuted
-            )
-        case .ddc, .none:
-            break
         }
-        onChange?()
+        _ = persist
+        if notify {
+            onChange?()
+        }
     }
 
     @discardableResult

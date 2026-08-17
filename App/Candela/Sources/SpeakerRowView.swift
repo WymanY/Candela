@@ -6,6 +6,8 @@ final class SpeakerRowView: NSView {
     var onVolume: ((Double) -> Void)?
     var onMute: ((Bool) -> Void)?
     var onSelect: ((String) -> Void)?
+    var onVolumeTrackingBegan: (() -> Void)?
+    var onVolumeTrackingEnded: ((Double) -> Void)?
 
     private let module = CandelaChrome.makeModule()
     private let nameLabel = CandelaChrome.makeTitle("")
@@ -34,6 +36,13 @@ final class SpeakerRowView: NSView {
 
         volumeSlider.target = self
         volumeSlider.action = #selector(volumeChanged(_:))
+        volumeSlider.onTrackingBegan = { [weak self] in
+            self?.onVolumeTrackingBegan?()
+        }
+        volumeSlider.onTrackingEnded = { [weak self] in
+            guard let self else { return }
+            self.onVolumeTrackingEnded?(self.volumeSlider.doubleValue / 100)
+        }
         muteButton.target = self
         muteButton.action = #selector(muteClicked(_:))
 
@@ -116,11 +125,13 @@ final class SpeakerRowView: NSView {
         muteButton.isHidden = !showsVolume
         volumePercent.isHidden = !showsVolume
         if showsVolume {
-            volumeSlider.doubleValue = speaker.volume.current * 100
-            updateVolumePercent(speaker.volume.current)
+            if !volumeSlider.isUserTracking {
+                volumeSlider.doubleValue = speaker.volume.current * 100
+                updateVolumePercent(speaker.volume.current)
+            }
             applyMutedAppearance(isMuted: speaker.volume.isMuted, name: speaker.name)
             volumeSlider.setAccessibilityLabel("\(String(localized: "Volume")), \(speaker.name)")
-            volumeSlider.setAccessibilityValueDescription(percentPhrase(speaker.volume.current))
+            volumeSlider.setAccessibilityValueDescription(percentPhrase(volumeSlider.doubleValue / 100))
         } else {
             applyMutedAppearance(isMuted: false, name: speaker.name)
         }
