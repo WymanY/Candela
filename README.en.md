@@ -41,14 +41,14 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 ### Picture in Picture
 
 - Each real display has a PiP button in the menu-bar panel. The footer also opens a monitor wall.
-- Opens a floating, resizable mirror of that screen, preferably on another display.
+- Opens a floating, resizable mirror of that screen on the display under the pointer.
 - The source can be the whole display, one window, or a magnifier that follows the cursor. Until a window is chosen, Window mode still shows that display.
 - The title bar shows the display name, then the window name in Window mode. Display and Window hint that you can scroll to zoom. Magnifier hints that Space-drag pans the canvas.
 - In Magnifier, hold Space and drag or scroll the preview to pan around the magnified region. That gesture does not resize the PiP window.
 - Flip the preview horizontally for a teleprompter.
-- Scroll or pinch to zoom. A single PiP stays between 280 and 1280 wide. The monitor wall can grow to the current screen. A pinned window grows from that corner.
+- Scroll or pinch to zoom. A single PiP stays between 280 and 1280 wide. The monitor wall can grow to the current screen. A pinned window grows from that position.
 - The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. ⌘W closes the hovered PiP.
-- Pin it to top-left, top-right, bottom-left, or bottom-right. Dragging it off that corner unpins it.
+- Pin it to top-left, top-right, bottom-left, bottom-right, or center. Dragging it off that position unpins it.
 - Each display remembers the last place, size, opacity, click-through, pin, flip, mode, and window identity. Closing and opening the window brings that layout back.
 - The monitor wall tiles every real display into one floating window, remembers its own placement, and can zoom up to the current screen. Virtual screens stay out. Desktop Backstop layers are hidden from the window list.
 - Captures at the source display's pixel size so text stays readable.
@@ -202,6 +202,8 @@ CI also builds the Candela app on macOS 14.
 
 ## 1.2
 
+- Picture in Picture now opens on the display under the pointer.
+- Picture in Picture can pin to the center of the current display.
 - Picture in Picture can follow a window, not just a whole display. Until a window is chosen, it keeps showing that display.
 - Flip the preview horizontally for a teleprompter.
 - Magnifier mode crops a sharp region around the cursor. Hold Space and drag or scroll the preview to pan the canvas. That gesture does not resize the PiP window.
@@ -210,7 +212,7 @@ CI also builds the Candela app on macOS 14.
 ## 1.1
 
 - Picture in Picture now has opacity, click-through, and pinned corners.
-- Scroll or pinch to zoom the floating window. A pinned window grows from that corner.
+- Scroll or pinch to zoom the floating window. A pinned window grows from that position.
 - Each display remembers the last PiP place, size, and window state.
 - With click-through on, clicks still reach the work underneath. Hovering the window still zooms it with the scroll wheel.
 
