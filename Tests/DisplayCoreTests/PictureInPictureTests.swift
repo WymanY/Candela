@@ -58,6 +58,10 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(topLeft.x, 1944, accuracy: 0.001)
         XCTAssertEqual(topLeft.y, 982 - 264 - 24, accuracy: 0.001)
 
+        let center = PictureInPictureLayout.snapOrigin(windowSize: size, corner: .center, visible: visible)
+        XCTAssertEqual(center.x, visible.midX - size.width / 2, accuracy: 0.001)
+        XCTAssertEqual(center.y, visible.midY - size.height / 2, accuracy: 0.001)
+
         let screens: [(id: UInt32, visible: CGRect)] = [
             (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1080)),
             (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 982)),
@@ -70,6 +74,15 @@ final class PictureInPictureTests: XCTestCase {
         )
         XCTAssertEqual(pinned.origin.x, 1920 + 1512 - size.width - 24, accuracy: 0.001)
         XCTAssertEqual(pinned.origin.y, 982 - size.height - 24, accuracy: 0.001)
+
+        let centered = PictureInPictureLayout.windowFrame(
+            windowSize: size,
+            sourceDisplayID: 2,
+            screens: screens,
+            placement: PictureInPicturePlacement(corner: .center, hostDisplayID: 1)
+        )
+        XCTAssertEqual(centered.origin.x, 1920 + (1512 - size.width) / 2, accuracy: 0.001)
+        XCTAssertEqual(centered.origin.y, (982 - size.height) / 2, accuracy: 0.001)
     }
 
     func testSavedFrameRestoresOnTheSameScreenAndClamps() {
