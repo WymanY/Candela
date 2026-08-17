@@ -62,6 +62,7 @@ final class PictureInPicturePinControl: NSPopUpButton {
         addOption(title: String(localized: "Snap Top Right"), value: PictureInPictureCorner.topRight.rawValue, symbolName: "arrow.up.right.square")
         addOption(title: String(localized: "Snap Bottom Left"), value: PictureInPictureCorner.bottomLeft.rawValue, symbolName: "arrow.down.left.square")
         addOption(title: String(localized: "Snap Bottom Right"), value: PictureInPictureCorner.bottomRight.rawValue, symbolName: "arrow.down.right.square")
+        addOption(title: String(localized: "Snap Center"), value: PictureInPictureCorner.center.rawValue, symbolName: "rectangle.center.inset.filled")
         isRebuilding = false
         select(corner: nil)
     }
@@ -92,6 +93,8 @@ final class PictureInPicturePinControl: NSPopUpButton {
             symbolName = "arrow.down.left.square"
         case .bottomRight:
             symbolName = "arrow.down.right.square"
+        case .center:
+            symbolName = "rectangle.center.inset.filled"
         case nil:
             symbolName = "arrow.up.and.down.and.arrow.left.and.right"
         }

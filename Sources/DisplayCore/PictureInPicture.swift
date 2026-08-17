@@ -6,6 +6,7 @@ public enum PictureInPictureCorner: String, Codable, CaseIterable, Sendable {
     case topRight
     case bottomLeft
     case bottomRight
+    case center
 
     public var title: String {
         switch self {
@@ -13,6 +14,7 @@ public enum PictureInPictureCorner: String, Codable, CaseIterable, Sendable {
         case .topRight: return "Top Right"
         case .bottomLeft: return "Bottom Left"
         case .bottomRight: return "Bottom Right"
+        case .center: return "Center"
         }
     }
 }
@@ -590,6 +592,11 @@ public enum PictureInPictureLayout {
             return CGPoint(x: visible.minX + margin, y: visible.minY + margin)
         case .bottomRight:
             return CGPoint(x: visible.maxX - windowSize.width - margin, y: visible.minY + margin)
+        case .center:
+            return CGPoint(
+                x: visible.midX - windowSize.width / 2,
+                y: visible.midY - windowSize.height / 2
+            )
         }
     }
 

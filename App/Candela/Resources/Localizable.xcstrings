@@ -1735,6 +1735,23 @@
         }
       }
     },
+    "Center": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Center"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "居中"
+          }
+        }
+      }
+    },
     "Scenes": {
       "extractionState": "manual",
       "localizations": {
@@ -2666,6 +2683,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "右下角"
+          }
+        }
+      }
+    },
+    "Snap Center": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Center"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "居中"
           }
         }
       }
