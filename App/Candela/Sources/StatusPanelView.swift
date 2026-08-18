@@ -130,6 +130,7 @@ final class StatusPanelView: NSView {
             syncPresetSelection(with: snapshots)
             reloadScenes()
             syncWallButton()
+            syncMirrorButton()
             return
         }
         rowKeys = keys
@@ -146,6 +147,7 @@ final class StatusPanelView: NSView {
             syncPresetSelection(with: snapshots)
             reloadScenes()
             syncWallButton()
+            syncMirrorButton()
             return
         }
 
@@ -188,6 +190,7 @@ final class StatusPanelView: NSView {
         syncPresetSelection(with: snapshots)
         reloadScenes()
         syncWallButton()
+        syncMirrorButton()
     }
 
     private func applySpeaker() {
@@ -364,6 +367,11 @@ final class StatusPanelView: NSView {
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
+        let mirrorButton = CandelaChrome.makeIconButton(symbolName: "rectangle.split.2x1", help: String(localized: "Mirror"))
+        mirrorButton.target = self
+        mirrorButton.action = #selector(toggleBuiltInMirror)
+        mirrorButton.translatesAutoresizingMaskIntoConstraints = false
+        mirrorButton.identifier = NSUserInterfaceItemIdentifier("mirror-builtin")
         let quitButton = CandelaChrome.makeQuietButton(title: String(localized: "Quit"), symbolName: "power")
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
@@ -372,7 +380,7 @@ final class StatusPanelView: NSView {
         footer.addSubview(line)
         footer.addSubview(quitButton)
 
-        let actions = NSStackView(views: [settingsButton, wallButton])
+        let actions = NSStackView(views: [settingsButton, wallButton, mirrorButton])
         actions.orientation = .horizontal
         actions.alignment = .centerY
         actions.spacing = 10
@@ -443,8 +451,26 @@ final class StatusPanelView: NSView {
         reload(session.snapshots)
     }
 
+    @objc private func toggleBuiltInMirror() {
+        _ = session.toggleBuiltInMirror()
+        reload(session.snapshots)
+    }
+
+    private func footerButton(_ identifier: String) -> NSButton? {
+        if let button = footer.subviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == identifier }) {
+            return button
+        }
+        for view in footer.subviews {
+            if let stack = view as? NSStackView,
+               let button = stack.arrangedSubviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == identifier }) {
+                return button
+            }
+        }
+        return nil
+    }
+
     private func syncWallButton() {
-        guard let wallButton = footer.subviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == "monitor-wall" }) else {
+        guard let wallButton = footerButton("monitor-wall") else {
             return
         }
         wallButton.toolTip = session.isPictureInPictureWallOpen
@@ -454,6 +480,22 @@ final class StatusPanelView: NSView {
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Overview") : String(localized: "Overview")
         sizeFooterButton(wallButton)
+    }
+
+    private func syncMirrorButton() {
+        guard let mirrorButton = footerButton("mirror-builtin") else { return }
+        let mirroring = session.isMirroringBuiltIn
+        let available = session.canToggleBuiltInMirror
+        mirrorButton.isHidden = !available && !mirroring
+        mirrorButton.isEnabled = available
+        mirrorButton.toolTip = mirroring
+            ? String(localized: "Stop mirroring and restore the previous arrangement.")
+            : String(localized: "Mirror every display onto the built-in display.")
+        mirrorButton.setAccessibilityLabel(mirrorButton.toolTip)
+        mirrorButton.contentTintColor = mirroring ? CandelaChrome.accent : .secondaryLabelColor
+        if let image = CandelaChrome.symbol(mirroring ? "rectangle.fill.on.rectangle.fill" : "rectangle.split.2x1", size: 13) {
+            mirrorButton.image = image
+        }
     }
 
     private func sizeFooterButton(_ button: NSButton) {

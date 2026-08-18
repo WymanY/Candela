@@ -121,6 +121,8 @@ public enum IOKitDisplaySource {
         let ioClass = ioRegRecord.map { "\($0.name) \($0.path)" }
 
         let mode = currentMode(for: displayID)
+        let mirroredMaster = CGDisplayMirrorsDisplay(displayID)
+        let isMirroringBuiltIn = mirroredMaster != 0 && CGDisplayIsBuiltin(mirroredMaster) != 0
         return DisplayHardwareFacts(
             displayID: displayID,
             isBuiltin: isBuiltin,
@@ -144,7 +146,8 @@ public enum IOKitDisplaySource {
             pixelHeight: mode.height,
             refreshHz: mode.refresh,
             scaleFactor: mode.scale,
-            rotationDegrees: CGDisplayRotation(displayID)
+            rotationDegrees: CGDisplayRotation(displayID),
+            isMirroringBuiltIn: isMirroringBuiltIn
         )
     }
 

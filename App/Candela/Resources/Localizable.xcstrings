@@ -2924,6 +2924,57 @@
           }
         }
       }
+    },
+    "Unmirror": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmirror"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消镜像"
+          }
+        }
+      }
+    },
+    "Mirror every display onto the built-in display.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mirror every display onto the built-in display."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把每块显示器镜像到内置屏。"
+          }
+        }
+      }
+    },
+    "Stop mirroring and restore the previous arrangement.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop mirroring and restore the previous arrangement."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止镜像并恢复之前的排列。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

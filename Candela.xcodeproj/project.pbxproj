@@ -47,6 +47,7 @@
 		027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScenesView.swift; sourceTree = "<group>"; };
 		052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotPlugObserver.swift; sourceTree = "<group>"; };
 		0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRowView.swift; sourceTree = "<group>"; };
+		117E6678BD8421DF9DA70D12 /* betterDisplay-mirror-builtin */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "betterDisplay-mirror-builtin"; path = .; sourceTree = SOURCE_ROOT; };
 		12F94F0FAF4B5E54894482FE /* Candela.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Candela.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsGeneralView.swift; sourceTree = "<group>"; };
 		236871E20297EA15E8B19C30 /* SettingsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAboutView.swift; sourceTree = "<group>"; };
@@ -64,7 +65,6 @@
 		A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureCapture.swift; sourceTree = "<group>"; };
 		A699CD75329BE53EC461E7A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		B26CD1B386264937826B8D04 /* candela-panel-battery-status */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "candela-panel-battery-status"; path = .; sourceTree = SOURCE_ROOT; };
 		B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWallWindowController.swift; sourceTree = "<group>"; };
 		BF47ABA59743DE249AC5488F /* DisplayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowView.swift; sourceTree = "<group>"; };
 		CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySessionController.swift; sourceTree = "<group>"; };
@@ -166,7 +166,7 @@
 		A36B3454BC4467585648D1B3 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				B26CD1B386264937826B8D04 /* candela-panel-battery-status */,
+				117E6678BD8421DF9DA70D12 /* betterDisplay-mirror-builtin */,
 			);
 			name = Packages;
 			sourceTree = "<group>";

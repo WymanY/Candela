@@ -16,6 +16,8 @@ public struct ControlBackend {
     public var rename: (String, String?) -> Bool
     public var applyPreset: (BrightnessPreset, String?) -> Void
     public var matchAll: (String) -> Void
+    public var toggleBuiltInMirror: () -> Bool
+    public var isMirroringBuiltIn: () -> Bool
     public var scenes: () -> [DisplayScene]
     public var applyScene: (String) -> DisplayScene?
     public var saveScene: (String) -> DisplayScene?
@@ -38,6 +40,8 @@ public struct ControlBackend {
         rename: @escaping (String, String?) -> Bool,
         applyPreset: @escaping (BrightnessPreset, String?) -> Void,
         matchAll: @escaping (String) -> Void,
+        toggleBuiltInMirror: @escaping () -> Bool = { false },
+        isMirroringBuiltIn: @escaping () -> Bool = { false },
         scenes: @escaping () -> [DisplayScene] = { [] },
         applyScene: @escaping (String) -> DisplayScene? = { _ in nil },
         saveScene: @escaping (String) -> DisplayScene? = { _ in nil },
@@ -59,6 +63,8 @@ public struct ControlBackend {
         self.rename = rename
         self.applyPreset = applyPreset
         self.matchAll = matchAll
+        self.toggleBuiltInMirror = toggleBuiltInMirror
+        self.isMirroringBuiltIn = isMirroringBuiltIn
         self.scenes = scenes
         self.applyScene = applyScene
         self.saveScene = saveScene
@@ -78,7 +84,7 @@ public enum ControlRouter {
             return ControlResponse(ok: true, dump: backend.dump(request.redact ?? true))
         case .listScenes:
             return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: all) })
-        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .configurePictureInPicture, .setPictureInPictureWall, .rename, .preset, .matchAll, .applyScene, .saveScene, .renameScene, .deleteScene:
+        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .configurePictureInPicture, .setPictureInPictureWall, .rename, .preset, .matchAll, .setBuiltInMirror, .applyScene, .saveScene, .renameScene, .deleteScene:
             break
         }
 
@@ -86,7 +92,7 @@ public enum ControlRouter {
         let resolved: DisplaySnapshot?
         if request.action == .preset, query.isEmpty || query.lowercased() == "all" {
             resolved = nil
-        } else if [.applyScene, .saveScene, .renameScene, .deleteScene, .setPictureInPictureWall].contains(request.action) {
+        } else if [.applyScene, .saveScene, .renameScene, .deleteScene, .setPictureInPictureWall, .setBuiltInMirror].contains(request.action) {
             resolved = nil
         } else {
             guard !query.isEmpty else {
@@ -216,6 +222,15 @@ public enum ControlRouter {
             backend.applyPreset(preset, resolved?.id.persistentKey)
         case .matchAll:
             backend.matchAll(resolved!.id.persistentKey)
+        case .setBuiltInMirror:
+            guard backend.toggleBuiltInMirror() else {
+                return .failure("Could not update built-in mirroring.")
+            }
+            return ControlResponse(
+                ok: true,
+                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
+                isMirroringBuiltIn: backend.isMirroringBuiltIn()
+            )
         case .applyScene:
             guard let query = sceneQuery(request) else {
                 return .failure("Scene name or id is required.")

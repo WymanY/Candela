@@ -37,6 +37,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - DDC contrast (`0x12`) and input select (`0x60`) when the monitor answers those VCPs.
 - Rotation at 0° / 90° / 180° / 270° on external monitors that can rotate.
 - Built-in panels never expose rotation.
+- The panel footer Mirror button mirrors every attached display onto the built-in panel. Click it again to restore the previous arrangement. External rows hide while mirrored; the button stays in the footer.
 
 ### Picture in Picture
 
@@ -100,6 +101,7 @@ swift run --package-path . candela-cli set-pip-wall --enabled true
 swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
+swift run --package-path . candela-cli set-mirror
 swift run --package-path . candela-cli scenes
 swift run --package-path . candela-cli save-scene --name Night
 swift run --package-path . candela-cli apply-scene Night
