@@ -91,8 +91,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 enum BootLog {
     static func write(_ line: String) {
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/Candela", isDirectory: true)
+        let dir = (FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library", isDirectory: true))
+            .appendingPathComponent("Logs/Candela", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("boot.txt")
         let stamp = ISO8601DateFormatter().string(from: Date())

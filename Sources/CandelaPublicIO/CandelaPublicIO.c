@@ -1,0 +1,315 @@
+#include "CandelaPublicIO.h"
+
+#include <CoreGraphics/CoreGraphics.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/graphics/IOGraphicsLib.h>
+#include <IOKit/graphics/IOGraphicsTypes.h>
+#include <IOKit/i2c/IOI2CInterface.h>
+#include <math.h>
+#include <string.h>
+
+#ifndef kIOFBSetTransform
+#define kIOFBSetTransform 0x00000400
+#endif
+
+#ifndef kIOScaleRotate0
+#define kIOScaleRotate0 0x00000000
+#endif
+
+#ifndef kIOScaleRotate90
+#define kIOScaleRotate90 0x00000030
+#endif
+
+#ifndef kIOScaleRotate180
+#define kIOScaleRotate180 0x00000060
+#endif
+
+#ifndef kIOScaleRotate270
+#define kIOScaleRotate270 0x00000050
+#endif
+
+static uint32_t scaleRotate(int32_t degrees) {
+    switch (degrees) {
+        case 90:
+            return kIOScaleRotate90;
+        case 180:
+            return kIOScaleRotate180;
+        case 270:
+            return kIOScaleRotate270;
+        default:
+            return kIOScaleRotate0;
+    }
+}
+
+static bool dictionaryMatchesDisplay(CFDictionaryRef info, uint32_t displayID) {
+    if (info == NULL) {
+        return false;
+    }
+    int64_t infoVendor = 0;
+    int64_t infoProduct = 0;
+    int64_t infoSerial = 0;
+    CFNumberRef vendorNumber = CFDictionaryGetValue(info, CFSTR(kDisplayVendorID));
+    CFNumberRef productNumber = CFDictionaryGetValue(info, CFSTR(kDisplayProductID));
+    CFNumberRef serialNumber = CFDictionaryGetValue(info, CFSTR(kDisplaySerialNumber));
+    if (vendorNumber != NULL) {
+        CFNumberGetValue(vendorNumber, kCFNumberSInt64Type, &infoVendor);
+    }
+    if (productNumber != NULL) {
+        CFNumberGetValue(productNumber, kCFNumberSInt64Type, &infoProduct);
+    }
+    if (serialNumber != NULL) {
+        CFNumberGetValue(serialNumber, kCFNumberSInt64Type, &infoSerial);
+    }
+    uint32_t vendor = CGDisplayVendorNumber(displayID);
+    uint32_t product = CGDisplayModelNumber(displayID);
+    uint32_t serial = CGDisplaySerialNumber(displayID);
+    if ((uint32_t)infoVendor != vendor || (uint32_t)infoProduct != product) {
+        return false;
+    }
+    if (serial != 0 && infoSerial != 0 && (uint32_t)infoSerial != serial) {
+        return false;
+    }
+    return true;
+}
+
+static io_service_t matchingService(uint32_t displayID, const char *className) {
+    io_iterator_t iterator = 0;
+    if (IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching(className), &iterator) != KERN_SUCCESS) {
+        return 0;
+    }
+
+    io_service_t fallback = 0;
+    io_service_t service = IOIteratorNext(iterator);
+    while (service != 0) {
+        CFDictionaryRef info = IODisplayCreateInfoDictionary(service, kIODisplayOnlyPreferredName);
+        bool matched = dictionaryMatchesDisplay(info, displayID);
+        if (info != NULL) {
+            CFRelease(info);
+        }
+        if (matched) {
+            if (fallback != 0) {
+                IOObjectRelease(fallback);
+            }
+            IOObjectRelease(iterator);
+            return service;
+        }
+        if (fallback == 0 && CGDisplayIsBuiltin(displayID) != 0) {
+            fallback = service;
+            service = IOIteratorNext(iterator);
+            continue;
+        }
+        IOObjectRelease(service);
+        service = IOIteratorNext(iterator);
+    }
+    IOObjectRelease(iterator);
+    return fallback;
+}
+
+static io_service_t displayConnect(uint32_t displayID) {
+    return matchingService(displayID, "IODisplayConnect");
+}
+
+static io_service_t framebuffer(uint32_t displayID) {
+    io_service_t service = matchingService(displayID, "IOFramebuffer");
+    if (service != 0) {
+        return service;
+    }
+    io_service_t connect = displayConnect(displayID);
+    if (connect == 0) {
+        return 0;
+    }
+    io_service_t parent = 0;
+    if (IORegistryEntryGetParentEntry(connect, kIOServicePlane, &parent) == KERN_SUCCESS) {
+        IOObjectRelease(connect);
+        return parent;
+    }
+    IOObjectRelease(connect);
+    return 0;
+}
+
+static bool brightnessOnService(io_service_t service, bool writing, float *value) {
+    if (service == 0) {
+        return false;
+    }
+    if (writing) {
+        return IODisplaySetFloatParameter(
+            service,
+            kNilOptions,
+            CFSTR(kIODisplayBrightnessKey),
+            *value
+        ) == kIOReturnSuccess;
+    }
+    float brightness = -1;
+    if (IODisplayGetFloatParameter(
+            service,
+            kNilOptions,
+            CFSTR(kIODisplayBrightnessKey),
+            &brightness
+        ) != kIOReturnSuccess || brightness < 0)
+    {
+        return false;
+    }
+    *value = brightness;
+    return true;
+}
+
+int32_t CandelaPublicDisplayGetOrientation(uint32_t displayID) {
+    return (int32_t)lround(CGDisplayRotation(displayID));
+}
+
+bool CandelaPublicDisplayCanChangeOrientation(uint32_t displayID) {
+    if (displayID == 0 || CGDisplayIsBuiltin(displayID) != 0) {
+        return false;
+    }
+    io_service_t service = framebuffer(displayID);
+    if (service == 0) {
+        return false;
+    }
+    IOObjectRelease(service);
+    return true;
+}
+
+bool CandelaPublicDisplaySetOrientation(uint32_t displayID, int32_t degrees) {
+    if (!CandelaPublicDisplayCanChangeOrientation(displayID)) {
+        return false;
+    }
+    io_service_t service = framebuffer(displayID);
+    if (service == 0) {
+        return false;
+    }
+    uint32_t option = kIOFBSetTransform | (scaleRotate(degrees) << 16);
+    IOReturn status = IOServiceRequestProbe(service, option);
+    IOObjectRelease(service);
+    return status == kIOReturnSuccess;
+}
+
+bool CandelaPublicDisplayGetBrightness(uint32_t displayID, float *value) {
+    if (value == NULL) {
+        return false;
+    }
+    io_service_t connect = displayConnect(displayID);
+    if (brightnessOnService(connect, false, value)) {
+        IOObjectRelease(connect);
+        return true;
+    }
+    if (connect != 0) {
+        IOObjectRelease(connect);
+    }
+    io_service_t fb = framebuffer(displayID);
+    bool ok = brightnessOnService(fb, false, value);
+    if (fb != 0) {
+        IOObjectRelease(fb);
+    }
+    return ok;
+}
+
+bool CandelaPublicDisplaySetBrightness(uint32_t displayID, float value) {
+    float writable = value;
+    io_service_t connect = displayConnect(displayID);
+    if (brightnessOnService(connect, true, &writable)) {
+        IOObjectRelease(connect);
+        return true;
+    }
+    if (connect != 0) {
+        IOObjectRelease(connect);
+    }
+    io_service_t fb = framebuffer(displayID);
+    bool ok = brightnessOnService(fb, true, &writable);
+    if (fb != 0) {
+        IOObjectRelease(fb);
+    }
+    return ok;
+}
+
+static IOI2CConnectRef openI2C(uint32_t displayID) {
+    io_service_t fb = framebuffer(displayID);
+    if (fb == 0) {
+        return NULL;
+    }
+
+    IOItemCount count = 0;
+    if (IOFBGetI2CInterfaceCount(fb, &count) != kIOReturnSuccess || count == 0) {
+        IOObjectRelease(fb);
+        return NULL;
+    }
+
+    for (IOItemCount bus = 0; bus < count; bus++) {
+        io_service_t interface = 0;
+        if (IOFBCopyI2CInterfaceForBus(fb, bus, &interface) != kIOReturnSuccess || interface == 0) {
+            continue;
+        }
+        IOI2CConnectRef connect = NULL;
+        IOReturn status = IOI2CInterfaceOpen(interface, kNilOptions, &connect);
+        IOObjectRelease(interface);
+        if (status == kIOReturnSuccess && connect != NULL) {
+            IOObjectRelease(fb);
+            return connect;
+        }
+    }
+    IOObjectRelease(fb);
+    return NULL;
+}
+
+bool CandelaPublicI2CAvailable(uint32_t displayID) {
+    IOI2CConnectRef connect = openI2C(displayID);
+    if (connect == NULL) {
+        return false;
+    }
+    IOI2CInterfaceClose(connect, kNilOptions);
+    return true;
+}
+
+bool CandelaPublicI2CWrite(uint32_t displayID, const uint8_t *bytes, uint32_t count) {
+    if (bytes == NULL || count == 0) {
+        return false;
+    }
+    IOI2CConnectRef connect = openI2C(displayID);
+    if (connect == NULL) {
+        return false;
+    }
+
+    IOI2CRequest request;
+    memset(&request, 0, sizeof(request));
+    request.sendTransactionType = kIOI2CSimpleTransactionType;
+    request.sendAddress = 0x6E;
+    request.sendBuffer = (vm_address_t)(uintptr_t)bytes;
+    request.sendBytes = count;
+    request.replyTransactionType = kIOI2CNoTransactionType;
+    request.minReplyDelay = 10000000ULL;
+
+    IOReturn started = IOI2CSendRequest(connect, kNilOptions, &request);
+    IOI2CInterfaceClose(connect, kNilOptions);
+    return started == kIOReturnSuccess && request.result == kIOReturnSuccess;
+}
+
+bool CandelaPublicI2CRead(
+    uint32_t displayID,
+    const uint8_t *send,
+    uint32_t sendCount,
+    uint8_t *reply,
+    uint32_t replyCount
+) {
+    if (send == NULL || reply == NULL || sendCount == 0 || replyCount == 0) {
+        return false;
+    }
+    IOI2CConnectRef connect = openI2C(displayID);
+    if (connect == NULL) {
+        return false;
+    }
+
+    IOI2CRequest request;
+    memset(&request, 0, sizeof(request));
+    request.sendTransactionType = kIOI2CSimpleTransactionType;
+    request.sendAddress = 0x6E;
+    request.sendBuffer = (vm_address_t)(uintptr_t)send;
+    request.sendBytes = sendCount;
+    request.replyTransactionType = kIOI2CDDCciReplyTransactionType;
+    request.replyAddress = 0x6F;
+    request.replyBuffer = (vm_address_t)(uintptr_t)reply;
+    request.replyBytes = replyCount;
+    request.minReplyDelay = 10000000ULL;
+
+    IOReturn started = IOI2CSendRequest(connect, kNilOptions, &request);
+    IOI2CInterfaceClose(connect, kNilOptions);
+    return started == kIOReturnSuccess && request.result == kIOReturnSuccess;
+}

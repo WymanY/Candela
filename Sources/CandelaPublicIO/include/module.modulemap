@@ -1,0 +1,4 @@
+module CandelaPublicIO {
+    header "CandelaPublicIO.h"
+    export *
+}

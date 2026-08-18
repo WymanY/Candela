@@ -202,8 +202,13 @@ public struct ControlResponse: Codable, Equatable, Sendable {
 
 public enum ControlSocket {
     public static var defaultPath: String {
-        let root = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/Candela", isDirectory: true)
+        let root: URL
+        if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            root = support.appendingPathComponent("Candela", isDirectory: true)
+        } else {
+            root = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library/Application Support/Candela", isDirectory: true)
+        }
         return root.appendingPathComponent("control.sock").path
     }
 }

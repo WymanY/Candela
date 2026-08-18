@@ -20,8 +20,8 @@ final class DisplayRotationControlTests: XCTestCase {
             .appendingPathComponent("Sources/BrightnessKit/DisplayRotationControl.swift")
         let body = try String(contentsOf: production, encoding: .utf8)
         XCTAssertTrue(body.contains("CandelaDisplaySetOrientation"))
+        XCTAssertTrue(body.contains("CandelaPublicDisplaySetOrientation"))
         XCTAssertFalse(body.contains("cgsServiceForDisplayNumber"))
-        XCTAssertFalse(body.contains("IOServiceRequestProbe"))
         let privateIO = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -32,6 +32,15 @@ final class DisplayRotationControlTests: XCTestCase {
         XCTAssertTrue(ioBody.contains("sharedMgr"))
         XCTAssertFalse(ioBody.contains("usleep"))
         XCTAssertFalse(ioBody.contains("initWithCGSDisplayID:"))
+        let publicIO = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/CandelaPublicIO/CandelaPublicIO.c")
+        let publicBody = try String(contentsOf: publicIO, encoding: .utf8)
+        XCTAssertTrue(publicBody.contains("IOServiceRequestProbe"))
+        XCTAssertTrue(publicBody.contains("IODisplaySetFloatParameter"))
+        XCTAssertFalse(publicBody.contains("MonitorPanel"))
     }
 
     func testCanQueryLiveOrientation() {

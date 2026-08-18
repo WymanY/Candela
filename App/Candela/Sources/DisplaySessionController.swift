@@ -1,6 +1,8 @@
 import AppKit
 import AudioKit
+#if canImport(BrightnessKit)
 import BrightnessKit
+#endif
 import ControlKit
 import DisplayCore
 import Foundation

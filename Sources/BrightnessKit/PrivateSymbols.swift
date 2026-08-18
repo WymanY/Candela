@@ -5,6 +5,19 @@ import os
 
 /// Function pointers only. Never `extern` private names (they would need linking).
 enum PrivateSymbols {
+#if CANDELA_MAS
+    static var displayServicesAvailable: Bool { false }
+
+    static func isHDREnabled(_ displayID: CGDirectDisplayID) -> Bool? {
+        _ = displayID
+        return nil
+    }
+
+    static func isHDRSupported(_ displayID: CGDirectDisplayID) -> Bool? {
+        _ = displayID
+        return nil
+    }
+#else
     typealias DisplayServicesGetBrightnessFn = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
     typealias DisplayServicesSetBrightnessFn = @convention(c) (CGDirectDisplayID, Float) -> Int32
     typealias CGSFlagFn = @convention(c) (CGDirectDisplayID) -> Int32
@@ -53,7 +66,6 @@ enum PrivateSymbols {
     static let cgsIsHDREnabled: CGSFlagFn? = symbol(skyLightHandle, name: "CGSIsHDREnabled")
     static let cgsIsHDRSupported: CGSFlagFn? = symbol(skyLightHandle, name: "CGSIsHDRSupported")
 
-
     static var displayServicesAvailable: Bool {
         displayServicesGetBrightness != nil && displayServicesSetBrightness != nil
     }
@@ -90,4 +102,5 @@ enum PrivateSymbols {
         loggedMissing.insert(what)
         log.error("private symbol unavailable: \(what, privacy: .public)")
     }
+#endif
 }
