@@ -29,10 +29,15 @@ final class SettingsShortcutsView: NSView {
 
         stack.addArrangedSubview(header)
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Menu Bar"),
+            title: String(localized: "App"),
             rows: [
                 (String(localized: "Open Settings"), "⌘,"),
                 (String(localized: "Quit"), "⌘Q"),
+            ]
+        ))
+        stack.addArrangedSubview(makeGroup(
+            title: String(localized: "Menu Bar"),
+            rows: [
                 (String(localized: "Close Panel"), "Esc"),
             ]
         ))
