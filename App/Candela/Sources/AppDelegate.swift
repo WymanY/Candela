@@ -56,6 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        if NSApp.mainMenu == nil {
+            installApplicationMenu()
+        }
         if NSApp.windows.contains(where: { $0.isVisible && $0.canBecomeMain }) == false {
             statusItem?.showMainUI()
         }
@@ -85,6 +88,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(appMenuItem)
 
         let appMenu = NSMenu()
+        let about = NSMenuItem(
+            title: String(localized: "About Candela"),
+            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+            keyEquivalent: ""
+        )
+        appMenu.addItem(about)
+        appMenu.addItem(.separator())
         let settings = NSMenuItem(
             title: String(localized: "Settings"),
             action: #selector(StatusItemController.openSettings),
@@ -99,6 +109,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: "h"
         )
         appMenu.addItem(hide)
+        let hideOthers = NSMenuItem(
+            title: String(localized: "Hide Others"),
+            action: #selector(NSApplication.hideOtherApplications(_:)),
+            keyEquivalent: "h"
+        )
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        appMenu.addItem(hideOthers)
+        let showAll = NSMenuItem(
+            title: String(localized: "Show All"),
+            action: #selector(NSApplication.unhideAllApplications(_:)),
+            keyEquivalent: ""
+        )
+        appMenu.addItem(showAll)
+        appMenu.addItem(.separator())
         let quit = NSMenuItem(
             title: String(localized: "Quit Candela"),
             action: #selector(NSApplication.terminate(_:)),
