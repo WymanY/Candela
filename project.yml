@@ -139,6 +139,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) CANDELA_MAS"
         OTHER_SWIFT_FLAGS: "$(inherited) -D CANDELA_MAS"
+        PRODUCT_MODULE_NAME: CandelaMAS
         LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/../Frameworks"]
     dependencies:
       - package: CandelaKit

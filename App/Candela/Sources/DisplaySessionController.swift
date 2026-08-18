@@ -1,6 +1,6 @@
 import AppKit
 import AudioKit
-#if canImport(BrightnessKit)
+#if !CANDELA_MAS
 import BrightnessKit
 #endif
 import ControlKit
