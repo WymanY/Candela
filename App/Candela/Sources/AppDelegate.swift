@@ -28,13 +28,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.session = session
         statusItem = StatusItemController(session: session)
         session.start()
-        controlServer = ControlServer { [weak session] request in
-            guard let session else { return .failure("Candela is shutting down.") }
-            var response: ControlResponse?
-            DispatchQueue.main.sync {
-                response = session.handleControl(request)
+        // Hop to the main actor asynchronously; a sync hop can deadlock
+        // against applicationWillTerminate stopping the server.
+        controlServer = ControlServer { [weak session] request, respond in
+            DispatchQueue.main.async {
+                guard let session else {
+                    respond(.failure("Candela is shutting down."))
+                    return
+                }
+                respond(session.handleControl(request))
             }
-            return response ?? .failure("Control request failed.")
         }
         controlServer?.start()
         log.info("launched; status item installed")
