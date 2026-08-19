@@ -18,6 +18,7 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 | `rename --display Q --name Desk` | `rename` | Empty name clears custom name |
 | `preset night` | `preset` | night/desk/max; optional `--display` |
 | `match-all --display Q` | `matchAll` | Copy source brightness/volume/contrast |
+| `set-mirror` | `setBuiltInMirror` | Mirror onto the built-in display or restore the previous arrangement |
 | `scenes` | `listScenes` | Saved scenes |
 | `save-scene --name Night` | `saveScene` | Capture current mix; same name overwrites |
 | `apply-scene Night` | `applyScene` | Name, slug, or id |

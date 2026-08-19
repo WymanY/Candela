@@ -21,6 +21,7 @@ public final class SystemDisplayCatalog: DisplayCataloging {
     private var running = false
     private var notificationObserver: NSObjectProtocol?
     private var previousKeysByDisplayID: [CGDirectDisplayID: String] = [:]
+    private var rememberedKeysByDisplayID: [CGDirectDisplayID: String] = [:]
     private var previousSnapshots: [DisplaySnapshot] = []
 
     public init(
@@ -136,7 +137,8 @@ public final class SystemDisplayCatalog: DisplayCataloging {
 
     private func performRescanLocked(screenNames: [CGDirectDisplayID: String]) {
         guard running else { return }
-        let ids = visibleOnlineDisplayIDs(Self.onlineDisplayIDs())
+        let online = Self.onlineDisplayIDs()
+        let ids = visibleOnlineDisplayIDs(online)
         let facts = IOKitDisplaySource.facts(for: ids, screenNames: screenNames)
         let built = buildLiveCatalog(
             facts: facts,
@@ -152,10 +154,18 @@ public final class SystemDisplayCatalog: DisplayCataloging {
             persistence.alias(old: alias.oldKey, new: alias.newKey)
         }
         previousKeysByDisplayID = built.keysByDisplayID
-        previousSnapshots = built.snapshots
-        snapshots = built.snapshots
-        log.debug("rescan displays=\(built.snapshots.count, privacy: .public)")
-        let next = built.snapshots
+        for (id, key) in built.keysByDisplayID {
+            rememberedKeysByDisplayID[id] = key
+        }
+        var keysForMirror = rememberedKeysByDisplayID
+        for (id, key) in built.keysByDisplayID {
+            keysForMirror[id] = key
+        }
+        let stamped = stampMirrorState(built.snapshots, onlineIDs: online, keysByDisplayID: keysForMirror)
+        previousSnapshots = stamped
+        snapshots = stamped
+        log.debug("rescan displays=\(stamped.count, privacy: .public)")
+        let next = stamped
         DispatchQueue.main.async { [weak self] in
             self?.continuation.yield(next)
         }
@@ -170,6 +180,28 @@ public final class SystemDisplayCatalog: DisplayCataloging {
             }
         }
         return names
+    }
+
+    private func stampMirrorState(
+        _ snapshots: [DisplaySnapshot],
+        onlineIDs: [CGDirectDisplayID],
+        keysByDisplayID: [CGDirectDisplayID: String]
+    ) -> [DisplaySnapshot] {
+        let targets = DisplayArrangementControl.currentTargets(
+            displayIDs: onlineIDs,
+            keysByDisplayID: keysByDisplayID,
+            isVirtual: { id in
+                snapshots.first(where: { $0.sessionDisplayID == id })?.kind == .virtualUnsupported
+            }
+        )
+        let kind = DisplayArrangementPlanning.kind(for: targets)
+        let canMirror = DisplayArrangementPlanning.canMirrorToBuiltIn(targets: targets)
+        return snapshots.map { snapshot in
+            var next = snapshot
+            next.isMirroringBuiltIn = kind == .builtin
+            next.canMirrorBuiltIn = canMirror || kind == .builtin
+            return next
+        }
     }
 
     static func onlineDisplayIDs() -> [CGDirectDisplayID] {

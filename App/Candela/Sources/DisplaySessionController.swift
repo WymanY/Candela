@@ -25,6 +25,8 @@ final class DisplaySessionController {
     private var pendingRotationByKey: [String: DisplayRotation] = [:]
     private var pictureInPictureWindows: [String: PictureInPictureWindowController] = [:]
     private var pictureInPictureWall: PictureInPictureWallWindowController?
+    private var lastExtendedArrangementOverride: DisplayArrangementSnapshot?
+    private var knownDisplayIDsByKey: [String: CGDirectDisplayID] = [:]
 
     var snapshots: [DisplaySnapshot] = []
     var pictureInPictureKeys: Set<String> {
@@ -367,6 +369,69 @@ final class DisplaySessionController {
         onChange?()
     }
 
+    var isMirroringBuiltIn: Bool {
+        snapshots.contains(where: \.isMirroringBuiltIn)
+            || DisplayArrangementPlanning.kind(for: liveMirrorTargets()) == .builtin
+    }
+
+    var canToggleBuiltInMirror: Bool {
+        switch DisplayArrangementPlanning.availability(
+            targets: liveMirrorTargets(),
+            savedArrangement: savedExtendedArrangement
+        ) {
+        case .unavailable:
+            return false
+        case .available, .mirroringBuiltIn:
+            return true
+        }
+    }
+
+    private var savedExtendedArrangement: DisplayArrangementSnapshot? {
+        lastExtendedArrangementOverride ?? settings.lastExtendedArrangement
+    }
+
+    @discardableResult
+    func toggleBuiltInMirror() -> Bool {
+        if isMirroringBuiltIn {
+            return restoreExtendedArrangement()
+        }
+        return mirrorToBuiltIn()
+    }
+
+    @discardableResult
+    func mirrorToBuiltIn() -> Bool {
+        let targets = liveMirrorTargets()
+        guard DisplayArrangementPlanning.canMirrorToBuiltIn(targets: targets) else { return false }
+        if DisplayArrangementPlanning.kind(for: targets) != .builtin {
+            rememberExtendedArrangement(from: targets)
+        }
+        if Self.shouldUseFakeHardware {
+            applyFakeMirrorState(isMirroring: true)
+            return true
+        }
+        guard DisplayArrangementControl.mirrorToBuiltIn(keysByDisplayID: liveKeysByDisplayID()) else {
+            return false
+        }
+        applyOptimisticMirrorState(isMirroring: true)
+        catalog.requestRescan()
+        return true
+    }
+
+    @discardableResult
+    func restoreExtendedArrangement() -> Bool {
+        guard let saved = savedExtendedArrangement else { return false }
+        if Self.shouldUseFakeHardware {
+            applyFakeMirrorState(isMirroring: false)
+            return true
+        }
+        guard DisplayArrangementControl.restore(saved, keysByDisplayID: liveKeysByDisplayID()) else {
+            return false
+        }
+        applyOptimisticMirrorState(isMirroring: false)
+        catalog.requestRescan()
+        return true
+    }
+
     func matchAll(to key: String) {
         guard let source = snapshots.first(where: { $0.id.persistentKey == key }) else { return }
         for snapshot in snapshots where snapshot.id.persistentKey != key && snapshot.kind != .virtualUnsupported {
@@ -609,6 +674,8 @@ final class DisplaySessionController {
             rename: { self.renameDisplay(key: $0, customName: $1) },
             applyPreset: { self.applyPreset($0, key: $1) },
             matchAll: { self.matchAll(to: $0) },
+            toggleBuiltInMirror: { self.toggleBuiltInMirror() },
+            isMirroringBuiltIn: { self.isMirroringBuiltIn },
             scenes: { self.scenes },
             applyScene: { self.applyScene($0) },
             saveScene: { self.saveScene(named: $0) },
@@ -664,6 +731,90 @@ final class DisplaySessionController {
         return lines.joined(separator: "\n")
     }
 
+    private func liveKeysByDisplayID() -> [CGDirectDisplayID: String] {
+        var keys: [CGDirectDisplayID: String] = [:]
+        for (key, id) in knownDisplayIDsByKey where id != 0 {
+            keys[id] = key
+        }
+        for snapshot in snapshots {
+            keys[snapshot.sessionDisplayID] = snapshot.id.persistentKey
+        }
+        return keys
+    }
+
+    private func liveMirrorTargets() -> [DisplayMirrorTarget] {
+        if Self.shouldUseFakeHardware {
+            return snapshots.map { snapshot in
+                DisplayMirrorTarget(
+                    displayID: snapshot.sessionDisplayID,
+                    persistentKey: snapshot.id.persistentKey,
+                    isBuiltin: snapshot.isBuiltin,
+                    isVirtual: snapshot.kind == .virtualUnsupported,
+                    origin: .zero,
+                    pixelWidth: snapshot.pixelWidth,
+                    pixelHeight: snapshot.pixelHeight,
+                    refreshHz: snapshot.refreshHz,
+                    isMain: snapshot.isMain,
+                    mirrorsDisplayID: snapshot.isMirroringBuiltIn && !snapshot.isBuiltin
+                        ? (snapshots.first(where: \.isBuiltin)?.sessionDisplayID ?? 0)
+                        : 0
+                )
+            }
+        }
+        let visible = snapshots.map { snapshot in
+            DisplayMirrorTarget(
+                displayID: snapshot.sessionDisplayID,
+                persistentKey: snapshot.id.persistentKey,
+                isBuiltin: snapshot.isBuiltin,
+                isVirtual: snapshot.kind == .virtualUnsupported,
+                origin: .zero,
+                pixelWidth: snapshot.pixelWidth,
+                pixelHeight: snapshot.pixelHeight,
+                refreshHz: snapshot.refreshHz,
+                isMain: snapshot.isMain
+            )
+        }
+        let hardware = DisplayArrangementControl.currentTargets(keysByDisplayID: liveKeysByDisplayID())
+        if hardware.isEmpty {
+            return visible
+        }
+        var merged = hardware
+        // Keep catalog-only identities such as Sidecar that CoreGraphics still lists.
+        let hardwareIDs = Set(hardware.map(\.displayID))
+        for extra in visible where !hardwareIDs.contains(extra.displayID) {
+            merged.append(extra)
+        }
+        return merged
+    }
+
+    private func rememberExtendedArrangement(from targets: [DisplayMirrorTarget]) {
+        let snapshot = DisplayArrangementPlanning.capture(
+            targets: targets,
+            keysByDisplayID: liveKeysByDisplayID()
+        )
+        guard snapshot.slots.count > 1 else { return }
+        lastExtendedArrangementOverride = snapshot
+        var next = settings
+        next.lastExtendedArrangement = snapshot
+        persistence.saveGlobal(next)
+    }
+
+    private func applyFakeMirrorState(isMirroring: Bool) {
+        for index in snapshots.indices {
+            snapshots[index].isMirroringBuiltIn = isMirroring
+            snapshots[index].canMirrorBuiltIn = true
+        }
+        onChange?()
+    }
+
+    private func applyOptimisticMirrorState(isMirroring: Bool) {
+        for index in snapshots.indices {
+            snapshots[index].isMirroringBuiltIn = isMirroring
+            snapshots[index].canMirrorBuiltIn = true
+        }
+        onChange?()
+    }
+
     private func apply(_ next: [DisplaySnapshot]) {
         applyGeneration += 1
         let generation = applyGeneration
@@ -698,9 +849,13 @@ final class DisplaySessionController {
         }
         boxes = kept
         snapshots = preserveProbedState(next)
+        for snapshot in snapshots {
+            knownDisplayIDsByKey[snapshot.id.persistentKey] = snapshot.sessionDisplayID
+        }
         refreshRotationSupport()
         syncPictureInPictureWindows()
         stampPictureInPictureState()
+        stampMirrorState()
         lastAppliedKeys = nextKeys
         probedKeys = probedKeys.intersection(nextKeys)
         pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
@@ -747,6 +902,19 @@ final class DisplaySessionController {
                     previousKeys: []
                 )
             }
+        }
+    }
+
+    private func stampMirrorState() {
+        let availability = DisplayArrangementPlanning.availability(
+            targets: liveMirrorTargets(),
+            savedArrangement: savedExtendedArrangement
+        )
+        let mirroring = availability == .mirroringBuiltIn
+        let canToggle = availability != .unavailable
+        for index in snapshots.indices {
+            snapshots[index].isMirroringBuiltIn = mirroring
+            snapshots[index].canMirrorBuiltIn = canToggle
         }
     }
 

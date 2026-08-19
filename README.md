@@ -37,6 +37,7 @@ English: [README.en.md](README.en.md)
 - 显示器响应对应 VCP 时，支持 DDC 对比度（`0x12`）和输入切换（`0x60`）。
 - 外接屏可旋转时，支持 0° / 90° / 180° / 270°。
 - 内建屏不提供旋转。
+- 面板底部的 Mirror 会把外接屏镜像到内置屏；再点一次按上次的排列恢复。镜像后外接行会暂时隐藏，按钮仍留在底部。
 
 ### 画中画
 
@@ -100,6 +101,7 @@ swift run --package-path . candela-cli set-pip-wall --enabled true
 swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
+swift run --package-path . candela-cli set-mirror
 swift run --package-path . candela-cli scenes
 swift run --package-path . candela-cli save-scene --name Night
 swift run --package-path . candela-cli apply-scene Night

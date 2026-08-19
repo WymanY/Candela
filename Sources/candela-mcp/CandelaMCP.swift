@@ -138,6 +138,8 @@ final class MCPStdioTransport {
             return ControlRequest(action: .preset, display: object["display"]?.stringValue, preset: try required(object, "preset"))
         case "candela_match_all":
             return ControlRequest(action: .matchAll, display: try required(object, "display"))
+        case "candela_set_builtin_mirror":
+            return ControlRequest(action: .setBuiltInMirror)
         case "candela_list_scenes":
             return ControlRequest(action: .listScenes)
         case "candela_apply_scene":
@@ -225,6 +227,7 @@ final class MCPStdioTransport {
         tool("candela_match_all", "Copy this display's brightness, volume, and contrast onto the others.", [
             "display": schema("string", "Source display query"),
         ], ["display"]),
+        tool("candela_set_builtin_mirror", "Mirror every attached display onto the built-in panel, or restore the previous arrangement."),
         tool("candela_list_scenes", "List saved display scenes."),
         tool("candela_apply_scene", "Apply a saved scene by name or id.", [
             "scene": schema("string", "Scene name or id"),

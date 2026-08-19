@@ -25,6 +25,7 @@ public struct DisplayHardwareFacts: Equatable, Sendable {
     public var refreshHz: Double
     public var scaleFactor: Double
     public var rotationDegrees: Double
+    public var isMirroringBuiltIn: Bool
 
     public init(
         displayID: CGDirectDisplayID,
@@ -49,7 +50,8 @@ public struct DisplayHardwareFacts: Equatable, Sendable {
         pixelHeight: UInt32 = 0,
         refreshHz: Double = 0,
         scaleFactor: Double = 1,
-        rotationDegrees: Double = 0
+        rotationDegrees: Double = 0,
+        isMirroringBuiltIn: Bool = false
     ) {
         self.displayID = displayID
         self.isBuiltin = isBuiltin
@@ -74,6 +76,7 @@ public struct DisplayHardwareFacts: Equatable, Sendable {
         self.refreshHz = refreshHz
         self.scaleFactor = scaleFactor
         self.rotationDegrees = rotationDegrees
+        self.isMirroringBuiltIn = isMirroringBuiltIn
     }
 
     public var resolvedName: String {
@@ -244,7 +247,9 @@ public func buildLiveCatalog(
                 pixelWidth: fact.pixelWidth,
                 pixelHeight: fact.pixelHeight,
                 refreshHz: fact.refreshHz,
-                scaleFactor: fact.scaleFactor
+                scaleFactor: fact.scaleFactor,
+                isMirroringBuiltIn: fact.isMirroringBuiltIn,
+                canMirrorBuiltIn: false
             )
         )
         keysByDisplayID[fact.displayID] = newKey

@@ -144,6 +144,41 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertEqual(store.global().pictureInPictureWall?.corner, .bottomLeft)
     }
 
+    func testSavesLastExtendedArrangement() {
+        let store = PersistenceStore()
+        var settings = store.global()
+        settings.lastExtendedArrangement = DisplayArrangementSnapshot(
+            slots: [
+                DisplayArrangementSlot(
+                    persistentKey: "v1:builtin",
+                    originX: 0,
+                    originY: 0,
+                    pixelWidth: 1512,
+                    pixelHeight: 982,
+                    refreshHz: 120,
+                    isMain: true,
+                    isBuiltin: true
+                ),
+                DisplayArrangementSlot(
+                    persistentKey: "v1:desk",
+                    originX: 1512,
+                    originY: -120,
+                    pixelWidth: 3840,
+                    pixelHeight: 2160,
+                    refreshHz: 60,
+                    isMain: false,
+                    isBuiltin: false
+                ),
+            ]
+        )
+        store.saveGlobal(settings)
+        let loaded = PersistenceStore().global().lastExtendedArrangement
+        XCTAssertEqual(loaded?.slots.count, 2)
+        XCTAssertEqual(loaded?.slots.last?.persistentKey, "v1:desk")
+        XCTAssertEqual(loaded?.slots.last?.originX ?? -1, 1512, accuracy: 0.0001)
+        XCTAssertEqual(loaded?.slots.last?.originY ?? 1, -120, accuracy: 0.0001)
+    }
+
     private func clearStore() {
         let defaults = UserDefaults.standard
         for key in keys {
