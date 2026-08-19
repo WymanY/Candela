@@ -223,7 +223,40 @@ static IOI2CConnectRef openI2C(uint32_t displayID) {
     return NULL;
 }
 
-static bool sendI2CRequestOnAnyBus(uint32_t displayID, const IOI2CRequest *template) {
+static IOOptionBits supportedReplyTransactionType(io_service_t interface) {
+    CFTypeRef property = IORegistryEntryCreateCFProperty(
+        interface,
+        CFSTR(kIOI2CTransactionTypesKey),
+        kCFAllocatorDefault,
+        kNilOptions
+    );
+    if (property == NULL || CFGetTypeID(property) != CFNumberGetTypeID()) {
+        if (property != NULL) {
+            CFRelease(property);
+        }
+        return kIOI2CNoTransactionType;
+    }
+
+    uint64_t types = 0;
+    bool read = CFNumberGetValue((CFNumberRef)property, kCFNumberSInt64Type, &types);
+    CFRelease(property);
+    if (!read) {
+        return kIOI2CNoTransactionType;
+    }
+    if ((types & (1ULL << kIOI2CDDCciReplyTransactionType)) != 0) {
+        return kIOI2CDDCciReplyTransactionType;
+    }
+    if ((types & (1ULL << kIOI2CSimpleTransactionType)) != 0) {
+        return kIOI2CSimpleTransactionType;
+    }
+    return kIOI2CNoTransactionType;
+}
+
+static bool sendI2CRequestOnAnyBus(
+    uint32_t displayID,
+    const IOI2CRequest *template,
+    bool selectReplyTransactionType
+) {
     io_service_t fb = framebuffer(displayID);
     if (fb == 0) {
         return false;
@@ -242,6 +275,15 @@ static bool sendI2CRequestOnAnyBus(uint32_t displayID, const IOI2CRequest *templ
             continue;
         }
 
+        IOOptionBits replyTransactionType = template->replyTransactionType;
+        if (selectReplyTransactionType) {
+            replyTransactionType = supportedReplyTransactionType(interface);
+            if (replyTransactionType == kIOI2CNoTransactionType) {
+                IOObjectRelease(interface);
+                continue;
+            }
+        }
+
         IOI2CConnectRef connect = NULL;
         IOReturn opened = IOI2CInterfaceOpen(interface, kNilOptions, &connect);
         IOObjectRelease(interface);
@@ -250,6 +292,7 @@ static bool sendI2CRequestOnAnyBus(uint32_t displayID, const IOI2CRequest *templ
         }
 
         IOI2CRequest request = *template;
+        request.replyTransactionType = replyTransactionType;
         IOReturn started = IOI2CSendRequest(connect, kNilOptions, &request);
         IOI2CInterfaceClose(connect, kNilOptions);
         if (started == kIOReturnSuccess && request.result == kIOReturnSuccess) {
@@ -283,9 +326,9 @@ bool CandelaPublicI2CWrite(uint32_t displayID, const uint8_t *bytes, uint32_t co
     request.sendBuffer = (vm_address_t)(uintptr_t)bytes;
     request.sendBytes = count;
     request.replyTransactionType = kIOI2CNoTransactionType;
-    request.minReplyDelay = 10000000ULL;
+    request.minReplyDelay = 0;
 
-    return sendI2CRequestOnAnyBus(displayID, &request);
+    return sendI2CRequestOnAnyBus(displayID, &request, false);
 }
 
 bool CandelaPublicI2CRead(
@@ -305,12 +348,12 @@ bool CandelaPublicI2CRead(
     request.sendAddress = 0x6E;
     request.sendBuffer = (vm_address_t)(uintptr_t)send;
     request.sendBytes = sendCount;
-    request.replyTransactionType = kIOI2CDDCciReplyTransactionType;
+    request.replyTransactionType = kIOI2CNoTransactionType;
     request.replyAddress = 0x6F;
     request.replySubAddress = 0x51;
     request.replyBuffer = (vm_address_t)(uintptr_t)reply;
     request.replyBytes = replyCount;
-    request.minReplyDelay = 10000000ULL;
+    request.minReplyDelay = 10;
 
-    return sendI2CRequestOnAnyBus(displayID, &request);
+    return sendI2CRequestOnAnyBus(displayID, &request, true);
 }

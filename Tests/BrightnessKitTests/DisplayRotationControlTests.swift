@@ -41,6 +41,11 @@ final class DisplayRotationControlTests: XCTestCase {
         XCTAssertTrue(publicBody.contains("IOServiceRequestProbe"))
         XCTAssertTrue(publicBody.contains("CGDisplayUnitNumber"))
         XCTAssertTrue(publicBody.contains("kIODisplayLocationKey"))
+        XCTAssertTrue(publicBody.contains("kIOI2CTransactionTypesKey"))
+        XCTAssertTrue(publicBody.contains("1ULL << kIOI2CDDCciReplyTransactionType"))
+        XCTAssertTrue(publicBody.contains("1ULL << kIOI2CSimpleTransactionType"))
+        XCTAssertTrue(publicBody.contains("request.minReplyDelay = 10;"))
+        XCTAssertFalse(publicBody.contains("10000000ULL"))
         XCTAssertFalse(publicBody.contains("IODisplaySetFloatParameter"))
         XCTAssertFalse(publicBody.contains("MonitorPanel"))
     }
