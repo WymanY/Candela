@@ -94,3 +94,50 @@ public enum VolumeResolution {
         return next
     }
 }
+
+
+public enum VolumeTiming {
+    public static let liveWriteInterval: TimeInterval = 0.05
+    public static let echoIgnoreInterval: TimeInterval = 0.25
+    public static let persistDelta = 0.02
+}
+
+/// Slider drag should write hardware sparingly and ignore our own HAL echoes.
+public enum VolumeInteractionPolicy {
+    public static func shouldIgnoreHALEcho(
+        isAdjusting: Bool,
+        lastWrite: Date?,
+        now: Date = Date(),
+        ignoreInterval: TimeInterval = VolumeTiming.echoIgnoreInterval
+    ) -> Bool {
+        if isAdjusting { return true }
+        guard let lastWrite else { return false }
+        return now.timeIntervalSince(lastWrite) < ignoreInterval
+    }
+
+    public static func shouldWriteLiveVolume(
+        lastWrite: Date?,
+        now: Date = Date(),
+        interval: TimeInterval = VolumeTiming.liveWriteInterval
+    ) -> Bool {
+        guard let lastWrite else { return true }
+        return now.timeIntervalSince(lastWrite) >= interval
+    }
+
+    public static func shouldPersist(
+        previous: Double?,
+        next: Double,
+        delta: Double = VolumeTiming.persistDelta
+    ) -> Bool {
+        guard let previous else { return true }
+        return abs(previous - next) > delta
+    }
+
+    /// Dragging the slider to zero should look and act muted.
+    public static func mutedState(forVolume value: Double, currentlyMuted: Bool) -> Bool? {
+        if value <= 0 {
+            return currentlyMuted ? nil : true
+        }
+        return currentlyMuted ? false : nil
+    }
+}

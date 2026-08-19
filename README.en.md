@@ -50,7 +50,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. ⌘W closes the hovered PiP.
 - Pin it to top-left, top-right, bottom-left, bottom-right, or center. Dragging it off that position unpins it.
 - Each display remembers the last place, size, opacity, click-through, pin, flip, mode, and window identity. Closing and opening the window brings that layout back.
-- The monitor wall tiles every real display into one floating window, remembers its own placement, and can zoom up to the current screen. Virtual screens stay out. Desktop Backstop layers are hidden from the window list.
+- The monitor wall tiles every real display into one floating window, remembers its own placement, and can zoom up to the current screen. Virtual screens stay out. Desktop Backstop layers and black capture overlays such as Screen Studio's window-picker highlighter are hidden from the window list.
 - Captures at the source display's pixel size so text stays readable.
 - Requires Screen Recording permission.
 - Virtual screens such as Sidecar are not supported.

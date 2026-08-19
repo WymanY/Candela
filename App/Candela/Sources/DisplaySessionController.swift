@@ -41,6 +41,8 @@ final class DisplaySessionController {
     var onChange: (() -> Void)?
     var launchAtLoginError: String?
     private var audioRouteObserver: HALAudioRouteObserver?
+    var isAdjustingSpeakerVolume = false
+    var lastLiveVolumeWrite: Date?
 
     var settings: GlobalSettings {
         persistence.global()
@@ -134,32 +136,11 @@ final class DisplaySessionController {
     }
 
     func setVolume(key: String, value: Double) {
-        let clamped = min(1, max(0, value))
-        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
-        record.lastVolume = clamped
-        persistence.save(record)
-        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
-            snapshots[index].volume.current = clamped
-            boxes[key]?.setVolume(clamped)
-            applyLiveVolume(snapshots[index])
-        } else {
-            boxes[key]?.setVolume(clamped)
-        }
-        refreshSpeaker()
-        onChange?()
+        applySpeakerVolume(key: key, value: value, persist: true, notify: true)
     }
 
     func setMuted(key: String, muted: Bool) {
-        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
-        record.lastMuted = muted
-        persistence.save(record)
-        boxes[key]?.setMuted(muted)
-        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
-            snapshots[index].volume.isMuted = muted
-            applyLiveVolume(snapshots[index])
-        }
-        refreshSpeaker()
-        onChange?()
+        applySpeakerMute(key: key, muted: muted, persist: true, notify: true)
     }
 
     func setContrast(key: String, value: Double) {
@@ -881,7 +862,7 @@ final class DisplaySessionController {
         )
     }
 
-    private func applyLiveVolume(_ snapshot: DisplaySnapshot) {
+    func applyLiveVolume(_ snapshot: DisplaySnapshot) {
         guard let uid = snapshot.volume.audioDeviceUID else { return }
         switch snapshot.volume.backend {
         case .coreAudio:
@@ -1048,6 +1029,12 @@ final class DisplaySessionController {
     }
 
     func handleAudioRouteChange() {
+        if VolumeInteractionPolicy.shouldIgnoreHALEcho(
+            isAdjusting: isAdjustingSpeakerVolume,
+            lastWrite: lastLiveVolumeWrite
+        ) {
+            return
+        }
         refreshAudioBindings()
         syncSoftwareVolumeSessions()
         onChange?()

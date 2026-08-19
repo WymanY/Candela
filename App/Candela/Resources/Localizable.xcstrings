@@ -2738,6 +2738,23 @@
         }
       }
     },
+    "App": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
+          }
+        }
+      }
+    },
     "Menu Bar": {
       "extractionState": "manual",
       "localizations": {
