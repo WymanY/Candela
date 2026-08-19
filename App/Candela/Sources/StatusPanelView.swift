@@ -131,6 +131,7 @@ final class StatusPanelView: NSView {
             reloadScenes()
             syncWallButton()
             syncMirrorButton()
+            syncFollowButton()
             return
         }
         rowKeys = keys
@@ -148,6 +149,7 @@ final class StatusPanelView: NSView {
             reloadScenes()
             syncWallButton()
             syncMirrorButton()
+            syncFollowButton()
             return
         }
 
@@ -191,6 +193,7 @@ final class StatusPanelView: NSView {
         reloadScenes()
         syncWallButton()
         syncMirrorButton()
+        syncFollowButton()
     }
 
     private func applySpeaker() {
@@ -289,6 +292,12 @@ final class StatusPanelView: NSView {
         save.target = self
         save.action = #selector(saveSceneClicked)
         scenesStack.addArrangedSubview(save)
+        let follow = CandelaChrome.makeIconButton(symbolName: "sun.max", help: String(localized: "Follow Keyboard Brightness"))
+        follow.identifier = NSUserInterfaceItemIdentifier("follow-keyboard")
+        follow.target = self
+        follow.action = #selector(toggleFollowKeyboard)
+        scenesStack.addArrangedSubview(follow)
+        syncFollowButton(follow)
     }
 
     @objc private func sceneClicked(_ sender: NSButton) {
@@ -508,6 +517,28 @@ final class StatusPanelView: NSView {
             mirrorButton.image = image
         }
         sizeFooterButton(mirrorButton)
+    }
+
+
+    @objc private func toggleFollowKeyboard() {
+        _ = session.toggleFollowKeyboardBrightness()
+        reload(session.snapshots)
+    }
+
+    private func syncFollowButton(_ button: NSButton? = nil) {
+        let followButton = button ?? scenesStack.arrangedSubviews.compactMap { $0 as? NSButton }.first(where: { $0.identifier?.rawValue == "follow-keyboard" })
+        guard let followButton else { return }
+        let enabled = session.isFollowingKeyboardBrightness
+        let available = session.canFollowKeyboardBrightness
+        followButton.isEnabled = available || enabled
+        followButton.contentTintColor = enabled ? CandelaChrome.accent : .secondaryLabelColor
+        followButton.toolTip = enabled
+            ? String(localized: "Stop following keyboard brightness")
+            : String(localized: "Follow keyboard brightness")
+        followButton.setAccessibilityLabel(followButton.toolTip)
+        if let image = CandelaChrome.symbol(enabled ? "sun.max.fill" : "sun.max", size: 13) {
+            followButton.image = image
+        }
     }
 
     private func sizeFooterButton(_ button: NSButton) {

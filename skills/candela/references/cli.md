@@ -19,6 +19,7 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 | `preset night` | `preset` | night/desk/max; optional `--display` |
 | `match-all --display Q` | `matchAll` | Copy source brightness/volume/contrast |
 | `set-mirror` | `setBuiltInMirror` | Mirror onto the built-in display or restore the previous arrangement |
+| `set-follow-keyboard --enabled true` | `setFollowKeyboardBrightness` | External displays follow keyboard brightness |
 | `scenes` | `listScenes` | Saved scenes |
 | `save-scene --name Night` | `saveScene` | Capture current mix; same name overwrites |
 | `apply-scene Night` | `applyScene` | Name, slug, or id |
@@ -44,6 +45,7 @@ Socket: `~/Library/Application Support/Candela/control.sock`
 - `candela_rename_display`
 - `candela_apply_preset`
 - `candela_match_all`
+- `candela_set_follow_keyboard`
 - `candela_list_scenes`
 - `candela_apply_scene`
 - `candela_save_scene`

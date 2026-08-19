@@ -305,6 +305,32 @@ static bool sendI2CRequestOnAnyBus(
     return succeeded;
 }
 
+bool CandelaPublicDisplayGetBrightness(uint32_t displayID, float *value) {
+    if (value == NULL || displayID == 0) {
+        return false;
+    }
+    io_service_t service = displayConnect(displayID);
+    if (service == 0) {
+        return false;
+    }
+    float brightness = -1;
+    IOReturn status = IODisplayGetFloatParameter(
+        service,
+        kNilOptions,
+        CFSTR(kIODisplayBrightnessKey),
+        &brightness
+    );
+    IOObjectRelease(service);
+    if (status != kIOReturnSuccess || brightness < 0) {
+        return false;
+    }
+    if (brightness > 1) {
+        brightness = 1;
+    }
+    *value = brightness;
+    return true;
+}
+
 bool CandelaPublicI2CAvailable(uint32_t displayID) {
     IOI2CConnectRef connect = openI2C(displayID);
     if (connect == NULL) {

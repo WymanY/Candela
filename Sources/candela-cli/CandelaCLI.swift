@@ -66,6 +66,11 @@ enum CandelaCLI {
             return ControlRequest(action: .renameScene, name: try requiredName(rest), scene: try requiredToken(rest, name: "scene"))
         case "delete-scene":
             return ControlRequest(action: .deleteScene, scene: try requiredToken(rest, name: "scene"))
+        case "set-follow-keyboard":
+            return ControlRequest(
+                action: .setFollowKeyboardBrightness,
+                followKeyboardBrightness: try requiredBool(rest, names: ["--enabled", "--value", "--follow"])
+            )
         case "dump":
             return ControlRequest(action: .dump, redact: !rest.contains("--no-redact"))
         case "help", "-h", "--help":
@@ -217,7 +222,7 @@ enum CLIError: LocalizedError {
         case .usage:
             return """
             candela-cli <command> [options]
-            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip set-pip-wall rename preset match-all set-mirror scenes apply-scene save-scene rename-scene delete-scene dump
+            commands: list get set-brightness set-volume set-mute set-contrast set-input set-rotation set-pip set-pip-wall rename preset match-all set-mirror set-follow-keyboard scenes apply-scene save-scene rename-scene delete-scene dump
             display queries: name, persistentKey, main, builtin, external
             set-pip options: --enabled --mode display|window|magnifier --mirror --window --bundle --zoom
             """

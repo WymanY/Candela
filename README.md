@@ -2,6 +2,8 @@
 
 Candela 是一款原生 macOS 菜单栏应用，用来控制本机接上的每一块显示器。它可以调节苹果屏和第三方显示器的亮度，在显示器带 HDMI/DP 音箱时调节音量，旋转外接屏，切换 DDC 输入，并把指定屏幕镜像到浮动画中画窗口。1.1 起，画中画可以调透明度、点击穿透、钉角落，也能记住上次的位置和大小。1.2 起还可以跟窗口、左右镜像、放大光标附近，以及把多块屏收成监视墙。
 
+1.3 起，键盘亮度键调节内建屏时，其他显示器可以按相对偏移一起变化，不必接管媒体键。
+
 这是一个 AppKit 菜单栏应用。Bundle ID：`app.candela.macos`。
 
 English: [README.en.md](README.en.md)
@@ -21,6 +23,7 @@ English: [README.en.md](README.en.md)
 - 第三方 HDMI / DisplayPort / USB-C 显示器在 Apple Silicon 上走 DDC/CI VCP `0x10`。
 - 硬件控制不可用或失败时，回退到软件 gamma 调光，并保持 LUT，避免被 WindowServer 冲掉。
 - Night / Desk / Max 预设：20%、50%、100%。
+- 默认跟随键盘亮度：F1/F2 只动内建屏时，外接屏按相对偏移一起变。拖某一块屏的滑条只会改它自己的偏移。
 - 场景会记住每块屏当时的亮度、音量、静音、对比度、输入、旋转和画中画状态，以及当前扬声器输出、音量和静音，之后一键还原。
 - Match All 会把一块屏的亮度（以及可用的音量/对比度）同步到其他屏。
 - 显示器重新接入时，可以恢复上次亮度。
@@ -75,6 +78,7 @@ English: [README.en.md](README.en.md)
 
 - 登录时启动
 - 重新接入时恢复上次亮度
+- 跟随键盘亮度
 - 开关软件调光
 - 允许调到全黑
 - 滑条旁显示百分比
@@ -102,6 +106,7 @@ swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
 swift run --package-path . candela-cli set-mirror
+swift run --package-path . candela-cli set-follow-keyboard --enabled true
 swift run --package-path . candela-cli scenes
 swift run --package-path . candela-cli save-scene --name Night
 swift run --package-path . candela-cli apply-scene Night
@@ -209,6 +214,11 @@ swift test --package-path .
 ```
 
 CI 还会在 macOS 14 上构建 **Candela** 和 **CandelaMAS**。
+
+## 1.3
+
+- 键盘亮度键调节内建屏时，其他显示器按相对偏移一起变化。
+- 菜单栏和设置里都可以开关跟随。关掉后，每块屏仍可单独调节。
 
 ## 1.2
 
