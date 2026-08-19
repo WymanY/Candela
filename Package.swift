@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "CandelaPrivateIO", targets: ["CandelaPrivateIO"]),
+        .library(name: "CandelaPublicIO", targets: ["CandelaPublicIO"]),
         .library(name: "DisplayCore", targets: ["DisplayCore"]),
         .library(name: "BrightnessKit", targets: ["BrightnessKit"]),
         .library(name: "AudioKit", targets: ["AudioKit"]),
@@ -25,9 +26,20 @@ let package = Package(
             ]
         ),
         .target(
+            name: "CandelaPublicIO",
+            publicHeadersPath: "include",
+            linkerSettings: [
+                .linkedFramework("IOKit"),
+                .linkedFramework("CoreGraphics"),
+            ]
+        ),
+        .target(
             name: "DisplayCore",
             resources: [.process("Localizable.xcstrings")],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [
+                .linkedFramework("IOKit"),
+            ]
         ),
         .target(
             name: "PersistenceKit",

@@ -295,7 +295,7 @@ public enum AVServiceMatcher {
 
     /// Recursive `IOService` walk. `Location == "External"` is required to emit.
     public static func walkExternalAVServices() -> [AVServiceWalkResult] {
-        #if arch(arm64) && !CANDELA_GAMMA_ONLY
+        #if arch(arm64) && !CANDELA_GAMMA_ONLY && !CANDELA_MAS
         walkIOReg()
         #else
         []
@@ -313,7 +313,7 @@ public enum AVServiceMatcher {
     }
 }
 
-#if arch(arm64) && !CANDELA_GAMMA_ONLY
+#if arch(arm64) && !CANDELA_GAMMA_ONLY && !CANDELA_MAS
 extension AVServiceMatcher {
     private static let framebufferNames: Set<String> = [
         "AppleCLCD2",

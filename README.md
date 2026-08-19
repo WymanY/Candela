@@ -41,12 +41,12 @@ English: [README.en.md](README.en.md)
 ### 画中画
 
 - 菜单栏里每一块真实显示器都有 PiP 按钮。底部还有监视墙开关。
-- 打开后会在另一块屏上出现可拖动、可缩放的镜像窗口。
+- 打开后会出现可拖动、可缩放的镜像窗口，默认落在鼠标所在的那块屏上。
 - 源可以是整块屏、一个具体窗口，或跟着光标走的放大镜。刚打开或还没选窗口时，仍显示这块屏的画面。
 - 标题栏会显示当前显示器名；窗口模式再跟上窗口名。Display / Window 会提示可用滚轮缩放，放大镜会提示按住空格拖动查看不同位置。
 - 放大镜下按住空格拖动或滚动预览，可平移查看放大后的其他区域，此时不会缩放 PiP 窗口。
 - 预览可左右翻转，方便当提词器。
-- 滚轮或触控板捏合可放大缩小。单个 PiP 宽度限制在 280–1280；监视墙可以放到当前屏幕那么大。钉在角落时，会从那个角长开。
+- 滚轮或触控板捏合可放大缩小。单个 PiP 宽度限制在 280–1280；监视墙可以放到当前屏幕那么大。钉住时，会从那个位置长开。
 - 标题栏可调透明度（最低 25%），也能打开点击穿透：点预览画面会点到下面的窗口，鼠标停在 PiP 上时滚轮仍缩放这个窗口。鼠标停在窗口上时，⌘W 关闭这个 PiP。
 - 可钉在左上 / 右上 / 左下 / 右下，或居中。拖离钉住的位置会自动取消。
 - 每块屏会记住上次的位置、大小、透明度、点击穿透、钉角、镜像、模式和窗口身份，关掉后再开会回到原处。
@@ -63,6 +63,12 @@ English: [README.en.md](README.en.md)
 - 同名保存会覆盖旧场景，不会另外复制一份。
 - 某块屏当前没接上时会跳过，接回来后再应用即可。
 - 应用不附带内置场景模板。你保存的场景会写进本机偏好设置，重启应用后还在。
+
+### 电池
+
+- 笔记本没插电源时，菜单栏面板标题右侧会显示当前电量和剩余使用时间。
+- 插上电源后改成一枚充电图标，表示当前在用外接电源。
+- 台式机或读不到内建电池时，这块提示会收起来。
 
 ### 设置
 
@@ -132,10 +138,18 @@ cd Candela
 open Candela.xcodeproj
 ```
 
-选择 **Candela** scheme 后运行。
+选择 **Candela** scheme 后运行。这是店外直装版：关沙盒，走 DisplayServices / DDC / MonitorPanel。
 
 - **Debug：** 同时显示 Dock 图标和菜单栏图标，方便找到应用。
 - **Release：** 只显示菜单栏。
+
+Mac App Store 不要用这个 scheme。另选 **CandelaMAS**：开沙盒，私有显示 API 不会编进包，硬件控制改走公开 IOKit（`IODisplay` 亮度、`IOI2CInterface` DDC、`IOServiceRequestProbe` 旋转）。界面和功能面保持一样；店外直装版行为不变。
+
+```sh
+xcodebuild -project Candela.xcodeproj -scheme CandelaMAS -configuration Release -destination 'generic/platform=macOS' build
+```
+
+这是一条可审核的 MAS 构建线，还不是一次完整上架：沙盒下的 I2C / IODisplay / process tap 仍需真机验证，也还没有 Mac App Store 签名和描述文件。
 
 启动时 Xcode 可能打印 `com.apple.linkd.autoShortcut` / `Error registering app with intents framework`。Candela 没有 App Intents，这条日志可以忽略。详见 `docs/linkd-diagnosis.md`。
 
@@ -192,10 +206,11 @@ CANDELA_FAKE_HARDWARE=1
 swift test --package-path .
 ```
 
-CI 还会在 macOS 14 上构建 Candela 应用。
+CI 还会在 macOS 14 上构建 **Candela** 和 **CandelaMAS**。
 
 ## 1.2
 
+- 打开画中画时，窗口默认出现在鼠标所在的那块屏上。
 - 画中画可以钉在屏幕正中。
 - 画中画可以跟一个窗口，不只跟整块屏。没选窗口时继续显示这块屏。
 - 预览可左右镜像，适合提词。

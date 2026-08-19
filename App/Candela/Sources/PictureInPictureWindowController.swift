@@ -102,7 +102,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             windowSize: windowSize,
             sourceDisplayID: displayID,
             screens: Self.screenDescriptors(),
-            placement: self.placement
+            placement: self.placement,
+            pointer: NSScreen.candelaPointerOnScreen
         )
         let panel = StatusPanel(
             contentRect: frame,

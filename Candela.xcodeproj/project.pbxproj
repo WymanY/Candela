@@ -7,36 +7,84 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02363366446ED003772BB623 /* DDCPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */; };
+		0992B9EDA691A5DA59BC4F16 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD764C727BD56351F6A07A8 /* AppDelegate.swift */; };
+		0F8E93374BCEC37D401CC0EB /* PictureInPictureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */; };
+		11987C674586E024C0599DB2 /* DisplayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF47ABA59743DE249AC5488F /* DisplayRowView.swift */; };
+		12516D0955F079F0726DEE6E /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */; };
 		148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 236871E20297EA15E8B19C30 /* SettingsAboutView.swift */; };
+		1671697A02F7E305214DCA82 /* PictureInPicturePinControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */; };
 		1794505AFB46B3BFB9F7F4D3 /* HotPlugObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */; };
+		1E93EAC3CE0E8E9448E33928 /* SpeakerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */; };
 		28544AC3C17324B984A50B02 /* SpeakerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */; };
+		287815A8BF009C34C6D6C7E8 /* GammaTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810C0393E03779607DA87A7F /* GammaTable.swift */; };
+		33BB80714314B12B3DECBD35 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
 		374DA311737FE3389AD7B8B7 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F8025C56D2F05F5E8F195926 /* InfoPlist.xcstrings */; };
+		382EBC0BE210CC5DC2D4EE9D /* SettingsShortcutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */; };
 		38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */; };
 		3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5705532336236260D9C43BA /* StatusItemController.swift */; };
 		431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */; };
 		479649E80C10E3EEAEC137BA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */; };
 		4C519E5C71C5AC8243AD9C3A /* PictureInPicturePinControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */; };
+		50A1E5A3A05FADEEF31276AD /* PictureInPictureWallWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */; };
+		5360DAD6B4AC47399E5E2D1A /* PrivateSymbols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 905089B8EC0FD548F605C25D /* PrivateSymbols.swift */; };
+		55B62ED96EFBD695FB884C95 /* MenuBarGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */; };
 		5D26A0F4FE898DAEBFFAD35B /* ControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = AE981E167F2C87818BFE05A1 /* ControlKit */; };
+		5F2413CDAF50910FBF841EC1 /* CandelaPublicIO in Frameworks */ = {isa = PBXBuildFile; productRef = 25F97705B76533722EEA26C3 /* CandelaPublicIO */; };
+		5FEBB4C48AC58CAE4DA51573 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C13464143DB251CFC1D652 /* AppLanguage.swift */; };
+		6272881F8AB83A21D126E46C /* SettingsScenesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */; };
 		637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */; };
 		692330B621E06F8B7B3C0916 /* StatusPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE08E062782DE20F87A30B88 /* StatusPanelView.swift */; };
 		69A43BA8D4A1E133A1EDB4EA /* DisplayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF47ABA59743DE249AC5488F /* DisplayRowView.swift */; };
+		6C46FE1D24F76C1573BBB02D /* BrightnessProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC0402D868CAED63B7BC4F1 /* BrightnessProbe.swift */; };
 		6E3D061424AB3C7C2BFF4532 /* TestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 5F6245109EDD65BFC9C59AAF /* TestSupport */; };
 		733383736CF5E7E902876333 /* BrightnessKit in Frameworks */ = {isa = PBXBuildFile; productRef = 75B34A6470F248E2DA5598B7 /* BrightnessKit */; };
 		7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C13464143DB251CFC1D652 /* AppLanguage.swift */; };
 		74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
+		765633F98315E4C36AC68A0D /* PictureInPictureCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */; };
+		7D4B2F97AA79DB6DDF1CCB8B /* DisplaySessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */; };
 		7F771C0205EDD2945ED9E130 /* SettingsScenesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */; };
+		7FAE06AAC14875CA2082C4F4 /* CoreDisplayInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */; };
 		8306540F60897D69FE9546DB /* SettingsShortcutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */; };
 		8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
 		87FAFF8076EE924CA5893831 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
+		8B4629877D7CB41F513E7B48 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
+		8B752083F19415DE630DC453 /* DisplayCore in Frameworks */ = {isa = PBXBuildFile; productRef = C2BBF6C2EEC9EDA7940995A3 /* DisplayCore */; };
+		8D8A4971992AA78C77AE4BCE /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
 		93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */; };
+		9415BC99B12024C7C7E07F11 /* DisplaySessionController+Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */; };
+		97866FF01C92B7EE93B20107 /* ControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2C45EA601124293C90E43F60 /* ControlKit */; };
 		9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */; };
 		99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */; };
+		9B27FB9C5D8BE0D9EDB0F32F /* DisplayRotationControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 416F0D17CCE7F056BC5E3614 /* DisplayRotationControl.swift */; };
+		9C4AB159E689709ECB5D4EBF /* TestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 3F15839A3266AF6C6C1047BF /* TestSupport */; };
+		9C935A90DBDA4AFA0666686E /* BatteryStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */; };
+		9E82477FA34CBDB1451B2FCF /* BatteryStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */; };
+		A29DA4472371F6613A18E023 /* DisplayIOBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */; };
+		A41F21975B8638CF4B993532 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F8025C56D2F05F5E8F195926 /* InfoPlist.xcstrings */; };
 		ACD5F998D2F9CEFAAFEFE68B /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = D0CD76F44137A01270AA98F8 /* AudioKit */; };
 		AE38CB5DB255A317F0F09C79 /* PersistenceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A3433947766DA220FA1639C /* PersistenceKit */; };
+		BADCADD3C43F9C07E9C8118A /* HotPlugObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */; };
+		BEAD2060F6E47EA57C982FCF /* StatusPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE08E062782DE20F87A30B88 /* StatusPanelView.swift */; };
+		C1A2FF8CEE3F9315D24A8092 /* DisplayServicesBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B9C7B47351DF19375E872B /* DisplayServicesBackend.swift */; };
+		C21A066F49081D12BBB00315 /* IOKitDisplaySource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */; };
+		C2ADCD0F797D2F59157AA5BD /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */; };
+		C69DE7949E11A766650A7D3B /* NSScreen+Candela.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */; };
 		CAF5FD8F9BE2B3C3943E408F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD764C727BD56351F6A07A8 /* AppDelegate.swift */; };
+		CC3718424899B5162343E56C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A699CD75329BE53EC461E7A5 /* Assets.xcassets */; };
+		CE407707F70942C18D8A9629 /* PersistenceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 47D61E87C6EDBCF5428CC70C /* PersistenceKit */; };
+		D643D221067915231530DBC8 /* SystemDisplayCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D225743D028BAEC554DC333A /* SystemDisplayCatalog.swift */; };
+		E4A8C539F43EBE745C868956 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9DCEC8CAFB16F00F3F75207B /* AudioKit */; };
+		E548DC0509D228792F4EBE68 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5705532336236260D9C43BA /* StatusItemController.swift */; };
 		E571621392FF6E664F9851C6 /* SettingsGeneralView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */; };
+		E605057E24A14B999A79F675 /* SettingsDisplaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */; };
+		E90E8BA0F88D21EDAF80FA31 /* AVServiceMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96D95FAB6120CC584BC71177 /* AVServiceMatcher.swift */; };
 		E983F4CF1ED46D18F9A2BCDB /* DisplaySessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */; };
+		EF9C05BA9E32D95E53A8CC44 /* PrivateIO+IOAV.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DF69DF0685D8BABB8BE541 /* PrivateIO+IOAV.swift */; };
 		F2E0057792E18EAAA8FBFD04 /* DisplayCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2CD3413AF063E87EA5861281 /* DisplayCore */; };
+		F301CFE813D82ABA5F369B43 /* SettingsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 236871E20297EA15E8B19C30 /* SettingsAboutView.swift */; };
+		F4F469C12599F6A149C4D3EA /* SettingsGeneralView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */; };
+		F7A93C4DDD4E5C0A2FBD1FBD /* Arm64DDCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACD2187B2D4C6446CC91568 /* Arm64DDCClient.swift */; };
 		F828F475CF94725A8FEABE29 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A699CD75329BE53EC461E7A5 /* Assets.xcassets */; };
 		F999A81BF392E44AABEF45BD /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */; };
 		FDC2756D29258B397D38AF69 /* PictureInPictureCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */; };
@@ -46,27 +94,43 @@
 		027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScenesView.swift; sourceTree = "<group>"; };
 		052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotPlugObserver.swift; sourceTree = "<group>"; };
 		0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRowView.swift; sourceTree = "<group>"; };
+		09B9C7B47351DF19375E872B /* DisplayServicesBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayServicesBackend.swift; sourceTree = "<group>"; };
+		09DF69DF0685D8BABB8BE541 /* PrivateIO+IOAV.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrivateIO+IOAV.swift"; sourceTree = "<group>"; };
 		12F94F0FAF4B5E54894482FE /* Candela.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Candela.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B3CE843BE3F863B77BF4BA7 /* CandelaMAS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CandelaMAS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsGeneralView.swift; sourceTree = "<group>"; };
 		236871E20297EA15E8B19C30 /* SettingsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAboutView.swift; sourceTree = "<group>"; };
 		27A22C1F71B3784803149C67 /* Candela.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Candela.entitlements; sourceTree = "<group>"; };
 		2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarGuide.swift; sourceTree = "<group>"; };
 		2BA2C5E2D757E71D9BE2BC0F /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		2E916555AC134A6FD1608068 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		416F0D17CCE7F056BC5E3614 /* DisplayRotationControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRotationControl.swift; sourceTree = "<group>"; };
 		4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelController.swift; sourceTree = "<group>"; };
 		55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPicturePinControl.swift; sourceTree = "<group>"; };
+		6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayIOBox.swift; sourceTree = "<group>"; };
+		7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitDisplaySource.swift; sourceTree = "<group>"; };
+		71C014411DFBAC303BD3B900 /* CandelaMAS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CandelaMAS.entitlements; sourceTree = "<group>"; };
+		810C0393E03779607DA87A7F /* GammaTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaTable.swift; sourceTree = "<group>"; };
+		82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDisplayInfo.swift; sourceTree = "<group>"; };
 		84C65B68A38C3CFB42408055 /* CandelaChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandelaChrome.swift; sourceTree = "<group>"; };
 		86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWindowController.swift; sourceTree = "<group>"; };
 		86C13464143DB251CFC1D652 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		8D5455D272FE6AB3D2C088B2 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		905089B8EC0FD548F605C25D /* PrivateSymbols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateSymbols.swift; sourceTree = "<group>"; };
+		96D95FAB6120CC584BC71177 /* AVServiceMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVServiceMatcher.swift; sourceTree = "<group>"; };
 		97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Candela.swift"; sourceTree = "<group>"; };
 		A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureCapture.swift; sourceTree = "<group>"; };
 		A699CD75329BE53EC461E7A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureWallWindowController.swift; sourceTree = "<group>"; };
+		BACD2187B2D4C6446CC91568 /* Arm64DDCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arm64DDCClient.swift; sourceTree = "<group>"; };
 		BF47ABA59743DE249AC5488F /* DisplayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRowView.swift; sourceTree = "<group>"; };
+		CCC0402D868CAED63B7BC4F1 /* BrightnessProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessProbe.swift; sourceTree = "<group>"; };
 		CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySessionController.swift; sourceTree = "<group>"; };
+		D225743D028BAEC554DC333A /* SystemDisplayCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemDisplayCatalog.swift; sourceTree = "<group>"; };
 		D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDisplaysView.swift; sourceTree = "<group>"; };
+		DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DDCPacket.swift; sourceTree = "<group>"; };
+		DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryStatusView.swift; sourceTree = "<group>"; };
 		E5705532336236260D9C43BA /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		EBD764C727BD56351F6A07A8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DisplaySessionController+Audio.swift"; sourceTree = "<group>"; };
@@ -90,6 +154,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		33A66B9D86F6E653789A6862 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B752083F19415DE630DC453 /* DisplayCore in Frameworks */,
+				5F2413CDAF50910FBF841EC1 /* CandelaPublicIO in Frameworks */,
+				E4A8C539F43EBE745C868956 /* AudioKit in Frameworks */,
+				CE407707F70942C18D8A9629 /* PersistenceKit in Frameworks */,
+				97866FF01C92B7EE93B20107 /* ControlKit in Frameworks */,
+				9C4AB159E689709ECB5D4EBF /* TestSupport in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -98,6 +175,7 @@
 			children = (
 				EBD764C727BD56351F6A07A8 /* AppDelegate.swift */,
 				86C13464143DB251CFC1D652 /* AppLanguage.swift */,
+				DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */,
 				84C65B68A38C3CFB42408055 /* CandelaChrome.swift */,
 				BF47ABA59743DE249AC5488F /* DisplayRowView.swift */,
 				CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */,
@@ -135,10 +213,19 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		50C1BF1218B7F24EF588E04F /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				C14DE443EB91B1932789C3A9 /* BrightnessKit */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
 		6BF0E466E4C6829697A8D9B2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				12F94F0FAF4B5E54894482FE /* Candela.app */,
+				1B3CE843BE3F863B77BF4BA7 /* CandelaMAS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -148,6 +235,7 @@
 			children = (
 				BBD7D8313BB7ED84F015AEF0 /* App */,
 				A36B3454BC4467585648D1B3 /* Packages */,
+				50C1BF1218B7F24EF588E04F /* Sources */,
 				6BF0E466E4C6829697A8D9B2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -156,6 +244,7 @@
 			isa = PBXGroup;
 			children = (
 				27A22C1F71B3784803149C67 /* Candela.entitlements */,
+				71C014411DFBAC303BD3B900 /* CandelaMAS.entitlements */,
 			);
 			path = Supporting;
 			sourceTree = "<group>";
@@ -176,6 +265,26 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		C14DE443EB91B1932789C3A9 /* BrightnessKit */ = {
+			isa = PBXGroup;
+			children = (
+				BACD2187B2D4C6446CC91568 /* Arm64DDCClient.swift */,
+				96D95FAB6120CC584BC71177 /* AVServiceMatcher.swift */,
+				CCC0402D868CAED63B7BC4F1 /* BrightnessProbe.swift */,
+				82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */,
+				DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */,
+				6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */,
+				416F0D17CCE7F056BC5E3614 /* DisplayRotationControl.swift */,
+				09B9C7B47351DF19375E872B /* DisplayServicesBackend.swift */,
+				810C0393E03779607DA87A7F /* GammaTable.swift */,
+				7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */,
+				09DF69DF0685D8BABB8BE541 /* PrivateIO+IOAV.swift */,
+				905089B8EC0FD548F605C25D /* PrivateSymbols.swift */,
+				D225743D028BAEC554DC333A /* SystemDisplayCatalog.swift */,
+			);
+			path = BrightnessKit;
+			sourceTree = "<group>";
+		};
 		EDFB4CA27A9E5566BC7C4D7A /* Candela */ = {
 			isa = PBXGroup;
 			children = (
@@ -189,6 +298,31 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4EAC371D9E6D634227E0B89E /* CandelaMAS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1FD2268BA5FB8FBB3391AAB /* Build configuration list for PBXNativeTarget "CandelaMAS" */;
+			buildPhases = (
+				756BF01F2E770AA0770A2A63 /* Sources */,
+				059F9BDC9B837B718FE3B0A7 /* Resources */,
+				33A66B9D86F6E653789A6862 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CandelaMAS;
+			packageProductDependencies = (
+				C2BBF6C2EEC9EDA7940995A3 /* DisplayCore */,
+				25F97705B76533722EEA26C3 /* CandelaPublicIO */,
+				9DCEC8CAFB16F00F3F75207B /* AudioKit */,
+				47D61E87C6EDBCF5428CC70C /* PersistenceKit */,
+				2C45EA601124293C90E43F60 /* ControlKit */,
+				3F15839A3266AF6C6C1047BF /* TestSupport */,
+			);
+			productName = CandelaMAS;
+			productReference = 1B3CE843BE3F863B77BF4BA7 /* CandelaMAS.app */;
+			productType = "com.apple.product-type.application";
+		};
 		686E42A1F84772C015147CB2 /* Candela */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7AB17156E6FA994878A15BC1 /* Build configuration list for PBXNativeTarget "Candela" */;
@@ -223,6 +357,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					4EAC371D9E6D634227E0B89E = {
+						DevelopmentTeam = A594W68DE5;
+						ProvisioningStyle = Automatic;
+					};
 					686E42A1F84772C015147CB2 = {
 						DevelopmentTeam = A594W68DE5;
 						ProvisioningStyle = Automatic;
@@ -248,11 +386,22 @@
 			projectRoot = "";
 			targets = (
 				686E42A1F84772C015147CB2 /* Candela */,
+				4EAC371D9E6D634227E0B89E /* CandelaMAS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		059F9BDC9B837B718FE3B0A7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CC3718424899B5162343E56C /* Assets.xcassets in Resources */,
+				A41F21975B8638CF4B993532 /* InfoPlist.xcstrings in Resources */,
+				C2ADCD0F797D2F59157AA5BD /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E85A3429B77E1E67E503A765 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -272,6 +421,7 @@
 			files = (
 				CAF5FD8F9BE2B3C3943E408F /* AppDelegate.swift in Sources */,
 				7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */,
+				9C935A90DBDA4AFA0666686E /* BatteryStatusView.swift in Sources */,
 				8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */,
 				69A43BA8D4A1E133A1EDB4EA /* DisplayRowView.swift in Sources */,
 				99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */,
@@ -294,6 +444,51 @@
 				74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */,
 				692330B621E06F8B7B3C0916 /* StatusPanelView.swift in Sources */,
 				87FAFF8076EE924CA5893831 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		756BF01F2E770AA0770A2A63 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E90E8BA0F88D21EDAF80FA31 /* AVServiceMatcher.swift in Sources */,
+				0992B9EDA691A5DA59BC4F16 /* AppDelegate.swift in Sources */,
+				5FEBB4C48AC58CAE4DA51573 /* AppLanguage.swift in Sources */,
+				F7A93C4DDD4E5C0A2FBD1FBD /* Arm64DDCClient.swift in Sources */,
+				9E82477FA34CBDB1451B2FCF /* BatteryStatusView.swift in Sources */,
+				6C46FE1D24F76C1573BBB02D /* BrightnessProbe.swift in Sources */,
+				8B4629877D7CB41F513E7B48 /* CandelaChrome.swift in Sources */,
+				7FAE06AAC14875CA2082C4F4 /* CoreDisplayInfo.swift in Sources */,
+				02363366446ED003772BB623 /* DDCPacket.swift in Sources */,
+				A29DA4472371F6613A18E023 /* DisplayIOBox.swift in Sources */,
+				9B27FB9C5D8BE0D9EDB0F32F /* DisplayRotationControl.swift in Sources */,
+				11987C674586E024C0599DB2 /* DisplayRowView.swift in Sources */,
+				C1A2FF8CEE3F9315D24A8092 /* DisplayServicesBackend.swift in Sources */,
+				9415BC99B12024C7C7E07F11 /* DisplaySessionController+Audio.swift in Sources */,
+				7D4B2F97AA79DB6DDF1CCB8B /* DisplaySessionController.swift in Sources */,
+				287815A8BF009C34C6D6C7E8 /* GammaTable.swift in Sources */,
+				BADCADD3C43F9C07E9C8118A /* HotPlugObserver.swift in Sources */,
+				C21A066F49081D12BBB00315 /* IOKitDisplaySource.swift in Sources */,
+				55B62ED96EFBD695FB884C95 /* MenuBarGuide.swift in Sources */,
+				C69DE7949E11A766650A7D3B /* NSScreen+Candela.swift in Sources */,
+				765633F98315E4C36AC68A0D /* PictureInPictureCapture.swift in Sources */,
+				1671697A02F7E305214DCA82 /* PictureInPicturePinControl.swift in Sources */,
+				50A1E5A3A05FADEEF31276AD /* PictureInPictureWallWindowController.swift in Sources */,
+				0F8E93374BCEC37D401CC0EB /* PictureInPictureWindowController.swift in Sources */,
+				EF9C05BA9E32D95E53A8CC44 /* PrivateIO+IOAV.swift in Sources */,
+				5360DAD6B4AC47399E5E2D1A /* PrivateSymbols.swift in Sources */,
+				F301CFE813D82ABA5F369B43 /* SettingsAboutView.swift in Sources */,
+				E605057E24A14B999A79F675 /* SettingsDisplaysView.swift in Sources */,
+				F4F469C12599F6A149C4D3EA /* SettingsGeneralView.swift in Sources */,
+				6272881F8AB83A21D126E46C /* SettingsScenesView.swift in Sources */,
+				382EBC0BE210CC5DC2D4EE9D /* SettingsShortcutsView.swift in Sources */,
+				12516D0955F079F0726DEE6E /* SettingsWindowController.swift in Sources */,
+				1E93EAC3CE0E8E9448E33928 /* SpeakerRowView.swift in Sources */,
+				E548DC0509D228792F4EBE68 /* StatusItemController.swift in Sources */,
+				8D8A4971992AA78C77AE4BCE /* StatusPanelController.swift in Sources */,
+				BEAD2060F6E47EA57C982FCF /* StatusPanelView.swift in Sources */,
+				D643D221067915231530DBC8 /* SystemDisplayCatalog.swift in Sources */,
+				33BB80714314B12B3DECBD35 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,6 +560,29 @@
 				SWIFT_VERSION = 5.10;
 			};
 			name = Release;
+		};
+		61ED952DCF37FB9CAF61CE2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Candela/Supporting/CandelaMAS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Candela/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D CANDELA_MAS";
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_MODULE_NAME = CandelaMAS;
+				PRODUCT_NAME = Candela;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) CANDELA_MAS";
+			};
+			name = Debug;
 		};
 		856339AFBB6F60FD23C32D00 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -467,11 +685,34 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos.debug;
 				PRODUCT_NAME = Candela;
 				SDKROOT = macosx;
 			};
 			name = Debug;
+		};
+		F842FAFA942BAEE04A6E0A60 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Candela/Supporting/CandelaMAS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Candela/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D CANDELA_MAS";
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_MODULE_NAME = CandelaMAS;
+				PRODUCT_NAME = Candela;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) CANDELA_MAS";
+			};
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -494,6 +735,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		F1FD2268BA5FB8FBB3391AAB /* Build configuration list for PBXNativeTarget "CandelaMAS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				61ED952DCF37FB9CAF61CE2A /* Debug */,
+				F842FAFA942BAEE04A6E0A60 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -508,9 +758,25 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = PersistenceKit;
 		};
+		25F97705B76533722EEA26C3 /* CandelaPublicIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CandelaPublicIO;
+		};
+		2C45EA601124293C90E43F60 /* ControlKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ControlKit;
+		};
 		2CD3413AF063E87EA5861281 /* DisplayCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DisplayCore;
+		};
+		3F15839A3266AF6C6C1047BF /* TestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TestSupport;
+		};
+		47D61E87C6EDBCF5428CC70C /* PersistenceKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PersistenceKit;
 		};
 		5F6245109EDD65BFC9C59AAF /* TestSupport */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -520,9 +786,17 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = BrightnessKit;
 		};
+		9DCEC8CAFB16F00F3F75207B /* AudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AudioKit;
+		};
 		AE981E167F2C87818BFE05A1 /* ControlKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ControlKit;
+		};
+		C2BBF6C2EEC9EDA7940995A3 /* DisplayCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DisplayCore;
 		};
 		D0CD76F44137A01270AA98F8 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;

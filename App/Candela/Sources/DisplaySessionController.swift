@@ -1,9 +1,12 @@
 import AppKit
 import AudioKit
+#if !CANDELA_MAS
 import BrightnessKit
+#endif
 import ControlKit
 import DisplayCore
 import Foundation
+import IOKit.ps
 import PersistenceKit
 import ServiceManagement
 import TestSupport
@@ -32,6 +35,9 @@ final class DisplaySessionController {
     }
     var speaker: SpeakerOutput?
     var speakerChoices: [SpeakerChoice] = []
+    var powerStatus = PowerStatus(source: .unknown, isPresent: false, percent: nil)
+    private var powerSourceRunLoopSource: CFRunLoopSource?
+    private var lowPowerModeObserver: NSObjectProtocol?
     var onChange: (() -> Void)?
     var launchAtLoginError: String?
     private var audioRouteObserver: HALAudioRouteObserver?
@@ -86,6 +92,10 @@ final class DisplaySessionController {
                 }
             }
             observeActiveSpeakerVolume()
+            startPowerSourceObserver()
+            startLowPowerModeObserver()
+        } else {
+            refreshPowerStatus()
         }
     }
 
@@ -94,6 +104,8 @@ final class DisplaySessionController {
         hotPlugObserver = nil
         audioRouteObserver?.invalidate()
         audioRouteObserver = nil
+        stopPowerSourceObserver()
+        stopLowPowerModeObserver()
         updatesTask?.cancel()
         updatesTask = nil
         for task in restoreTasks.values {
@@ -888,7 +900,10 @@ final class DisplaySessionController {
 
     private func mergeVolume(key: String, capabilities: VolumeCapabilities) {
         guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else { return }
-        var next = capabilities
+        var next = VolumeResolution.preferringExistingHAL(
+            existing: snapshots[index].volume,
+            probed: capabilities
+        )
         let record = persistence.record(for: key)
         if let last = record?.lastVolume,
            next.supportsVolume,
@@ -1026,12 +1041,7 @@ final class DisplaySessionController {
     }
 
     func sampleLiveSpeakerVolume() {
-        if Self.shouldUseFakeHardware {
-            refreshSpeaker()
-            return
-        }
         refreshSpeaker()
-        onChange?()
     }
 
     func observeActiveSpeakerVolume() {
@@ -1072,6 +1082,59 @@ final class DisplaySessionController {
                 guard generation == self.applyGeneration else { return }
                 self.mergeBrightness(key: snapshot.id.persistentKey, capabilities: caps, isBuiltin: snapshot.isBuiltin)
             }
+        }
+    }
+
+    func refreshPowerStatus() {
+        let next = PowerStatusReader.current()
+        guard next != powerStatus else { return }
+        powerStatus = next
+        onChange?()
+    }
+
+    private func startPowerSourceObserver() {
+        guard powerSourceRunLoopSource == nil else {
+            refreshPowerStatus()
+            return
+        }
+        let source = IOPSNotificationCreateRunLoopSource({ context in
+            guard let context else { return }
+            let session = Unmanaged<DisplaySessionController>.fromOpaque(context).takeUnretainedValue()
+            DispatchQueue.main.async {
+                session.refreshPowerStatus()
+            }
+        }, Unmanaged.passUnretained(self).toOpaque())?.takeRetainedValue()
+        guard let source else {
+            refreshPowerStatus()
+            return
+        }
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
+        powerSourceRunLoopSource = source
+        refreshPowerStatus()
+    }
+
+    private func stopPowerSourceObserver() {
+        if let source = powerSourceRunLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .defaultMode)
+            powerSourceRunLoopSource = nil
+        }
+    }
+
+    private func startLowPowerModeObserver() {
+        guard lowPowerModeObserver == nil else { return }
+        lowPowerModeObserver = NotificationCenter.default.addObserver(
+            forName: .NSProcessInfoPowerStateDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshPowerStatus()
+        }
+    }
+
+    private func stopLowPowerModeObserver() {
+        if let lowPowerModeObserver {
+            NotificationCenter.default.removeObserver(lowPowerModeObserver)
+            self.lowPowerModeObserver = nil
         }
     }
 }

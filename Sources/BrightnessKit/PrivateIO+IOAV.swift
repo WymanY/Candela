@@ -1,13 +1,20 @@
-import CandelaPrivateIO
 import Darwin
 import Foundation
 import IOKit
 import os
+#if !CANDELA_MAS
+import CandelaPrivateIO
+#endif
 
+#if CANDELA_MAS
+enum IOAVSymbols {
+    static var isReady: Bool { false }
+}
+#else
 extension PrivateSymbols {
     typealias IOAVCreateWithServiceFn = @convention(c) (CFAllocator?, io_service_t) -> UnsafeRawPointer?
     typealias IOAVI2CFn = @convention(c) (
-        IOAVServiceRef?,
+        UnsafeRawPointer?,
         UInt32,
         UInt32,
         UnsafeMutableRawPointer?,
@@ -95,3 +102,4 @@ private enum IOAVLoader {
         #endif
     }
 }
+#endif

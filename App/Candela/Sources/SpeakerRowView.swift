@@ -127,6 +127,7 @@ final class SpeakerRowView: NSView {
         if showsVolume {
             if !volumeSlider.isUserTracking {
                 volumeSlider.doubleValue = speaker.volume.current * 100
+                volumeSlider.needsDisplay = true
                 updateVolumePercent(speaker.volume.current)
             }
             applyMutedAppearance(isMuted: speaker.volume.isMuted, name: speaker.name)

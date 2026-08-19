@@ -41,12 +41,12 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 ### Picture in Picture
 
 - Each real display has a PiP button in the menu-bar panel. The footer also opens a monitor wall.
-- Opens a floating, resizable mirror of that screen, preferably on another display.
+- Opens a floating, resizable mirror of that screen on the display under the pointer.
 - The source can be the whole display, one window, or a magnifier that follows the cursor. Until a window is chosen, Window mode still shows that display.
 - The title bar shows the display name, then the window name in Window mode. Display and Window hint that you can scroll to zoom. Magnifier hints that Space-drag pans the canvas.
 - In Magnifier, hold Space and drag or scroll the preview to pan around the magnified region. That gesture does not resize the PiP window.
 - Flip the preview horizontally for a teleprompter.
-- Scroll or pinch to zoom. A single PiP stays between 280 and 1280 wide. The monitor wall can grow to the current screen. A pinned window grows from that corner.
+- Scroll or pinch to zoom. A single PiP stays between 280 and 1280 wide. The monitor wall can grow to the current screen. A pinned window grows from that position.
 - The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. ⌘W closes the hovered PiP.
 - Pin it to top-left, top-right, bottom-left, bottom-right, or center. Dragging it off that position unpins it.
 - Each display remembers the last place, size, opacity, click-through, pin, flip, mode, and window identity. Closing and opening the window brings that layout back.
@@ -63,6 +63,12 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Saving with the same name overwrites that scene instead of duplicating it.
 - Missing displays are skipped and applied again when they return.
 - Candela does not ship built-in scene templates. Saved scenes live in local preferences and survive app relaunch.
+
+### Battery
+
+- When a MacBook is unplugged, the menu-bar panel shows the current battery percent and remaining time beside the title.
+- On AC power the chip switches to a charging bolt so the plugged-in state stays visible.
+- The chip hides on desktops, or when no internal battery is present.
 
 ### Settings
 
@@ -132,10 +138,18 @@ cd Candela
 open Candela.xcodeproj
 ```
 
-Select the **Candela** scheme and run.
+Select the **Candela** scheme and run. That is the direct / Developer ID build: sandbox off, DisplayServices / DDC / MonitorPanel on.
 
 - **Debug:** Dock icon and menu-bar extra, so the app is easy to find.
 - **Release:** menu bar only.
+
+Do not upload that scheme to the Mac App Store. Use **CandelaMAS** instead: sandbox on, private display APIs compiled out, hardware I/O on public IOKit (`IODisplay` brightness, `IOI2CInterface` DDC, `IOServiceRequestProbe` rotation). The UI and feature set stay the same; the direct / Developer ID scheme is unchanged.
+
+```sh
+xcodebuild -project Candela.xcodeproj -scheme CandelaMAS -configuration Release -destination 'generic/platform=macOS' build
+```
+
+This is a reviewable MAS build line, not a completed App Store upload. Sandboxed I2C / IODisplay / process-tap still need hardware smoke, and this repo does not yet carry a Mac App Store signing identity or provisioning profile.
 
 Xcode may print `com.apple.linkd.autoShortcut` / `Error registering app with intents framework` on launch. Candela has no App Intents. That message is harmless. See `docs/linkd-diagnosis.md`.
 
@@ -192,10 +206,11 @@ The fake catalog is:
 swift test --package-path .
 ```
 
-CI also builds the Candela app on macOS 14.
+CI also builds **Candela** and **CandelaMAS** on macOS 14.
 
 ## 1.2
 
+- Picture in Picture now opens on the display under the pointer.
 - Picture in Picture can pin to the center of the current display.
 - Picture in Picture can follow a window, not just a whole display. Until a window is chosen, it keeps showing that display.
 - Flip the preview horizontally for a teleprompter.
@@ -205,7 +220,7 @@ CI also builds the Candela app on macOS 14.
 ## 1.1
 
 - Picture in Picture now has opacity, click-through, and pinned corners.
-- Scroll or pinch to zoom the floating window. A pinned window grows from that corner.
+- Scroll or pinch to zoom the floating window. A pinned window grows from that position.
 - Each display remembers the last PiP place, size, and window state.
 - With click-through on, clicks still reach the work underneath. Hovering the window still zooms it with the scroll wheel.
 

@@ -545,17 +545,19 @@ public enum PictureInPictureLayout {
         return (width, height)
     }
 
-    /// Prefer a screen that is not the mirrored source so the window is visible.
+    /// Prefer the screen under the pointer so a first-open window appears where the user is looking.
     public static func origin(
         windowSize: CGSize,
         sourceDisplayID: CGDirectDisplayID,
-        screens: [(id: CGDirectDisplayID, visible: CGRect)]
+        screens: [(id: CGDirectDisplayID, visible: CGRect)],
+        pointer: CGPoint? = nil
     ) -> CGPoint {
         windowFrame(
             windowSize: windowSize,
             sourceDisplayID: sourceDisplayID,
             screens: screens,
-            placement: .default
+            placement: .default,
+            pointer: pointer
         ).origin
     }
 
@@ -563,14 +565,16 @@ public enum PictureInPictureLayout {
         windowSize: CGSize,
         sourceDisplayID: CGDirectDisplayID,
         screens: [(id: CGDirectDisplayID, visible: CGRect)],
-        placement: PictureInPicturePlacement = .default
+        placement: PictureInPicturePlacement = .default,
+        pointer: CGPoint? = nil
     ) -> CGRect {
         let size = clampedWindowSize(windowSize)
         let host = hostScreen(
             preferredDisplayID: placement.hostDisplayID,
             savedFrame: placement.frame?.rect,
             sourceDisplayID: sourceDisplayID,
-            screens: screens
+            screens: screens,
+            pointer: pointer
         )
         guard let host else {
             return CGRect(origin: .zero, size: size)
@@ -579,7 +583,10 @@ public enum PictureInPictureLayout {
             return CGRect(origin: snapOrigin(windowSize: size, corner: corner, visible: host.visible), size: size)
         }
         if let saved = placement.frame?.rect, saved.width > 1, saved.height > 1 {
-            return clampedFrame(CGRect(origin: saved.origin, size: size), in: host.visible)
+            let overlap = saved.intersection(host.visible)
+            if overlap.width * overlap.height > 1 {
+                return clampedFrame(CGRect(origin: saved.origin, size: size), in: host.visible)
+            }
         }
         return CGRect(
             origin: snapOrigin(windowSize: size, corner: .bottomRight, visible: host.visible),
@@ -628,12 +635,19 @@ public enum PictureInPictureLayout {
         return next
     }
 
+    /// Menu bar and dock sit just outside `visibleFrame`, so pad before giving up.
+    public static let pointerHitPadding = CGSize(width: 24, height: 48)
+
     public static func hostScreen(
         preferredDisplayID: UInt32?,
         savedFrame: CGRect?,
         sourceDisplayID: CGDirectDisplayID,
-        screens: [(id: CGDirectDisplayID, visible: CGRect)]
+        screens: [(id: CGDirectDisplayID, visible: CGRect)],
+        pointer: CGPoint? = nil
     ) -> (id: CGDirectDisplayID, visible: CGRect)? {
+        if let pointer, let match = screenContaining(point: pointer, screens: screens) {
+            return match
+        }
         if let savedFrame {
             let ranked = screens
                 .map { screen -> (screen: (id: CGDirectDisplayID, visible: CGRect), area: CGFloat) in
@@ -651,6 +665,31 @@ public enum PictureInPictureLayout {
             return match
         }
         return screens.first(where: { $0.id != sourceDisplayID }) ?? screens.first
+    }
+
+    public static func screenContaining(
+        point: CGPoint,
+        screens: [(id: CGDirectDisplayID, visible: CGRect)]
+    ) -> (id: CGDirectDisplayID, visible: CGRect)? {
+        if let exact = screens.first(where: { $0.visible.contains(point) }) {
+            return exact
+        }
+        let padded = screens.filter {
+            $0.visible.insetBy(dx: -pointerHitPadding.width, dy: -pointerHitPadding.height).contains(point)
+        }
+        if padded.count == 1 {
+            return padded[0]
+        }
+        if let closest = padded.min(by: { distanceSquared($0.visible, to: point) < distanceSquared($1.visible, to: point) }) {
+            return closest
+        }
+        return nil
+    }
+
+    private static func distanceSquared(_ rect: CGRect, to point: CGPoint) -> CGFloat {
+        let x = point.x < rect.minX ? rect.minX - point.x : max(point.x - rect.maxX, 0)
+        let y = point.y < rect.minY ? rect.minY - point.y : max(point.y - rect.maxY, 0)
+        return x * x + y * y
     }
 
     public static func clampedWindowSize(_ size: CGSize) -> CGSize {

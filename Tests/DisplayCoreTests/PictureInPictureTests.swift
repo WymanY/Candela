@@ -21,7 +21,7 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(wide.width, PictureInPictureLayout.maxWidth, accuracy: 0.001)
     }
 
-    func testWindowAddsChromeAndPrefersAnotherScreen() {
+    func testWindowAddsChromeAndFallsBackToAnotherScreen() {
         let content = CGSize(width: 420, height: 236)
         let window = PictureInPictureLayout.windowSize(forContent: content)
         XCTAssertEqual(window.height, content.height + PictureInPictureLayout.chromeHeight, accuracy: 0.001)
@@ -36,6 +36,80 @@ final class PictureInPictureTests: XCTestCase {
         )
         XCTAssertEqual(origin.x, 1920 + 1512 - window.width - 24, accuracy: 0.001)
         XCTAssertEqual(origin.y, 24, accuracy: 0.001)
+    }
+
+    func testDefaultWindowOpensOnTheScreenUnderThePointer() {
+        let size = CGSize(width: 420, height: 264)
+        let screens: [(id: UInt32, visible: CGRect)] = [
+            (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1080)),
+            (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 982)),
+        ]
+
+        let onSource = PictureInPictureLayout.windowFrame(
+            windowSize: size,
+            sourceDisplayID: 2,
+            screens: screens,
+            pointer: CGPoint(x: 200, y: 200)
+        )
+        XCTAssertEqual(onSource.origin.x, 1920 - size.width - 24, accuracy: 0.001)
+        XCTAssertEqual(onSource.origin.y, 24, accuracy: 0.001)
+
+        let onOther = PictureInPictureLayout.windowFrame(
+            windowSize: size,
+            sourceDisplayID: 2,
+            screens: screens,
+            pointer: CGPoint(x: 2100, y: 200)
+        )
+        XCTAssertEqual(onOther.origin.x, 1920 + 1512 - size.width - 24, accuracy: 0.001)
+        XCTAssertEqual(onOther.origin.y, 24, accuracy: 0.001)
+    }
+
+    func testPointerScreenBeatsASavedFrameOnAnotherDisplay() {
+        let size = CGSize(width: 480, height: 300)
+        let screens: [(id: UInt32, visible: CGRect)] = [
+            (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1080)),
+            (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 982)),
+        ]
+        let saved = PictureInPictureFrame(x: 2100, y: 120, width: 480, height: 300)
+        let frame = PictureInPictureLayout.windowFrame(
+            windowSize: size,
+            sourceDisplayID: 2,
+            screens: screens,
+            placement: PictureInPicturePlacement(frame: saved, hostDisplayID: 1),
+            pointer: CGPoint(x: 240, y: 180)
+        )
+        XCTAssertEqual(frame.origin.x, 1920 - size.width - 24, accuracy: 0.001)
+        XCTAssertEqual(frame.origin.y, 24, accuracy: 0.001)
+        XCTAssertEqual(frame.size.width, size.width, accuracy: 0.001)
+    }
+
+    func testSavedFrameOnThePointerScreenStillRestores() {
+        let screens: [(id: UInt32, visible: CGRect)] = [
+            (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1080)),
+            (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 982)),
+        ]
+        let saved = PictureInPictureFrame(x: 2100, y: 120, width: 480, height: 300)
+        let frame = PictureInPictureLayout.windowFrame(
+            windowSize: CGSize(width: 480, height: 300),
+            sourceDisplayID: 2,
+            screens: screens,
+            placement: PictureInPicturePlacement(frame: saved),
+            pointer: CGPoint(x: 2200, y: 200)
+        )
+        XCTAssertEqual(frame.origin.x, 2100, accuracy: 0.001)
+        XCTAssertEqual(frame.origin.y, 120, accuracy: 0.001)
+    }
+
+    func testPointerInMenuBarStillSelectsThatScreen() {
+        let screens: [(id: UInt32, visible: CGRect)] = [
+            (id: 2, visible: CGRect(x: 0, y: 0, width: 1920, height: 1056)),
+            (id: 1, visible: CGRect(x: 1920, y: 0, width: 1512, height: 958)),
+        ]
+        let host = PictureInPictureLayout.screenContaining(
+            point: CGPoint(x: 240, y: 1070),
+            screens: screens
+        )
+        XCTAssertEqual(host?.id, 2)
     }
 
     func testCaptureUsesSourcePixels() {

@@ -43,11 +43,15 @@ extension DisplaySessionController {
             if let notes {
                 volume.notes = notes
             }
-            if volume.backend == .coreAudio, let uid {
-                volume = VolumeResolution.adoptingHAL(
+            if let uid {
+                let liveCurrent = HALVolumeControl.volume(uid: uid)
+                let liveMuted = HALVolumeControl.isMuted(uid: uid)
+                volume = VolumeResolution.adoptingLiveOutput(
                     volume,
-                    current: HALVolumeControl.volume(uid: uid),
-                    muted: HALVolumeControl.isMuted(uid: uid)
+                    deviceUID: uid,
+                    hasHALVolume: device?.hasVolume == true || liveCurrent != nil,
+                    current: liveCurrent,
+                    muted: liveMuted
                 )
             }
             snapshots[index].volume = volume
@@ -70,17 +74,24 @@ extension DisplaySessionController {
             defaultUID: defaultUID,
             devices: devices
         )
-        if var resolved = next, let uid = resolved.uid, resolved.volume.backend == .coreAudio {
-            resolved.volume = VolumeResolution.adoptingHAL(
+        if var resolved = next, let uid = resolved.uid {
+            let device = devices.first(where: { $0.uid == uid })
+            let liveCurrent = HALVolumeControl.volume(uid: uid)
+            let liveMuted = HALVolumeControl.isMuted(uid: uid)
+            resolved.volume = VolumeResolution.adoptingLiveOutput(
                 resolved.volume,
-                current: HALVolumeControl.volume(uid: uid),
-                muted: HALVolumeControl.isMuted(uid: uid)
+                deviceUID: uid,
+                hasHALVolume: device?.hasVolume == true || liveCurrent != nil,
+                current: liveCurrent,
+                muted: liveMuted
             )
             if let key = resolved.displayKey,
                let index = snapshots.firstIndex(where: { $0.id.persistentKey == key })
             {
-                snapshots[index].volume = VolumeResolution.adoptingHAL(
+                snapshots[index].volume = VolumeResolution.adoptingLiveOutput(
                     snapshots[index].volume,
+                    deviceUID: uid,
+                    hasHALVolume: device?.hasVolume == true || liveCurrent != nil,
                     current: resolved.volume.current,
                     muted: resolved.volume.isMuted
                 )

@@ -2,10 +2,13 @@ name: ci
 on: [push, pull_request]
 jobs:
   test:
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - run: brew list xcodegen || brew install xcodegen
       - run: xcodegen generate --spec project.yml
       - run: swift test --package-path .
-      - run: xcodebuild -scheme Candela -destination 'platform=macOS' ONLY_ACTIVE_ARCH=NO build
+      - run: xcodebuild -scheme Candela -destination 'platform=macOS' ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+      - run: xcodebuild -scheme CandelaMAS -destination 'platform=macOS' ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build

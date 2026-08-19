@@ -62,8 +62,9 @@ final class SettingsAboutView: NSView {
         let dump = session.debugDump(redact: !debugEnv)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(dump, forType: .string)
-        let logs = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/Candela", isDirectory: true)
+        let logs = (FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library", isDirectory: true))
+            .appendingPathComponent("Logs/Candela", isDirectory: true)
         try? FileManager.default.createDirectory(at: logs, withIntermediateDirectories: true)
         try? dump.write(to: logs.appendingPathComponent("last-dump.txt"), atomically: true, encoding: .utf8)
     }
