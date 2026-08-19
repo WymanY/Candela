@@ -250,6 +250,45 @@ static IOI2CConnectRef openI2C(uint32_t displayID) {
     return NULL;
 }
 
+static bool sendI2CRequestOnAnyBus(uint32_t displayID, const IOI2CRequest *template) {
+    io_service_t fb = framebuffer(displayID);
+    if (fb == 0) {
+        return false;
+    }
+
+    IOItemCount count = 0;
+    if (IOFBGetI2CInterfaceCount(fb, &count) != kIOReturnSuccess || count == 0) {
+        IOObjectRelease(fb);
+        return false;
+    }
+
+    bool succeeded = false;
+    for (IOItemCount bus = 0; bus < count; bus++) {
+        io_service_t interface = 0;
+        if (IOFBCopyI2CInterfaceForBus(fb, bus, &interface) != kIOReturnSuccess || interface == 0) {
+            continue;
+        }
+
+        IOI2CConnectRef connect = NULL;
+        IOReturn opened = IOI2CInterfaceOpen(interface, kNilOptions, &connect);
+        IOObjectRelease(interface);
+        if (opened != kIOReturnSuccess || connect == NULL) {
+            continue;
+        }
+
+        IOI2CRequest request = *template;
+        IOReturn started = IOI2CSendRequest(connect, kNilOptions, &request);
+        IOI2CInterfaceClose(connect, kNilOptions);
+        if (started == kIOReturnSuccess && request.result == kIOReturnSuccess) {
+            succeeded = true;
+            break;
+        }
+    }
+
+    IOObjectRelease(fb);
+    return succeeded;
+}
+
 bool CandelaPublicI2CAvailable(uint32_t displayID) {
     IOI2CConnectRef connect = openI2C(displayID);
     if (connect == NULL) {
@@ -263,10 +302,6 @@ bool CandelaPublicI2CWrite(uint32_t displayID, const uint8_t *bytes, uint32_t co
     if (bytes == NULL || count == 0) {
         return false;
     }
-    IOI2CConnectRef connect = openI2C(displayID);
-    if (connect == NULL) {
-        return false;
-    }
 
     IOI2CRequest request;
     memset(&request, 0, sizeof(request));
@@ -277,9 +312,7 @@ bool CandelaPublicI2CWrite(uint32_t displayID, const uint8_t *bytes, uint32_t co
     request.replyTransactionType = kIOI2CNoTransactionType;
     request.minReplyDelay = 10000000ULL;
 
-    IOReturn started = IOI2CSendRequest(connect, kNilOptions, &request);
-    IOI2CInterfaceClose(connect, kNilOptions);
-    return started == kIOReturnSuccess && request.result == kIOReturnSuccess;
+    return sendI2CRequestOnAnyBus(displayID, &request);
 }
 
 bool CandelaPublicI2CRead(
@@ -290,10 +323,6 @@ bool CandelaPublicI2CRead(
     uint32_t replyCount
 ) {
     if (send == NULL || reply == NULL || sendCount == 0 || replyCount == 0) {
-        return false;
-    }
-    IOI2CConnectRef connect = openI2C(displayID);
-    if (connect == NULL) {
         return false;
     }
 
@@ -309,7 +338,5 @@ bool CandelaPublicI2CRead(
     request.replyBytes = replyCount;
     request.minReplyDelay = 10000000ULL;
 
-    IOReturn started = IOI2CSendRequest(connect, kNilOptions, &request);
-    IOI2CInterfaceClose(connect, kNilOptions);
-    return started == kIOReturnSuccess && request.result == kIOReturnSuccess;
+    return sendI2CRequestOnAnyBus(displayID, &request);
 }
