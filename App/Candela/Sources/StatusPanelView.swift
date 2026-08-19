@@ -373,11 +373,15 @@ final class StatusPanelView: NSView {
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
-        let mirrorButton = CandelaChrome.makeIconButton(symbolName: "rectangle.split.2x1", help: String(localized: "Mirror"))
+        let mirrorButton = CandelaChrome.makeQuietButton(
+            title: String(localized: "Mirror"),
+            symbolName: "rectangle.split.2x1"
+        )
         mirrorButton.target = self
         mirrorButton.action = #selector(toggleBuiltInMirror)
         mirrorButton.translatesAutoresizingMaskIntoConstraints = false
         mirrorButton.identifier = NSUserInterfaceItemIdentifier("mirror-builtin")
+        sizeFooterButton(mirrorButton)
         let quitButton = CandelaChrome.makeQuietButton(title: String(localized: "Quit"), symbolName: "power")
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
@@ -499,9 +503,11 @@ final class StatusPanelView: NSView {
             : String(localized: "Mirror every display onto the built-in display.")
         mirrorButton.setAccessibilityLabel(mirrorButton.toolTip)
         mirrorButton.contentTintColor = mirroring ? CandelaChrome.accent : .secondaryLabelColor
+        mirrorButton.title = mirroring ? String(localized: "Unmirror") : String(localized: "Mirror")
         if let image = CandelaChrome.symbol(mirroring ? "rectangle.fill.on.rectangle.fill" : "rectangle.split.2x1", size: 13) {
             mirrorButton.image = image
         }
+        sizeFooterButton(mirrorButton)
     }
 
     private func sizeFooterButton(_ button: NSButton) {
