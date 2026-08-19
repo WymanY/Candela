@@ -47,7 +47,7 @@ targets:
     info:
       path: App/Candela/Resources/Info.plist
       properties:
-        LSUIElement: false
+        LSUIElement: true
         LSRequiresNativeExecution: true
         LSApplicationCategoryType: public.app-category.utilities
         NSHighResolutionCapable: true
@@ -70,7 +70,9 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_ENTITLEMENTS: App/Candela/Supporting/Candela.entitlements
         LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/../Frameworks"]
-        # no SWIFT_OBJC_BRIDGING_HEADER
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: app.candela.macos.debug
     dependencies:
       - package: CandelaKit
         product: DisplayCore
@@ -104,7 +106,7 @@ targets:
     info:
       path: App/Candela/Resources/Info.plist
       properties:
-        LSUIElement: false
+        LSUIElement: true
         LSRequiresNativeExecution: true
         LSApplicationCategoryType: public.app-category.utilities
         NSHighResolutionCapable: true

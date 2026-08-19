@@ -685,7 +685,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos;
+				PRODUCT_BUNDLE_IDENTIFIER = app.candela.macos.debug;
 				PRODUCT_NAME = Candela;
 				SDKROOT = macosx;
 			};
