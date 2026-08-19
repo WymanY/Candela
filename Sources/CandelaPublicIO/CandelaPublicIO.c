@@ -41,6 +41,38 @@ static uint32_t scaleRotate(int32_t degrees) {
     }
 }
 
+static bool displayUnitFromLocation(CFTypeRef locationValue, uint32_t *unit) {
+    if (locationValue == NULL || unit == NULL || CFGetTypeID(locationValue) != CFStringGetTypeID()) {
+        return false;
+    }
+
+    CFStringRef location = (CFStringRef)locationValue;
+    CFRange at = CFStringFind(location, CFSTR("@"), kCFCompareBackwards);
+    if (at.location == kCFNotFound) {
+        return false;
+    }
+    CFIndex start = at.location + at.length;
+    CFIndex length = CFStringGetLength(location) - start;
+    if (length <= 0) {
+        return false;
+    }
+
+    uint32_t parsed = 0;
+    for (CFIndex index = start; index < CFStringGetLength(location); index++) {
+        UniChar character = CFStringGetCharacterAtIndex(location, index);
+        if (character < '0' || character > '9') {
+            return false;
+        }
+        uint32_t digit = (uint32_t)(character - '0');
+        if (parsed > (UINT32_MAX - digit) / 10) {
+            return false;
+        }
+        parsed = parsed * 10 + digit;
+    }
+    *unit = parsed;
+    return true;
+}
+
 static bool dictionaryMatchesDisplay(CFDictionaryRef info, uint32_t displayID) {
     if (info == NULL) {
         return false;
@@ -67,6 +99,11 @@ static bool dictionaryMatchesDisplay(CFDictionaryRef info, uint32_t displayID) {
         return false;
     }
     if (serial != 0 && infoSerial != 0 && (uint32_t)infoSerial != serial) {
+        return false;
+    }
+    uint32_t infoUnit = 0;
+    CFTypeRef location = CFDictionaryGetValue(info, CFSTR(kIODisplayLocationKey));
+    if (displayUnitFromLocation(location, &infoUnit) && infoUnit != CGDisplayUnitNumber(displayID)) {
         return false;
     }
     return true;
@@ -127,32 +164,6 @@ static io_service_t framebuffer(uint32_t displayID) {
     return 0;
 }
 
-static bool brightnessOnService(io_service_t service, bool writing, float *value) {
-    if (service == 0) {
-        return false;
-    }
-    if (writing) {
-        return IODisplaySetFloatParameter(
-            service,
-            kNilOptions,
-            CFSTR(kIODisplayBrightnessKey),
-            *value
-        ) == kIOReturnSuccess;
-    }
-    float brightness = -1;
-    if (IODisplayGetFloatParameter(
-            service,
-            kNilOptions,
-            CFSTR(kIODisplayBrightnessKey),
-            &brightness
-        ) != kIOReturnSuccess || brightness < 0)
-    {
-        return false;
-    }
-    *value = brightness;
-    return true;
-}
-
 int32_t CandelaPublicDisplayGetOrientation(uint32_t displayID) {
     return (int32_t)lround(CGDisplayRotation(displayID));
 }
@@ -181,44 +192,6 @@ bool CandelaPublicDisplaySetOrientation(uint32_t displayID, int32_t degrees) {
     IOReturn status = IOServiceRequestProbe(service, option);
     IOObjectRelease(service);
     return status == kIOReturnSuccess;
-}
-
-bool CandelaPublicDisplayGetBrightness(uint32_t displayID, float *value) {
-    if (value == NULL) {
-        return false;
-    }
-    io_service_t connect = displayConnect(displayID);
-    if (brightnessOnService(connect, false, value)) {
-        IOObjectRelease(connect);
-        return true;
-    }
-    if (connect != 0) {
-        IOObjectRelease(connect);
-    }
-    io_service_t fb = framebuffer(displayID);
-    bool ok = brightnessOnService(fb, false, value);
-    if (fb != 0) {
-        IOObjectRelease(fb);
-    }
-    return ok;
-}
-
-bool CandelaPublicDisplaySetBrightness(uint32_t displayID, float value) {
-    float writable = value;
-    io_service_t connect = displayConnect(displayID);
-    if (brightnessOnService(connect, true, &writable)) {
-        IOObjectRelease(connect);
-        return true;
-    }
-    if (connect != 0) {
-        IOObjectRelease(connect);
-    }
-    io_service_t fb = framebuffer(displayID);
-    bool ok = brightnessOnService(fb, true, &writable);
-    if (fb != 0) {
-        IOObjectRelease(fb);
-    }
-    return ok;
 }
 
 static IOI2CConnectRef openI2C(uint32_t displayID) {

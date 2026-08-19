@@ -39,7 +39,9 @@ final class DisplayRotationControlTests: XCTestCase {
             .appendingPathComponent("Sources/CandelaPublicIO/CandelaPublicIO.c")
         let publicBody = try String(contentsOf: publicIO, encoding: .utf8)
         XCTAssertTrue(publicBody.contains("IOServiceRequestProbe"))
-        XCTAssertTrue(publicBody.contains("IODisplaySetFloatParameter"))
+        XCTAssertTrue(publicBody.contains("CGDisplayUnitNumber"))
+        XCTAssertTrue(publicBody.contains("kIODisplayLocationKey"))
+        XCTAssertFalse(publicBody.contains("IODisplaySetFloatParameter"))
         XCTAssertFalse(publicBody.contains("MonitorPanel"))
     }
 

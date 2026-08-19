@@ -1,15 +1,12 @@
 import CoreGraphics
 import Foundation
-#if CANDELA_MAS
-import CandelaPublicIO
-#endif
 
 /// Hardware brightness get/set. Direct builds use DisplayServices via `dlsym`.
-/// The Mac App Store flavor uses public `IODisplayGet/SetFloatParameter`.
+/// MAS builds skip this private-only tier and continue to DDC or software gamma.
 enum HardwareBrightnessBackend {
     static var isAvailable: Bool {
         #if CANDELA_MAS
-        true
+        false
         #else
         PrivateSymbols.displayServicesAvailable
         #endif
@@ -18,9 +15,7 @@ enum HardwareBrightnessBackend {
     /// Probe success: Get returns 0 and brightness ≥ 0.
     static func get(_ displayID: CGDirectDisplayID) -> Float? {
         #if CANDELA_MAS
-        var value: Float = -1
-        guard CandelaPublicDisplayGetBrightness(displayID, &value), value >= 0 else { return nil }
-        return value
+        nil
         #else
         guard let get = PrivateSymbols.displayServicesGetBrightness else { return nil }
         var value: Float = -1
@@ -32,7 +27,7 @@ enum HardwareBrightnessBackend {
 
     static func set(_ displayID: CGDirectDisplayID, _ value: Float) -> Bool {
         #if CANDELA_MAS
-        CandelaPublicDisplaySetBrightness(displayID, value)
+        false
         #else
         guard let set = PrivateSymbols.displayServicesSetBrightness else { return false }
         return set(displayID, value) == 0
