@@ -51,7 +51,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. ⌘W closes the hovered PiP.
 - Pin it to top-left, top-right, bottom-left, bottom-right, or center. Dragging it off that position unpins it.
 - Each display remembers the last place, size, opacity, click-through, pin, flip, mode, and window identity. Closing and opening the window brings that layout back.
-- The monitor wall tiles every real display into one floating window, remembers its own placement, and can zoom up to the current screen. Virtual screens stay out. Desktop Backstop layers are hidden from the window list.
+- The monitor wall tiles every real display into one floating window, remembers its own placement, and can zoom up to the current screen. Virtual screens stay out. Desktop Backstop layers and black capture overlays such as Screen Studio's window-picker highlighter are hidden from the window list.
 - Captures at the source display's pixel size so text stays readable.
 - Requires Screen Recording permission.
 - Virtual screens such as Sidecar are not supported.
@@ -140,10 +140,18 @@ cd Candela
 open Candela.xcodeproj
 ```
 
-Select the **Candela** scheme and run.
+Select the **Candela** scheme and run. That is the direct / Developer ID build: sandbox off, DisplayServices / DDC / MonitorPanel on.
 
 - **Debug:** Dock icon and menu-bar extra, so the app is easy to find.
 - **Release:** menu bar only.
+
+Do not upload that scheme to the Mac App Store. Use **CandelaMAS** instead: sandbox on, private display APIs compiled out, hardware I/O on public IOKit (`IODisplay` brightness, `IOI2CInterface` DDC, `IOServiceRequestProbe` rotation). The UI and feature set stay the same; the direct / Developer ID scheme is unchanged.
+
+```sh
+xcodebuild -project Candela.xcodeproj -scheme CandelaMAS -configuration Release -destination 'generic/platform=macOS' build
+```
+
+This is a reviewable MAS build line, not a completed App Store upload. Sandboxed I2C / IODisplay / process-tap still need hardware smoke, and this repo does not yet carry a Mac App Store signing identity or provisioning profile.
 
 Xcode may print `com.apple.linkd.autoShortcut` / `Error registering app with intents framework` on launch. Candela has no App Intents. That message is harmless. See `docs/linkd-diagnosis.md`.
 
@@ -200,7 +208,7 @@ The fake catalog is:
 swift test --package-path .
 ```
 
-CI also builds the Candela app on macOS 14.
+CI also builds **Candela** and **CandelaMAS** on macOS 14.
 
 ## 1.2
 

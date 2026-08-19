@@ -3,8 +3,6 @@ import os
 
 @MainActor
 final class StatusItemController: NSObject {
-    static let autosaveName = "CandelaMain"
-
     private let session: DisplaySessionController
     private let statusItem: NSStatusItem
     private let panelController: StatusPanelController
@@ -17,7 +15,6 @@ final class StatusItemController: NSObject {
     private var appliedLanguage: String
 
     init(session: DisplaySessionController) {
-        Self.forceSystemVisible()
         self.session = session
         self.statusItem = Self.makeStatusItem()
         self.panelController = StatusPanelController(session: session)
@@ -33,38 +30,15 @@ final class StatusItemController: NSObject {
             quit: { [weak self] in self?.quit() }
         )
         configureButton()
+        statusItem.isVisible = true
         installMonitors()
         log.info("status item created visible=\(self.statusItem.isVisible, privacy: .public)")
     }
 
-    /// macOS 26 stores unnamed extras as Item-N and Control Center hides them.
-    /// Pin a named extra next to the clock before NSStatusItem reads autosave state.
     private static func makeStatusItem() -> NSStatusItem {
-        forceSystemVisible()
-        let bar = NSStatusBar.system
-        let item = bar.statusItem(withLength: NSStatusItem.squareLength)
-        item.autosaveName = autosaveName
-        item.isVisible = true
-        // If macOS still bound this extra as a hidden Item-N, drop it and
-        // publish the named CandelaMain extra instead.
-        if item.autosaveName != autosaveName {
-            bar.removeStatusItem(item)
-            let named = bar.statusItem(withLength: NSStatusItem.squareLength)
-            named.autosaveName = autosaveName
-            named.isVisible = true
-            return named
-        }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.isVisible = false
         return item
-    }
-
-    private static func forceSystemVisible() {
-        let defaults = UserDefaults.standard
-        defaults.set(true, forKey: "NSStatusItem Visible \(autosaveName)")
-        defaults.set(true, forKey: "NSStatusItem VisibleCC \(autosaveName)")
-        if defaults.object(forKey: "NSStatusItem Preferred Position \(autosaveName)") == nil {
-            defaults.set(48.0, forKey: "NSStatusItem Preferred Position \(autosaveName)")
-        }
-        defaults.synchronize()
     }
 
     deinit {
@@ -78,15 +52,8 @@ final class StatusItemController: NSObject {
 
     func revealOnLaunch() {
         showMainUI()
-        DispatchQueue.main.async { [weak self] in
-            self?.republishStatusItemIfNeeded()
-            self?.showMainUI()
-        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             self?.showPanelIfReady()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
-            self?.presentGuideIfMissing()
         }
     }
 
@@ -97,9 +64,8 @@ final class StatusItemController: NSObject {
 
     /// Dock click, first launch, and reopen all go through here.
     func showMainUI() {
-        Self.forceSystemVisible()
-        statusItem.isVisible = true
         configureButton()
+        statusItem.isVisible = true
         suppressDismissUntil = Date().addingTimeInterval(2)
         if !session.settings.hasOpenedPanelOnce {
             session.markPanelOpenedOnce()
@@ -114,35 +80,14 @@ final class StatusItemController: NSObject {
     }
 
     private func presentGuideIfMissing() {
-        let onMenuBar = isStatusItemOnMenuBar()
-        MenuBarGuideController.writeDiagnostic(
-            "post-launch window=\(statusItem.button?.window != nil) onMenuBar=\(onMenuBar) autosave=\(statusItem.autosaveName ?? "nil")"
-        )
-        if !onMenuBar {
+        let hasWindow = statusItem.button?.window != nil
+        MenuBarGuideController.writeDiagnostic("post-launch window=\(hasWindow)")
+        if !hasWindow {
             guideController.present()
         }
     }
 
-    private func isStatusItemOnMenuBar() -> Bool {
-        guard let button = statusItem.button, let window = button.window else { return false }
-        let frame = window.convertToScreen(button.convert(button.bounds, to: nil))
-        guard frame.width > 8, frame.height > 8 else { return false }
-        return NSScreen.screens.contains { screen in
-            let menuBar = NSRect(x: screen.frame.minX, y: screen.frame.maxY - 32, width: screen.frame.width, height: 32)
-            return menuBar.intersects(frame)
-        }
-    }
-
-    private func republishStatusItemIfNeeded() {
-        Self.forceSystemVisible()
-        statusItem.autosaveName = Self.autosaveName
-        statusItem.isVisible = false
-        statusItem.isVisible = true
-    }
-
     private func configureButton() {
-        statusItem.autosaveName = Self.autosaveName
-        statusItem.isVisible = true
         guard let button = statusItem.button else {
             log.error("configureButton: NSStatusItem.button is nil")
             return

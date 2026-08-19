@@ -19,12 +19,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
-        NSApp.setActivationPolicy(.regular)
+        NSApp.setActivationPolicy(.accessory)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         BootLog.write("didFinish")
-        terminateExtraInstances()
         let session = DisplaySessionController.makeDefault()
         self.session = session
         statusItem = StatusItemController(session: session)
@@ -42,11 +41,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controlServer?.start()
         log.info("launched; status item installed")
         BootLog.write("status item installed")
-        #if !DEBUG
-        DispatchQueue.main.async {
-            NSApp.setActivationPolicy(.accessory)
-        }
-        #endif
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -132,48 +126,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenuItem.submenu = appMenu
         NSApp.mainMenu = menu
     }
-
-    private func terminateExtraInstances() {
-        // A later launch used to force-kill every other Candela, including the
-        // instance Xcode was debugging. That shows up as SIGTERM on NSApplicationMain.
-        if ProcessInfo.processInfo.isDebuggerAttached {
-            BootLog.write("skip terminate extras; debugger attached")
-            return
-        }
-        let mine = ProcessInfo.processInfo.processIdentifier
-        for app in NSRunningApplication.runningApplications(withBundleIdentifier: "app.candela.macos")
-        where app.processIdentifier != mine {
-            if ProcessInfo.processInfo.isDebuggerAttached(to: app.processIdentifier) {
-                log.info("leaving debugged instance pid=\(app.processIdentifier, privacy: .public)")
-                BootLog.write("leave debugged pid=\(app.processIdentifier)")
-                continue
-            }
-            log.info("terminating extra instance pid=\(app.processIdentifier, privacy: .public)")
-            BootLog.write("terminate extra pid=\(app.processIdentifier)")
-            app.forceTerminate()
-        }
-    }
-}
-
-private extension ProcessInfo {
-    var isDebuggerAttached: Bool {
-        isDebuggerAttached(to: processIdentifier)
-    }
-
-    func isDebuggerAttached(to pid: pid_t) -> Bool {
-        var info = kinfo_proc()
-        var size = MemoryLayout<kinfo_proc>.stride
-        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
-        let result = sysctl(&mib, u_int(mib.count), &info, &size, nil, 0)
-        guard result == 0, size >= MemoryLayout<kinfo_proc>.stride else { return false }
-        return (info.kp_proc.p_flag & P_TRACED) != 0
-    }
 }
 
 enum BootLog {
     static func write(_ line: String) {
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/Candela", isDirectory: true)
+        let dir = (FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library", isDirectory: true))
+            .appendingPathComponent("Logs/Candela", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("boot.txt")
         let stamp = ISO8601DateFormatter().string(from: Date())

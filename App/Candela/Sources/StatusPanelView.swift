@@ -337,6 +337,12 @@ final class StatusPanelView: NSView {
         speakerRow.onVolume = { [weak self] value in
             self?.session.setSpeakerVolume(value)
         }
+        speakerRow.onVolumeTrackingBegan = { [weak self] in
+            self?.session.beginSpeakerVolumeAdjustment()
+        }
+        speakerRow.onVolumeTrackingEnded = { [weak self] value in
+            self?.session.endSpeakerVolumeAdjustment(value)
+        }
         speakerRow.onMute = { [weak self] muted in
             self?.session.setSpeakerMuted(muted)
         }

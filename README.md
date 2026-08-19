@@ -51,7 +51,7 @@ English: [README.en.md](README.en.md)
 - 标题栏可调透明度（最低 25%），也能打开点击穿透：点预览画面会点到下面的窗口，鼠标停在 PiP 上时滚轮仍缩放这个窗口。鼠标停在窗口上时，⌘W 关闭这个 PiP。
 - 可钉在左上 / 右上 / 左下 / 右下，或居中。拖离钉住的位置会自动取消。
 - 每块屏会记住上次的位置、大小、透明度、点击穿透、钉角、镜像、模式和窗口身份，关掉后再开会回到原处。
-- 监视墙把所有真实屏缩成一格，位置单独记住，缩放上限跟着当前屏幕走。Sidecar 等虚拟屏不会进墙。窗口列表会去掉 Display Backstop 这类系统垫底层。
+- 监视墙把所有真实屏缩成一格，位置单独记住，缩放上限跟着当前屏幕走。Sidecar 等虚拟屏不会进墙。窗口列表会去掉 Display Backstop 这类系统垫底层，以及 Screen Studio Window Picker Highlighter 这类纯黑覆盖窗。
 - 按源屏像素采集，文字更清楚。
 - 需要「屏幕录制」权限。
 - Sidecar 等虚拟屏不支持。
@@ -140,10 +140,18 @@ cd Candela
 open Candela.xcodeproj
 ```
 
-选择 **Candela** scheme 后运行。
+选择 **Candela** scheme 后运行。这是店外直装版：关沙盒，走 DisplayServices / DDC / MonitorPanel。
 
 - **Debug：** 同时显示 Dock 图标和菜单栏图标，方便找到应用。
 - **Release：** 只显示菜单栏。
+
+Mac App Store 不要用这个 scheme。另选 **CandelaMAS**：开沙盒，私有显示 API 不会编进包，硬件控制改走公开 IOKit（`IODisplay` 亮度、`IOI2CInterface` DDC、`IOServiceRequestProbe` 旋转）。界面和功能面保持一样；店外直装版行为不变。
+
+```sh
+xcodebuild -project Candela.xcodeproj -scheme CandelaMAS -configuration Release -destination 'generic/platform=macOS' build
+```
+
+这是一条可审核的 MAS 构建线，还不是一次完整上架：沙盒下的 I2C / IODisplay / process tap 仍需真机验证，也还没有 Mac App Store 签名和描述文件。
 
 启动时 Xcode 可能打印 `com.apple.linkd.autoShortcut` / `Error registering app with intents framework`。Candela 没有 App Intents，这条日志可以忽略。详见 `docs/linkd-diagnosis.md`。
 
@@ -200,7 +208,7 @@ CANDELA_FAKE_HARDWARE=1
 swift test --package-path .
 ```
 
-CI 还会在 macOS 14 上构建 Candela 应用。
+CI 还会在 macOS 14 上构建 **Candela** 和 **CandelaMAS**。
 
 ## 1.2
 

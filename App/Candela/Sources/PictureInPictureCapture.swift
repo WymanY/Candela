@@ -34,7 +34,8 @@ enum PictureInPictureCapture {
                 ownerName: owner,
                 displayID: displayIDContaining(window.frame),
                 pixelWidth: UInt32(max(window.frame.width, 0).rounded()),
-                pixelHeight: UInt32(max(window.frame.height, 0).rounded())
+                pixelHeight: UInt32(max(window.frame.height, 0).rounded()),
+                windowLayer: window.windowLayer
             )
             return PictureInPictureWindowMatching.shouldOffer(candidate) ? candidate : nil
         }

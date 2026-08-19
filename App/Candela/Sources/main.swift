@@ -1,6 +1,7 @@
 import AppKit
 
 AppLanguage.applyStoredPreference()
+let application = NSApplication.shared
 let candelaDelegate = AppDelegate()
-NSApplication.shared.delegate = candelaDelegate
-_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+application.delegate = candelaDelegate
+application.run()

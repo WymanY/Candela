@@ -25,6 +25,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
@@ -32,7 +34,7 @@
 	<key>LSRequiresNativeExecution</key>
 	<true/>
 	<key>LSUIElement</key>
-	<false/>
+	<true/>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.</string>
 	<key>NSHighResolutionCapable</key>

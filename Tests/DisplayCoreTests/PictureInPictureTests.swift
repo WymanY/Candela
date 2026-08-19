@@ -409,6 +409,31 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertFalse(PictureInPictureWindowMatching.shouldOffer(otherBackstop))
     }
 
+    func testWindowMenuHidesBlackCaptureOverlays() {
+        let slack = PictureInPictureWindowCandidate(
+            windowID: 11,
+            bundleIdentifier: "com.tinyspeck.slackmacgap",
+            title: "#design",
+            ownerName: "Slack"
+        )
+        let highlighter = PictureInPictureWindowCandidate(
+            windowID: 41,
+            bundleIdentifier: "com.timpler.screenstudio",
+            title: "Screen Studio Display Window Picker Highlighter",
+            ownerName: "Screen Studio"
+        )
+        let untitledOverlay = PictureInPictureWindowCandidate(
+            windowID: 42,
+            bundleIdentifier: "com.timpler.screenstudio",
+            title: "",
+            ownerName: "Screen Studio",
+            windowLayer: 3
+        )
+        XCTAssertTrue(PictureInPictureWindowMatching.shouldOffer(slack))
+        XCTAssertFalse(PictureInPictureWindowMatching.shouldOffer(highlighter))
+        XCTAssertFalse(PictureInPictureWindowMatching.shouldOffer(untitledOverlay))
+    }
+
     func testMagnifierCropsAroundCursorAndStaysOnScreen() {
         let crop = PictureInPictureMagnifier.cropRect(
             sourceWidth: 1920,

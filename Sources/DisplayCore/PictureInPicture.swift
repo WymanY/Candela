@@ -147,6 +147,7 @@ public struct PictureInPictureWindowCandidate: Equatable, Sendable {
     public var displayID: UInt32?
     public var pixelWidth: UInt32
     public var pixelHeight: UInt32
+    public var windowLayer: Int
 
     public init(
         windowID: UInt32,
@@ -155,7 +156,8 @@ public struct PictureInPictureWindowCandidate: Equatable, Sendable {
         ownerName: String,
         displayID: UInt32? = nil,
         pixelWidth: UInt32 = 0,
-        pixelHeight: UInt32 = 0
+        pixelHeight: UInt32 = 0,
+        windowLayer: Int = 0
     ) {
         self.windowID = windowID
         self.bundleIdentifier = bundleIdentifier
@@ -164,6 +166,7 @@ public struct PictureInPictureWindowCandidate: Equatable, Sendable {
         self.displayID = displayID
         self.pixelWidth = pixelWidth
         self.pixelHeight = pixelHeight
+        self.windowLayer = windowLayer
     }
 
     public var identity: PictureInPictureWindowIdentity {
@@ -176,9 +179,9 @@ public struct PictureInPictureWindowCandidate: Equatable, Sendable {
 }
 
 public enum PictureInPictureWindowMatching {
-    /// Desktop backdrop layers such as "Display 1 Backstop" are not capturable app windows.
+    /// Desktop backdrops and capture overlays are not useful app windows.
     public static func shouldOffer(_ candidate: PictureInPictureWindowCandidate) -> Bool {
-        !isSystemBackdrop(candidate)
+        !isSystemBackdrop(candidate) && !isCaptureOverlay(candidate)
     }
 
     public static func isSystemBackdrop(_ candidate: PictureInPictureWindowCandidate) -> Bool {
@@ -188,6 +191,15 @@ public enum PictureInPictureWindowMatching {
         if title.contains("backstop") { return true }
         if owner == "windowserver" || owner == "window server" { return true }
         if bundle == "com.apple.windowserver" { return true }
+        return false
+    }
+
+    /// Screen Studio's window-picker highlighter and similar HUD layers capture as a black frame.
+    public static func isCaptureOverlay(_ candidate: PictureInPictureWindowCandidate) -> Bool {
+        let title = normalize(candidate.title)
+        if title.contains("window picker") { return true }
+        if title.contains("highlighter") { return true }
+        if candidate.windowLayer != 0 && title.isEmpty { return true }
         return false
     }
 

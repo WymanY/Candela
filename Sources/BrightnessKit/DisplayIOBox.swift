@@ -1,4 +1,8 @@
+#if CANDELA_MAS
+import CandelaPublicIO
+#else
 import CandelaPrivateIO
+#endif
 import CoreGraphics
 import Dispatch
 import DisplayCore
@@ -241,7 +245,11 @@ public final class DisplayIOBox: @unchecked Sendable {
 
     /// Exposes the private I/O pointer type without declaring any extern symbol.
     public static var ioavServiceRefSize: Int {
+        #if CANDELA_MAS
+        MemoryLayout<UnsafeRawPointer?>.size
+        #else
         MemoryLayout<IOAVServiceRef>.size
+        #endif
     }
 
     private func probeBrightness(kind: DisplayKind, context: BrightnessProbeContext?) async -> BrightnessCapabilities {
@@ -272,7 +280,7 @@ public final class DisplayIOBox: @unchecked Sendable {
         )
         var dsValue: Float?
         if enablesHardware, !skipHDR {
-            dsValue = DisplayServicesBackend.get(sessionDisplayID)
+            dsValue = HardwareBrightnessBackend.get(sessionDisplayID)
         }
         let ddcRead = probeDDCBrightnessLocked()
         let winner = probeBrightnessWinner(
@@ -471,7 +479,7 @@ public final class DisplayIOBox: @unchecked Sendable {
         } else {
             switch backend {
             case .displayServices:
-                ok = DisplayServicesBackend.set(sessionDisplayID, Float(value))
+                ok = HardwareBrightnessBackend.set(sessionDisplayID, Float(value))
             case .softwareGamma:
                 ok = gamma.apply(
                     displayID: sessionDisplayID,
