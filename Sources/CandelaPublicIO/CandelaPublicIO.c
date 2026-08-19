@@ -334,6 +334,7 @@ bool CandelaPublicI2CRead(
     request.sendBytes = sendCount;
     request.replyTransactionType = kIOI2CDDCciReplyTransactionType;
     request.replyAddress = 0x6F;
+    request.replySubAddress = 0x51;
     request.replyBuffer = (vm_address_t)(uintptr_t)reply;
     request.replyBytes = replyCount;
     request.minReplyDelay = 10000000ULL;
