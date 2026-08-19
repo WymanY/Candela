@@ -19,16 +19,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
-        NSApp.setActivationPolicy(.regular)
+        NSApp.setActivationPolicy(.accessory)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         BootLog.write("didFinish")
-        terminateExtraInstances()
         let session = DisplaySessionController.makeDefault()
         self.session = session
         statusItem = StatusItemController(session: session)
-        statusItem?.revealOnLaunch()
         session.start()
         controlServer = ControlServer { [weak session] request in
             guard let session else { return .failure("Candela is shutting down.") }
@@ -41,11 +39,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controlServer?.start()
         log.info("launched; status item installed")
         BootLog.write("status item installed")
-        #if !DEBUG
-        DispatchQueue.main.async {
-            NSApp.setActivationPolicy(.accessory)
-        }
-        #endif
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -78,21 +71,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         session?.prepareToQuit()
     }
 
-    private func terminateExtraInstances() {
-        let mine = ProcessInfo.processInfo.processIdentifier
-        for app in NSRunningApplication.runningApplications(withBundleIdentifier: "app.candela.macos")
-        where app.processIdentifier != mine {
-            log.info("terminating extra instance pid=\(app.processIdentifier, privacy: .public)")
-            BootLog.write("terminate extra pid=\(app.processIdentifier)")
-            app.forceTerminate()
-        }
-    }
 }
 
 enum BootLog {
     static func write(_ line: String) {
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/Candela", isDirectory: true)
+        let dir = (FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library", isDirectory: true))
+            .appendingPathComponent("Logs/Candela", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("boot.txt")
         let stamp = ISO8601DateFormatter().string(from: Date())

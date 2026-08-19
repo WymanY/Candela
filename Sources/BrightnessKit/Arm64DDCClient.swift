@@ -4,6 +4,9 @@ import DisplayCore
 import Foundation
 import IOKit
 import os
+#if CANDELA_MAS
+import CandelaPublicIO
+#endif
 
 public enum Arm64DDCError: Error, Equatable {
     case unavailable
@@ -14,7 +17,8 @@ public enum Arm64DDCError: Error, Equatable {
     case invalidReply
 }
 
-/// Apple Silicon DDC/CI via `IOAVService`. x86_64 / `CANDELA_GAMMA_ONLY` is a stub.
+/// Direct builds talk DDC/CI through `IOAVService` on Apple Silicon.
+/// The Mac App Store flavor uses public `IOI2CInterface` instead.
 public final class Arm64DDCClient: DDCCommanding {
     public static let chipAddress: UInt32 = 0x37
     public static let writeDataAddress: UInt32 = 0x51
@@ -33,13 +37,15 @@ public final class Arm64DDCClient: DDCCommanding {
 
     private static let log = Logger(subsystem: "app.candela.macos", category: "ddc")
 
-    #if arch(arm64) && !CANDELA_GAMMA_ONLY
+    #if arch(arm64) && !CANDELA_GAMMA_ONLY && !CANDELA_MAS
     private var avService: AnyObject?
     private var needsReadGap = false
     #endif
 
     public static var isSupported: Bool {
-        #if arch(arm64) && !CANDELA_GAMMA_ONLY
+        #if CANDELA_MAS
+        true
+        #elseif arch(arm64) && !CANDELA_GAMMA_ONLY
         IOAVSymbols.isReady
         #else
         false
@@ -48,15 +54,16 @@ public final class Arm64DDCClient: DDCCommanding {
 
     public init(displayID: CGDirectDisplayID) {
         self.displayID = displayID
-        #if arch(arm64) && !CANDELA_GAMMA_ONLY
         if CGDisplayIsBuiltin(displayID) == 0 {
             try? recreateHandle()
         }
-        #endif
     }
 
     public func read(vcp: UInt8) throws -> (current: UInt16, max: UInt16) {
-        #if arch(arm64) && !CANDELA_GAMMA_ONLY
+        #if CANDELA_MAS
+        try ensureUsable(forGet: true)
+        return try i2cRead(vcp: vcp)
+        #elseif arch(arm64) && !CANDELA_GAMMA_ONLY
         try ensureUsable(forGet: true)
         if needsReadGap {
             usleep(Self.ddcReadGapMicroseconds)
@@ -84,7 +91,10 @@ public final class Arm64DDCClient: DDCCommanding {
     }
 
     public func write(vcp: UInt8, value: UInt16) throws {
-        #if arch(arm64) && !CANDELA_GAMMA_ONLY
+        #if CANDELA_MAS
+        try ensureUsable(forGet: false)
+        try i2cWrite(vcp: vcp, value: value)
+        #elseif arch(arm64) && !CANDELA_GAMMA_ONLY
         try ensureUsable(forGet: false)
         try writePacket(DDCPacket.arm64Set(vcp: vcp, value: value))
         needsReadGap = true
@@ -96,10 +106,7 @@ public final class Arm64DDCClient: DDCCommanding {
     }
 
     public func recreateHandle() throws {
-        #if arch(arm64) && !CANDELA_GAMMA_ONLY
-        avService = nil
         pinnedReadOffset = nil
-        needsReadGap = false
         getAvailable = false
         isAvailable = false
         lastMatchScore = 0
@@ -108,6 +115,19 @@ public final class Arm64DDCClient: DDCCommanding {
         guard CGDisplayIsBuiltin(displayID) == 0 else {
             throw Arm64DDCError.builtIn
         }
+
+        #if CANDELA_MAS
+        guard CandelaPublicI2CAvailable(displayID) else {
+            throw Arm64DDCError.noService
+        }
+        isAvailable = true
+        getAvailable = true
+        lastMatchScore = 1
+        lastServiceLocation = 0
+        Self.log.debug("recreated public IOI2C")
+        #elseif arch(arm64) && !CANDELA_GAMMA_ONLY
+        avService = nil
+        needsReadGap = false
         guard IOAVSymbols.isReady else {
             throw Arm64DDCError.unavailable
         }
@@ -126,7 +146,60 @@ public final class Arm64DDCClient: DDCCommanding {
         #endif
     }
 
-    #if arch(arm64) && !CANDELA_GAMMA_ONLY
+    #if CANDELA_MAS
+    private func ensureUsable(forGet: Bool) throws {
+        guard CGDisplayIsBuiltin(displayID) == 0 else {
+            throw Arm64DDCError.builtIn
+        }
+        guard isAvailable else {
+            throw Arm64DDCError.unavailable
+        }
+        if forGet, !getAvailable {
+            throw Arm64DDCError.getUnavailable
+        }
+    }
+
+    private func i2cWrite(vcp: UInt8, value: UInt16) throws {
+        var packet = DDCPacket.intelSet(vcp: vcp, value: value)
+        let ok = packet.withUnsafeBytes { buffer in
+            CandelaPublicI2CWrite(
+                displayID,
+                buffer.bindMemory(to: UInt8.self).baseAddress,
+                UInt32(buffer.count)
+            )
+        }
+        lastIOReturn = ok ? kIOReturnSuccess : kIOReturnError
+        guard ok else {
+            throw Arm64DDCError.ioFailure(lastIOReturn)
+        }
+    }
+
+    private func i2cRead(vcp: UInt8) throws -> (current: UInt16, max: UInt16) {
+        var request = DDCPacket.intelGet(vcp: vcp)
+        var reply = [UInt8](repeating: 0, count: Self.replyByteCount)
+        let ok = request.withUnsafeBytes { send in
+            reply.withUnsafeMutableBytes { receive in
+                CandelaPublicI2CRead(
+                    displayID,
+                    send.bindMemory(to: UInt8.self).baseAddress,
+                    UInt32(send.count),
+                    receive.bindMemory(to: UInt8.self).baseAddress,
+                    UInt32(receive.count)
+                )
+            }
+        }
+        lastIOReturn = ok ? kIOReturnSuccess : kIOReturnError
+        guard ok else {
+            getAvailable = false
+            throw Arm64DDCError.ioFailure(lastIOReturn)
+        }
+        guard let parsed = DDCPacket.parseReply(reply) else {
+            getAvailable = false
+            throw Arm64DDCError.invalidReply
+        }
+        return parsed
+    }
+#elseif arch(arm64) && !CANDELA_GAMMA_ONLY
     private func ensureUsable(forGet: Bool) throws {
         guard CGDisplayIsBuiltin(displayID) == 0 else {
             throw Arm64DDCError.builtIn

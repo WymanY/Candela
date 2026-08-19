@@ -138,10 +138,18 @@ cd Candela
 open Candela.xcodeproj
 ```
 
-Select the **Candela** scheme and run.
+Select the **Candela** scheme and run. That is the direct / Developer ID build: sandbox off, DisplayServices / DDC / MonitorPanel on.
 
 - **Debug:** Dock icon and menu-bar extra, so the app is easy to find.
 - **Release:** menu bar only.
+
+Do not upload that scheme to the Mac App Store. Use **CandelaMAS** instead: sandbox on, private display APIs compiled out, hardware I/O on public IOKit (`IODisplay` brightness, `IOI2CInterface` DDC, `IOServiceRequestProbe` rotation). The UI and feature set stay the same; the direct / Developer ID scheme is unchanged.
+
+```sh
+xcodebuild -project Candela.xcodeproj -scheme CandelaMAS -configuration Release -destination 'generic/platform=macOS' build
+```
+
+This is a reviewable MAS build line, not a completed App Store upload. Sandboxed I2C / IODisplay / process-tap still need hardware smoke, and this repo does not yet carry a Mac App Store signing identity or provisioning profile.
 
 Xcode may print `com.apple.linkd.autoShortcut` / `Error registering app with intents framework` on launch. Candela has no App Intents. That message is harmless. See `docs/linkd-diagnosis.md`.
 
@@ -198,7 +206,7 @@ The fake catalog is:
 swift test --package-path .
 ```
 
-CI also builds the Candela app on macOS 14.
+CI also builds **Candela** and **CandelaMAS** on macOS 14.
 
 ## 1.2
 

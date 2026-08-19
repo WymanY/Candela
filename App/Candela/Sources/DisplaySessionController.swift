@@ -1,6 +1,8 @@
 import AppKit
 import AudioKit
+#if !CANDELA_MAS
 import BrightnessKit
+#endif
 import ControlKit
 import DisplayCore
 import Foundation

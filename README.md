@@ -138,10 +138,18 @@ cd Candela
 open Candela.xcodeproj
 ```
 
-选择 **Candela** scheme 后运行。
+选择 **Candela** scheme 后运行。这是店外直装版：关沙盒，走 DisplayServices / DDC / MonitorPanel。
 
 - **Debug：** 同时显示 Dock 图标和菜单栏图标，方便找到应用。
 - **Release：** 只显示菜单栏。
+
+Mac App Store 不要用这个 scheme。另选 **CandelaMAS**：开沙盒，私有显示 API 不会编进包，硬件控制改走公开 IOKit（`IODisplay` 亮度、`IOI2CInterface` DDC、`IOServiceRequestProbe` 旋转）。界面和功能面保持一样；店外直装版行为不变。
+
+```sh
+xcodebuild -project Candela.xcodeproj -scheme CandelaMAS -configuration Release -destination 'generic/platform=macOS' build
+```
+
+这是一条可审核的 MAS 构建线，还不是一次完整上架：沙盒下的 I2C / IODisplay / process tap 仍需真机验证，也还没有 Mac App Store 签名和描述文件。
 
 启动时 Xcode 可能打印 `com.apple.linkd.autoShortcut` / `Error registering app with intents framework`。Candela 没有 App Intents，这条日志可以忽略。详见 `docs/linkd-diagnosis.md`。
 
@@ -198,7 +206,7 @@ CANDELA_FAKE_HARDWARE=1
 swift test --package-path .
 ```
 
-CI 还会在 macOS 14 上构建 Candela 应用。
+CI 还会在 macOS 14 上构建 **Candela** 和 **CandelaMAS**。
 
 ## 1.2
 
