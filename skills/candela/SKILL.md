@@ -58,4 +58,4 @@ Every command prints one JSON object. `ok: false` means stop and report `error`.
 
 ## Limits
 
-Candela does not create virtual screens, override EDID, unlock XDR nits, change resolution, or take over media keys. Built-in panels do not support rotation. Picture in Picture can mirror a display, follow a window, or magnify around the cursor, and needs Screen Recording. A monitor wall tiles every real display. Sidecar/AirPlay rows are listed but not controllable.
+Candela does not create virtual screens, override EDID, unlock XDR nits, change resolution, or take over media keys. Built-in panels do not support rotation. Picture in Picture can mirror a display, follow a window, or magnify around the cursor, and needs Screen Recording. A monitor wall tiles every real display, and individual tiles can be dismissed. Sidecar/AirPlay rows are listed but not controllable.
