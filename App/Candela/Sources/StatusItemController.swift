@@ -1,4 +1,5 @@
 import AppKit
+import DisplayCore
 import os
 
 @MainActor
@@ -52,14 +53,19 @@ final class StatusItemController: NSObject {
 
     func revealOnLaunch() {
         showMainUI()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.showPanelIfReady()
-        }
+        presentFirstLaunchPanelIfPossible(attempt: 0)
     }
 
-    private func showPanelIfReady() {
-        guard statusItem.button?.window != nil else { return }
-        showPanel()
+    private func presentFirstLaunchPanelIfPossible(attempt: Int) {
+        guard !session.settings.hasOpenedPanelOnce else { return }
+        if canAnchorPanelToStatusItem() {
+            showPanel()
+            return
+        }
+        guard attempt < 12 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            self?.presentFirstLaunchPanelIfPossible(attempt: attempt + 1)
+        }
     }
 
     /// Dock click, first launch, and reopen all go through here.
@@ -67,9 +73,6 @@ final class StatusItemController: NSObject {
         configureButton()
         statusItem.isVisible = true
         suppressDismissUntil = Date().addingTimeInterval(2)
-        if !session.settings.hasOpenedPanelOnce {
-            session.markPanelOpenedOnce()
-        }
         let button = statusItem.button
         let frame = button.map { NSStringFromRect($0.frame) } ?? "nil"
         let hasWindow = button?.window != nil
@@ -128,6 +131,17 @@ final class StatusItemController: NSObject {
         guard let button = statusItem.button else { return }
         panelController.show(relativeTo: button)
         statusItem.button?.image = statusImage(filled: true)
+        if !session.settings.hasOpenedPanelOnce {
+            session.markPanelOpenedOnce()
+        }
+    }
+
+    private func canAnchorPanelToStatusItem() -> Bool {
+        guard let button = statusItem.button, let window = button.window else { return false }
+        let visible = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+        let converted = window.convertToScreen(button.convert(button.bounds, to: nil))
+        return StatusPanelLayout.isUsableStatusButtonFrame(converted, visible: visible)
+            || StatusPanelLayout.isUsableStatusButtonFrame(window.frame, visible: visible)
     }
 
     private func hidePanel() {

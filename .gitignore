@@ -6,3 +6,4 @@ DerivedData/
 *.xcuserstate
 .idea/
 Configs/Developer.xcconfig
+.codex/worktrees/

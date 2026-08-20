@@ -1,4 +1,5 @@
 import AppKit
+import DisplayCore
 
 @MainActor
 final class StatusPanel: NSPanel {
@@ -116,13 +117,9 @@ final class StatusPanelController {
         panelView.reload(session.snapshots)
         panelView.needsLayout = true
         panelView.layoutSubtreeIfNeeded()
-        let measured = panelView.fittingSize.height
-        let height = min(max(measured.isFinite ? measured : 196, 176), 640)
+        let height = StatusPanelLayout.clampedHeight(panelView.fittingSize.height)
         panel.setContentSize(NSSize(width: CandelaChrome.panelWidth, height: height))
         position(relativeTo: button, height: height)
-        if !isOnscreen() {
-            snapBelowMenuBar(height: height)
-        }
         panel.orderFront(nil)
         panel.makeKey()
     }
@@ -145,9 +142,11 @@ final class StatusPanelController {
         if isVisible, !panelView.isDraggingBrightness {
             panelView.needsLayout = true
             panelView.layoutSubtreeIfNeeded()
-            let measured = panelView.fittingSize.height
-            let height = min(max(measured.isFinite ? measured : 196, 176), 640)
-            panel.setContentSize(NSSize(width: CandelaChrome.panelWidth, height: height))
+            let height = StatusPanelLayout.clampedHeight(panelView.fittingSize.height)
+            var frame = panel.frame
+            frame.origin.y += frame.height - height
+            frame.size.height = height
+            panel.setFrame(frame, display: true)
         }
     }
 
@@ -165,39 +164,24 @@ final class StatusPanelController {
     }
 
     private func position(relativeTo button: NSView, height: CGFloat) {
-        let width = CandelaChrome.panelWidth
         let screen = button.window?.screen ?? NSScreen.main ?? NSScreen.screens.first
         let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
-        let buttonScreen = resolvedButtonFrame(button, visible: visible)
-        var x = buttonScreen.midX - width / 2
-        var y = buttonScreen.minY - height - 8
-        x = min(max(x, visible.minX + 8), max(visible.minX + 8, visible.maxX - width - 8))
-        if y < visible.minY + 8 || (y + height) > visible.maxY {
-            y = visible.maxY - height - 8
+        let converted = button.window.map { window in
+            window.convertToScreen(button.convert(button.bounds, to: nil))
         }
-        panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
-    }
-
-    private func resolvedButtonFrame(_ button: NSView, visible: NSRect) -> NSRect {
-        let padded = visible.insetBy(dx: -48, dy: -48)
-        if let window = button.window {
-            let converted = window.convertToScreen(button.convert(button.bounds, to: nil))
-            if converted.width > 4, converted.height > 4, padded.intersects(converted) {
-                return converted
-            }
-            if padded.intersects(window.frame) {
-                return window.frame
-            }
-        }
-        return NSRect(x: visible.maxX - 72, y: visible.maxY, width: 36, height: 24)
-    }
-
-    private func snapBelowMenuBar(height: CGFloat) {
-        let screen = NSScreen.main ?? NSScreen.screens.first
-        let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
-        let width = CandelaChrome.panelWidth
-        let x = min(max(visible.maxX - width - 16, visible.minX + 8), visible.maxX - width - 8)
-        let y = visible.maxY - height - 8
-        panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
+        let buttonScreen = StatusPanelLayout.resolvedButtonFrame(
+            converted: converted,
+            windowFrame: button.window?.frame,
+            visible: visible
+        )
+        panel.setFrame(
+            StatusPanelLayout.panelFrame(
+                button: buttonScreen,
+                height: height,
+                visible: visible,
+                width: CandelaChrome.panelWidth
+            ),
+            display: true
+        )
     }
 }
