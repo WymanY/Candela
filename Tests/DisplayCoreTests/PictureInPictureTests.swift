@@ -664,6 +664,18 @@ final class PictureInPictureTests: XCTestCase {
         }
         XCTAssertEqual(allHidden.count, 3)
         XCTAssertTrue(PictureInPictureWallLayout.visibleSnapshots(snapshots, hiddenKeys: allHidden).isEmpty)
+        XCTAssertTrue(
+            PictureInPictureWallLayout.shouldCloseAfterHidingLastTile(
+                hiddenKeys: allHidden,
+                snapshots: snapshots
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureWallLayout.shouldCloseAfterHidingLastTile(
+                hiddenKeys: hidden,
+                snapshots: snapshots
+            )
+        )
         XCTAssertEqual(
             PictureInPictureWallLayout.restoredHiddenKeys(stored: allHidden, snapshots: snapshots),
             []

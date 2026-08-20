@@ -504,6 +504,14 @@ public enum PictureInPictureWallLayout {
         return sanitizedHiddenKeys(stored + [key])
     }
 
+    public static func shouldCloseAfterHidingLastTile(
+        hiddenKeys: [String],
+        snapshots: [DisplaySnapshot]
+    ) -> Bool {
+        visibleSnapshots(snapshots, hiddenKeys: hiddenKeys).isEmpty
+            && !self.snapshots(snapshots).isEmpty
+    }
+
     /// If every live display is hidden, the next open restores the full wall.
     public static func restoredHiddenKeys(
         stored: [String],

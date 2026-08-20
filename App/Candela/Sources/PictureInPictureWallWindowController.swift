@@ -323,6 +323,15 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     private func hideTile(key: String) {
         hiddenKeys = PictureInPictureWallLayout.hiding(key, in: hiddenKeys, among: latestSnapshots)
         onHiddenKeysChange?(hiddenKeys)
+        if PictureInPictureWallLayout.shouldCloseAfterHidingLastTile(
+            hiddenKeys: hiddenKeys,
+            snapshots: latestSnapshots
+        ) {
+            hiddenKeys = []
+            onHiddenKeysChange?(hiddenKeys)
+            window?.close()
+            return
+        }
         update(snapshots: latestSnapshots)
     }
 
