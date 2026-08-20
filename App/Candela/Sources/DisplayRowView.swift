@@ -39,8 +39,8 @@ final class DisplayRowView: NSView {
     private var currentKey = ""
 
     override init(frame frameRect: NSRect) {
-        matchButton = CandelaChrome.makeQuietButton(title: String(localized: "Match All"), symbolName: "square.on.square")
-        pipButton = CandelaChrome.makeQuietButton(title: String(localized: "PiP"), symbolName: "rectangle.on.rectangle")
+        matchButton = CandelaChrome.makeQuietButton(title: localizedText("Match All"), symbolName: "square.on.square")
+        pipButton = CandelaChrome.makeQuietButton(title: localizedText("PiP"), symbolName: "rectangle.on.rectangle")
         brightnessSlider = CandelaChrome.makeSlider()
         contrastSlider = CandelaChrome.makeSlider()
         super.init(frame: frameRect)
@@ -108,7 +108,7 @@ final class DisplayRowView: NSView {
         column.alignment = .leading
         column.spacing = 6
         let rotateIcon = CandelaChrome.makeSymbol("rotate.right")
-        let rotationLabel = CandelaChrome.makeCaption(String(localized: "Rotation"))
+        let rotationLabel = CandelaChrome.makeCaption(localizedText("Rotation"))
         rotationLabel.font = .systemFont(ofSize: 11, weight: .medium)
         let rotationLeading = NSStackView(views: [rotateIcon, rotationLabel])
         rotationLeading.orientation = .horizontal
@@ -165,14 +165,14 @@ final class DisplayRowView: NSView {
                 brightnessSlider.doubleValue = snapshot.brightness.current * 100
                 updateBrightnessPercent(snapshot.brightness.current)
             }
-            brightnessSlider.setAccessibilityLabel("\(String(localized: "Brightness")), \(snapshot.name)")
+            brightnessSlider.setAccessibilityLabel("\(localizedText("Brightness")), \(snapshot.name)")
             brightnessSlider.setAccessibilityValueDescription(percentPhrase(brightnessSlider.doubleValue / 100))
         }
 
         let showHDR = showsBrightness && snapshot.brightness.hdrWashes
         hdrNote.isHidden = !showHDR
         if showHDR {
-            hdrNote.stringValue = String(localized: "Software dimming reduces HDR contrast.")
+            hdrNote.stringValue = localizedText("Software dimming reduces HDR contrast.")
         }
 
         let showsContrast = !unsupported && snapshot.contrast.supportsContrast
@@ -180,7 +180,7 @@ final class DisplayRowView: NSView {
         if showsContrast {
             contrastSlider.doubleValue = snapshot.contrast.current * 100
             updateContrastPercent(snapshot.contrast.current)
-            contrastSlider.setAccessibilityLabel("\(String(localized: "Contrast")), \(snapshot.name)")
+            contrastSlider.setAccessibilityLabel("\(localizedText("Contrast")), \(snapshot.name)")
         }
 
         let showsInput = !unsupported && snapshot.input.supportsInputSelect
@@ -195,16 +195,16 @@ final class DisplayRowView: NSView {
         rotationControl.isHidden = !showsRotation
         if showsRotation {
             rotationControl.select(snapshot.rotation.current)
-            rotationControl.setAccessibilityLabel("\(String(localized: "Rotation")), \(snapshot.name)")
+            rotationControl.setAccessibilityLabel("\(localizedText("Rotation")), \(snapshot.name)")
         }
         matchButton.isHidden = unsupported || !showMatchAll
         let showsPip = PictureInPictureLayout.supports(kind: snapshot.kind)
         pipButton.isHidden = !showsPip
         if showsPip {
-            pipButton.title = snapshot.pictureInPictureActive ? String(localized: "Close PiP") : String(localized: "PiP")
+            pipButton.title = snapshot.pictureInPictureActive ? localizedText("Close PiP") : localizedText("PiP")
             pipButton.toolTip = snapshot.pictureInPictureActive
-                ? String(localized: "Close Picture in Picture")
-                : String(localized: "Open Picture in Picture")
+                ? localizedText("Close Picture in Picture")
+                : localizedText("Open Picture in Picture")
             pipButton.setAccessibilityLabel(pipButton.toolTip)
             pipButton.contentTintColor = snapshot.pictureInPictureActive ? CandelaChrome.accent : .secondaryLabelColor
         }
@@ -270,31 +270,31 @@ final class DisplayRowView: NSView {
     }
 
     private func percentPhrase(_ value: Double) -> String {
-        String(format: String(localized: "%d percent"), Int((value * 100).rounded()))
+        String(format: localizedText("%d percent"), Int((value * 100).rounded()))
     }
 
     private func badgeTitle(for snapshot: DisplaySnapshot) -> String {
         var title: String
         switch snapshot.kind {
         case .builtIn:
-            title = String(localized: "Built-in")
+            title = localizedText("Built-in")
         case .appleExternal:
-            title = String(localized: "Apple")
+            title = localizedText("Apple")
         case .genericExternal:
             switch snapshot.connection {
             case .hdmi:
-                title = String(localized: "HDMI")
+                title = localizedText("HDMI")
             case .displayPort:
-                title = String(localized: "DisplayPort")
+                title = localizedText("DisplayPort")
             case .thunderbolt:
-                title = String(localized: "Thunderbolt")
+                title = localizedText("Thunderbolt")
             case .usb:
-                title = String(localized: "USB-C")
+                title = localizedText("USB-C")
             default:
-                title = String(localized: "External")
+                title = localizedText("External")
             }
         case .virtualUnsupported:
-            title = String(localized: "Unsupported")
+            title = localizedText("Unsupported")
         }
         if snapshot.brightness.notes == "!" {
             title += " !"

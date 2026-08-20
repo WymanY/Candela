@@ -1,5 +1,10 @@
+import DisplayCore
 import Foundation
 import PersistenceKit
+
+func localizedText(_ value: String.LocalizationValue) -> String {
+    CandelaText.string(value, bundle: .main)
+}
 
 enum AppLanguage: String, CaseIterable, Sendable {
     case system = ""
@@ -11,11 +16,11 @@ enum AppLanguage: String, CaseIterable, Sendable {
     var menuTitle: String {
         switch self {
         case .system:
-            return String(localized: "System")
+            return localizedText("System")
         case .english:
-            return String(localized: "English")
+            return localizedText("English")
         case .simplifiedChinese:
-            return String(localized: "简体中文")
+            return localizedText("简体中文")
         }
     }
 
@@ -33,5 +38,6 @@ enum AppLanguage: String, CaseIterable, Sendable {
             defaults.set([language.rawValue], forKey: appleLanguagesKey)
         }
         defaults.synchronize()
+        CandelaText.applyPreferredLanguage(rawValue)
     }
 }

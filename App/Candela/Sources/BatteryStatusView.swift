@@ -97,7 +97,7 @@ final class BatteryStatusView: NSView {
         toolTip = help
         setAccessibilityElement(true)
         setAccessibilityRole(.staticText)
-        setAccessibilityLabel(String(localized: "Battery"))
+        setAccessibilityLabel(localizedText("Battery"))
         setAccessibilityValue(help)
     }
 }

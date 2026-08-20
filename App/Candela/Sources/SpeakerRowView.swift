@@ -28,7 +28,7 @@ final class SpeakerRowView: NSView {
         volumeSlider = CandelaChrome.makeSlider()
         muteButton = CandelaChrome.makeIconButton(
             symbolName: "speaker.slash",
-            help: String(localized: "Mute")
+            help: localizedText("Mute")
         )
         super.init(frame: frameRect)
         translatesAutoresizingMaskIntoConstraints = false
@@ -52,7 +52,7 @@ final class SpeakerRowView: NSView {
         outputPopup.action = #selector(outputChanged(_:))
         outputPopup.setContentHuggingPriority(.required, for: .horizontal)
         outputPopup.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        outputPopup.setAccessibilityLabel(String(localized: "Output"))
+        outputPopup.setAccessibilityLabel(localizedText("Output"))
 
         nameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         nameLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -117,7 +117,7 @@ final class SpeakerRowView: NSView {
 
         isHidden = false
         nameLabel.stringValue = speaker.name
-        metaLabel.stringValue = String(localized: "Current output")
+        metaLabel.stringValue = localizedText("Current output")
         reloadChoices(choices, selectedUID: speaker.uid)
 
         let showsVolume = speaker.volume.supportsVolume
@@ -131,7 +131,7 @@ final class SpeakerRowView: NSView {
                 updateVolumePercent(speaker.volume.current)
             }
             applyMutedAppearance(isMuted: speaker.volume.isMuted, name: speaker.name)
-            volumeSlider.setAccessibilityLabel("\(String(localized: "Volume")), \(speaker.name)")
+            volumeSlider.setAccessibilityLabel("\(localizedText("Volume")), \(speaker.name)")
             volumeSlider.setAccessibilityValueDescription(percentPhrase(volumeSlider.doubleValue / 100))
         } else {
             applyMutedAppearance(isMuted: false, name: speaker.name)
@@ -140,7 +140,7 @@ final class SpeakerRowView: NSView {
         let showSoftwareVolume = showsVolume && speaker.volume.backend == .software
         volumeNote.isHidden = !showSoftwareVolume
         if showSoftwareVolume {
-            volumeNote.stringValue = String(localized: "Software volume for the current output.")
+            volumeNote.stringValue = localizedText("Software volume for the current output.")
         }
         isApplying = false
         invalidateIntrinsicContentSize()
@@ -214,8 +214,8 @@ final class SpeakerRowView: NSView {
     private func applyMutedAppearance(isMuted: Bool, name: String) {
         self.isMuted = isMuted
         muteButton.state = isMuted ? .on : .off
-        muteButton.toolTip = isMuted ? String(localized: "Unmute") : String(localized: "Mute")
-        muteButton.setAccessibilityLabel(isMuted ? String(localized: "Unmute") : String(localized: "Mute"))
+        muteButton.toolTip = isMuted ? localizedText("Unmute") : localizedText("Mute")
+        muteButton.setAccessibilityLabel(isMuted ? localizedText("Unmute") : localizedText("Mute"))
         muteButton.setAccessibilityHelp(name)
         muteButton.wantsLayer = true
         muteButton.layer?.cornerRadius = 7
@@ -232,11 +232,11 @@ final class SpeakerRowView: NSView {
         volumePercent.textColor = isMuted ? .tertiaryLabelColor : .secondaryLabelColor
         metaLabel.textColor = isMuted ? CandelaChrome.accent : .secondaryLabelColor
         metaLabel.stringValue = isMuted
-            ? String(localized: "Muted · Current output")
-            : String(localized: "Current output")
+            ? localizedText("Muted · Current output")
+            : localizedText("Current output")
     }
 
     private func percentPhrase(_ value: Double) -> String {
-        String(format: String(localized: "%d percent"), Int((value * 100).rounded()))
+        String(format: localizedText("%d percent"), Int((value * 100).rounded()))
     }
 }

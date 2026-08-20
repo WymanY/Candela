@@ -80,7 +80,7 @@ public struct DisplayScene: Codable, Equatable, Identifiable, Sendable {
     }
 
     public var displayName: String {
-        name.isEmpty ? String(localized: "Untitled Scene", bundle: .module) : name
+        name.isEmpty ? localized("Untitled Scene") : name
     }
 }
 

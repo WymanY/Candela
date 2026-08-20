@@ -347,6 +347,13 @@ final class DisplaySessionController {
         onChange?()
     }
 
+    func reloadLocalizedChrome() {
+        for controller in pictureInPictureWindows.values {
+            controller.reloadLocalizedChrome()
+        }
+        pictureInPictureWall?.reloadLocalizedChrome()
+    }
+
     private func savePictureInPictureWallPlacement(_ placement: PictureInPicturePlacement) {
         var next = settings
         next.pictureInPictureWall = placement
@@ -656,7 +663,7 @@ final class DisplaySessionController {
             }
         }
         #endif
-        return enabled ? String(localized: "Launch at Login requires macOS 13 or later.") : nil
+        return enabled ? localizedText("Launch at Login requires macOS 13 or later.") : nil
     }
 
     func syncLaunchAtLoginFromSystem() {

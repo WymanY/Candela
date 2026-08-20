@@ -7,11 +7,11 @@ import ScreenCaptureKit
 
 @MainActor
 final class PictureInPictureWallWindowController: NSWindowController, NSWindowDelegate {
-    private let titleLabel = CandelaChrome.makeTitle(String(localized: "Display Overview"), size: 12, weight: .semibold)
+    private let titleLabel = CandelaChrome.makeTitle(localizedText("Display Overview"), size: 12, weight: .semibold)
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
     private let pinControl = PictureInPicturePinControl()
-    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Display Overview"))
+    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: localizedText("Close Display Overview"))
     private let chrome = NSStackView()
     private let tilesHost = WallTilesHost()
     private var tiles: [WallTile] = []
@@ -36,7 +36,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         )
         clickThroughButton = CandelaChrome.makeIconButton(
             symbolName: "cursorarrow.slash",
-            help: String(localized: "Click Through")
+            help: localizedText("Click Through")
         )
         let preferredWidth = CGFloat(placement.frame?.width ?? PictureInPictureWallLayout.defaultWidth)
         let content = PictureInPictureWallLayout.contentSize(displayCount: 2, preferredWidth: preferredWidth)
@@ -102,6 +102,20 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
             NSEvent.removeMonitor(clickThroughScrollMonitor)
         }
         NotificationCenter.default.removeObserver(self)
+    }
+
+    func reloadLocalizedChrome() {
+        closeButton.toolTip = localizedText("Close Display Overview")
+        closeButton.setAccessibilityLabel(localizedText("Close Display Overview"))
+        opacitySlider.setAccessibilityLabel(localizedText("Opacity"))
+        pinControl.reloadLocalizedChrome()
+        applyOpacity()
+        applyClickThrough()
+        if lastTileCount > 0 {
+            titleLabel.stringValue = localizedText("Display Overview") + " · \(lastTileCount)"
+        } else {
+            titleLabel.stringValue = localizedText("Display Overview")
+        }
     }
 
     func update(snapshots: [DisplaySnapshot]) {
@@ -173,8 +187,8 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         opacitySlider.controlSize = .small
         opacitySlider.target = self
         opacitySlider.action = #selector(opacityChanged(_:))
-        opacitySlider.setAccessibilityLabel(String(localized: "Opacity"))
-        opacitySlider.toolTip = String(localized: "Opacity")
+        opacitySlider.setAccessibilityLabel(localizedText("Opacity"))
+        opacitySlider.toolTip = localizedText("Opacity")
         opacitySlider.translatesAutoresizingMaskIntoConstraints = false
         opacitySlider.widthAnchor.constraint(equalToConstant: 72).isActive = true
 
@@ -247,9 +261,9 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         tilesHost.tileViews = tiles.map(\.view)
         layoutTiles()
         if snapshots.isEmpty {
-            titleLabel.stringValue = String(localized: "Display Overview")
+            titleLabel.stringValue = localizedText("Display Overview")
         } else {
-            titleLabel.stringValue = String(localized: "Display Overview") + " · \(snapshots.count)"
+            titleLabel.stringValue = localizedText("Display Overview") + " · \(snapshots.count)"
         }
     }
 
@@ -312,15 +326,15 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
 
     private func applyOpacity() {
         window?.alphaValue = CGFloat(placement.opacity)
-        opacitySlider.toolTip = "\(String(localized: "Opacity")) \(Int((placement.opacity * 100).rounded()))%"
+        opacitySlider.toolTip = "\(localizedText("Opacity")) \(Int((placement.opacity * 100).rounded()))%"
     }
 
     private func applyClickThrough() {
         clickThroughButton.state = placement.clickThrough ? .on : .off
         clickThroughButton.contentTintColor = placement.clickThrough ? CandelaChrome.accent : .secondaryLabelColor
         clickThroughButton.toolTip = placement.clickThrough
-            ? String(localized: "Click through is on. Hover the title bar to adjust. Scroll still zooms.")
-            : String(localized: "Click Through")
+            ? localizedText("Click through is on. Hover the title bar to adjust. Scroll still zooms.")
+            : localizedText("Click Through")
         updateClickThroughIgnoring()
         if placement.clickThrough {
             if clickThroughTimer == nil {
@@ -529,8 +543,8 @@ private final class WallTile {
         placeholder.translatesAutoresizingMaskIntoConstraints = false
         placeholder.alignment = .center
         placeholder.stringValue = usePlaceholder
-            ? String(localized: "Preview only in fake-hardware mode.")
-            : String(localized: "Waiting for display…")
+            ? localizedText("Preview only in fake-hardware mode.")
+            : localizedText("Waiting for display…")
         placeholder.isHidden = !usePlaceholder
         view.addSubview(preview)
         view.addSubview(placeholder)
@@ -561,7 +575,7 @@ private final class WallTile {
     private func startCapture() async {
         guard snapshot.sessionDisplayID != 0 else {
             placeholder.isHidden = false
-            placeholder.stringValue = String(localized: "This display is not available.")
+            placeholder.stringValue = localizedText("This display is not available.")
             return
         }
         if !CGPreflightScreenCaptureAccess() {
@@ -571,7 +585,7 @@ private final class WallTile {
             let content = try await PictureInPictureCapture.shareableContent()
             guard let display = PictureInPictureCapture.display(id: snapshot.sessionDisplayID, in: content) else {
                 placeholder.isHidden = false
-                placeholder.stringValue = String(localized: "Could not find this display for capture.")
+                placeholder.stringValue = localizedText("Could not find this display for capture.")
                 return
             }
             let filter = SCContentFilter(
@@ -594,7 +608,7 @@ private final class WallTile {
             placeholder.isHidden = true
         } catch {
             placeholder.isHidden = false
-            placeholder.stringValue = String(localized: "Screen Recording permission is required for Picture in Picture.")
+            placeholder.stringValue = localizedText("Screen Recording permission is required for Picture in Picture.")
         }
     }
 }

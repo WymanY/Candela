@@ -5,7 +5,7 @@ import DisplayCore
 final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
     private let session: DisplaySessionController
     private let stack = NSStackView()
-    private let empty = CandelaChrome.makeCaption(String(localized: "No Displays"))
+    private let empty = CandelaChrome.makeCaption(localizedText("No Displays"))
 
     init(session: DisplaySessionController) {
         self.session = session
@@ -21,8 +21,8 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scroll)
 
-        let heading = CandelaChrome.makeTitle(String(localized: "Displays"), size: 22, weight: .semibold)
-        let subtitle = CandelaChrome.makeCaption(String(localized: "Identity, connection, and control path for each panel."))
+        let heading = CandelaChrome.makeTitle(localizedText("Displays"), size: 22, weight: .semibold)
+        let subtitle = CandelaChrome.makeCaption(localizedText("Identity, connection, and control path for each panel."))
         let header = NSStackView(views: [heading, subtitle])
         header.orientation = .vertical
         header.alignment = .leading
@@ -98,10 +98,10 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         badges.spacing = 6
         badges.addArrangedSubview(makeBadge(DisplayPresentation.connectionTitle(for: snapshot)))
         if snapshot.isMain {
-            badges.addArrangedSubview(makeBadge(String(localized: "Main")))
+            badges.addArrangedSubview(makeBadge(localizedText("Main")))
         }
         if snapshot.kind == .virtualUnsupported {
-            badges.addArrangedSubview(makeBadge(String(localized: "Unsupported")))
+            badges.addArrangedSubview(makeBadge(localizedText("Unsupported")))
         }
 
         let field = NSTextField(string: snapshot.name == snapshot.hardwareName ? "" : snapshot.name)
@@ -118,7 +118,7 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
         field.setContentHuggingPriority(.defaultLow, for: .horizontal)
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let nameLabel = CandelaChrome.makeCaption(String(localized: "Custom Name"))
+        let nameLabel = CandelaChrome.makeCaption(localizedText("Custom Name"))
         let nameColumn = NSStackView(views: [nameLabel, field])
         nameColumn.orientation = .vertical
         nameColumn.alignment = .leading
@@ -163,34 +163,34 @@ final class SettingsDisplaysView: NSView, NSTextFieldDelegate {
             if let scale = DisplayPresentation.scaleTitle(for: snapshot) {
                 value += " · \(scale)"
             }
-            rows.append(factRow(String(localized: "Resolution"), value))
+            rows.append(factRow(localizedText("Resolution"), value))
         }
-        rows.append(factRow(String(localized: "Connection"), DisplayPresentation.connectionTitle(for: snapshot)))
-        rows.append(factRow(String(localized: "Brightness"), DisplayPresentation.brightnessBackendTitle(for: snapshot)))
-        rows.append(factRow(String(localized: "Volume"), DisplayPresentation.volumeBackendTitle(for: snapshot)))
+        rows.append(factRow(localizedText("Connection"), DisplayPresentation.connectionTitle(for: snapshot)))
+        rows.append(factRow(localizedText("Brightness"), DisplayPresentation.brightnessBackendTitle(for: snapshot)))
+        rows.append(factRow(localizedText("Volume"), DisplayPresentation.volumeBackendTitle(for: snapshot)))
         if snapshot.contrast.supportsContrast {
-            rows.append(factRow(String(localized: "Contrast"), String(localized: "DDC")))
+            rows.append(factRow(localizedText("Contrast"), localizedText("DDC")))
         }
         if snapshot.input.supportsInputSelect {
-            let current = snapshot.input.current?.title ?? String(localized: "DDC")
-            rows.append(factRow(String(localized: "Input"), current))
+            let current = snapshot.input.current?.title ?? localizedText("DDC")
+            rows.append(factRow(localizedText("Input"), current))
         }
         if snapshot.rotation.supportsRotation {
-            rows.append(factRow(String(localized: "Rotation"), DisplayPresentation.rotationTitle(for: snapshot)))
+            rows.append(factRow(localizedText("Rotation"), DisplayPresentation.rotationTitle(for: snapshot)))
         }
         if PictureInPictureLayout.supports(kind: snapshot.kind) {
-            let value = snapshot.pictureInPictureActive ? String(localized: "Open") : String(localized: "Available")
-            rows.append(factRow(String(localized: "Picture in Picture"), value))
+            let value = snapshot.pictureInPictureActive ? localizedText("Open") : localizedText("Available")
+            rows.append(factRow(localizedText("Picture in Picture"), value))
         }
         if let vendor = DisplayPresentation.vendorTitle(for: snapshot) {
-            rows.append(factRow(String(localized: "Vendor"), vendor))
+            rows.append(factRow(localizedText("Vendor"), vendor))
         }
-        rows.append(factRow(String(localized: "Product"), DisplayPresentation.identityTitle(for: snapshot)))
+        rows.append(factRow(localizedText("Product"), DisplayPresentation.identityTitle(for: snapshot)))
         if let serial = DisplayPresentation.serialTitle(for: snapshot) {
-            rows.append(factRow(String(localized: "Serial"), serial))
+            rows.append(factRow(localizedText("Serial"), serial))
         }
         if snapshot.isMain {
-            rows.append(factRow(String(localized: "Role"), String(localized: "Main display")))
+            rows.append(factRow(localizedText("Role"), localizedText("Main display")))
         }
         return rows
     }

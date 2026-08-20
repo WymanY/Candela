@@ -36,7 +36,7 @@ final class MenuBarGuideController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = String(localized: "Candela")
+        window.title = localizedText("Candela")
         window.isReleasedWhenClosed = false
         window.level = .floating
         window.isRestorable = false
@@ -96,11 +96,11 @@ final class MenuBarGuideController: NSWindowController {
 
     private static func makeContent(target: MenuBarGuideController) -> NSView {
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 520, height: 340))
-        let title = NSTextField(labelWithString: String(localized: "The menu bar icon is hidden by macOS 26."))
+        let title = NSTextField(labelWithString: localizedText("The menu bar icon is hidden by macOS 26."))
         title.font = .systemFont(ofSize: 18, weight: .semibold)
         title.translatesAutoresizingMaskIntoConstraints = false
 
-        let body = NSTextField(wrappingLabelWithString: String(localized: """
+        let body = NSTextField(wrappingLabelWithString: localizedText("""
         Candela does not need Accessibility, Screen Recording, or other privacy permissions.
 
         macOS 26 added a switch that hides third-party status items by default. Open:
@@ -115,7 +115,7 @@ final class MenuBarGuideController: NSWindowController {
         body.translatesAutoresizingMaskIntoConstraints = false
 
         let button = NSButton(
-            title: String(localized: "Open System Settings · Menu Bar"),
+            title: localizedText("Open System Settings · Menu Bar"),
             target: target,
             action: #selector(MenuBarGuideController.openSettingsPane)
         )
