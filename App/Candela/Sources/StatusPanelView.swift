@@ -8,14 +8,14 @@ final class StatusPanelView: NSView {
     private let accentBar = CandelaChrome.makeAccentBar()
     private let content = NSView()
     private let header = NSView()
-    private let titleLabel = CandelaChrome.makeTitle(String(localized: "Candela"), size: 14, weight: .semibold)
+    private let titleLabel = CandelaChrome.makeTitle(localizedText("Candela"), size: 14, weight: .semibold)
     private let markView = CandelaChrome.makeSymbol("sun.max.fill", size: 14)
     private let batteryView = BatteryStatusView()
     private let presets = NSSegmentedControl(
         labels: [
-            String(localized: "Dim"),
-            String(localized: "Normal"),
-            String(localized: "Full"),
+            localizedText("Dim"),
+            localizedText("Normal"),
+            localizedText("Full"),
         ],
         trackingMode: .selectOne,
         target: nil,
@@ -29,6 +29,7 @@ final class StatusPanelView: NSView {
     private let footer = NSView()
     private var rows: [DisplayRowView] = []
     private var rowKeys: [String] = []
+    var isDraggingBrightness = false
     var onOpenSettings: (() -> Void)?
     var onQuit: (() -> Void)?
 
@@ -128,8 +129,12 @@ final class StatusPanelView: NSView {
             applySpeaker()
             applyBattery()
             syncPresetSelection(with: snapshots)
-            reloadScenes()
-            syncWallButton()
+            if !isDraggingBrightness {
+                reloadScenes()
+                syncWallButton()
+                syncMirrorButton()
+                syncFollowButton()
+            }
             return
         }
         rowKeys = keys
@@ -137,7 +142,7 @@ final class StatusPanelView: NSView {
         rowsStack.arrangedSubviews.forEach { rowsStack.removeArrangedSubview($0); $0.removeFromSuperview() }
 
         if snapshots.isEmpty {
-            let empty = CandelaChrome.makeCaption(String(localized: "No Displays"))
+            let empty = CandelaChrome.makeCaption(localizedText("No Displays"))
             empty.alignment = .left
             empty.font = .systemFont(ofSize: 13, weight: .medium)
             rowsStack.addArrangedSubview(empty)
@@ -146,6 +151,8 @@ final class StatusPanelView: NSView {
             syncPresetSelection(with: snapshots)
             reloadScenes()
             syncWallButton()
+            syncMirrorButton()
+            syncFollowButton()
             return
         }
 
@@ -154,8 +161,14 @@ final class StatusPanelView: NSView {
             let key = snapshot.id.persistentKey
             row.onBrightness = { [weak self] value in
                 guard let self else { return }
+                self.isDraggingBrightness = true
                 self.session.setBrightness(key: key, value: value)
                 self.syncPresetSelection(with: self.session.snapshots)
+            }
+            row.onBrightnessTrackingEnded = { [weak self] in
+                guard let self else { return }
+                self.isDraggingBrightness = false
+                self.reload(self.session.snapshots)
             }
             row.onContrast = { [weak self] value in
                 self?.session.setContrast(key: key, value: value)
@@ -188,6 +201,8 @@ final class StatusPanelView: NSView {
         syncPresetSelection(with: snapshots)
         reloadScenes()
         syncWallButton()
+        syncMirrorButton()
+        syncFollowButton()
     }
 
     private func applySpeaker() {
@@ -263,13 +278,13 @@ final class StatusPanelView: NSView {
         scenesStack.isHidden = false
         let scenes = Array(session.scenes.prefix(3))
         if scenes.isEmpty {
-            let caption = CandelaChrome.makeCaption(String(localized: "No Scenes"))
+            let caption = CandelaChrome.makeCaption(localizedText("No Scenes"))
             caption.font = .systemFont(ofSize: 11, weight: .medium)
             scenesStack.addArrangedSubview(caption)
         } else {
             for scene in scenes {
                 let button = CandelaChrome.makeQuietButton(title: scene.displayName, symbolName: "square.stack.3d.up")
-                button.toolTip = String(localized: "Apply Scene")
+                button.toolTip = localizedText("Apply Scene")
                 button.identifier = NSUserInterfaceItemIdentifier(scene.id)
                 button.target = self
                 button.action = #selector(sceneClicked(_:))
@@ -282,10 +297,16 @@ final class StatusPanelView: NSView {
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         scenesStack.addArrangedSubview(spacer)
-        let save = CandelaChrome.makeIconButton(symbolName: "plus", help: String(localized: "Save Scene"))
+        let save = CandelaChrome.makeIconButton(symbolName: "plus", help: localizedText("Save Scene"))
         save.target = self
         save.action = #selector(saveSceneClicked)
         scenesStack.addArrangedSubview(save)
+        let follow = CandelaChrome.makeIconButton(symbolName: "sun.max", help: localizedText("Follow Keyboard Brightness"))
+        follow.identifier = NSUserInterfaceItemIdentifier("follow-keyboard")
+        follow.target = self
+        follow.action = #selector(toggleFollowKeyboard)
+        scenesStack.addArrangedSubview(follow)
+        syncFollowButton(follow)
     }
 
     @objc private func sceneClicked(_ sender: NSButton) {
@@ -296,10 +317,10 @@ final class StatusPanelView: NSView {
 
     @objc private func saveSceneClicked() {
         let alert = NSAlert()
-        alert.messageText = String(localized: "Save Scene")
-        alert.informativeText = String(localized: "Capture brightness, volume, input, rotation, and Picture in Picture for the current displays.")
-        alert.addButton(withTitle: String(localized: "Save"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
+        alert.messageText = localizedText("Save Scene")
+        alert.informativeText = localizedText("Capture brightness, volume, input, rotation, and Picture in Picture for the current displays.")
+        alert.addButton(withTitle: localizedText("Save"))
+        alert.addButton(withTitle: localizedText("Cancel"))
         let field = NSTextField(string: suggestedSceneName())
         field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
         alert.accessoryView = field
@@ -311,13 +332,13 @@ final class StatusPanelView: NSView {
 
     private func suggestedSceneName() -> String {
         let existing = Set(session.scenes.map { DisplaySceneName.slug($0.name) })
-        if !existing.contains("desk") { return String(localized: "Desk") }
-        if !existing.contains("night") { return String(localized: "Night") }
+        if !existing.contains("desk") { return localizedText("Desk") }
+        if !existing.contains("night") { return localizedText("Night") }
         var index = session.scenes.count + 1
         while existing.contains(DisplaySceneName.slug("Scene \(index)")) {
             index += 1
         }
-        return String(localized: "Scene \(index)")
+        return localizedText("Scene \(index)")
     }
 
     private func configureRows() {
@@ -334,6 +355,12 @@ final class StatusPanelView: NSView {
         speakerRow.onVolume = { [weak self] value in
             self?.session.setSpeakerVolume(value)
         }
+        speakerRow.onVolumeTrackingBegan = { [weak self] in
+            self?.session.beginSpeakerVolumeAdjustment()
+        }
+        speakerRow.onVolumeTrackingEnded = { [weak self] value in
+            self?.session.endSpeakerVolumeAdjustment(value)
+        }
         speakerRow.onMute = { [weak self] muted in
             self?.session.setSpeakerMuted(muted)
         }
@@ -348,46 +375,57 @@ final class StatusPanelView: NSView {
         content.addSubview(footer)
 
         let line = CandelaChrome.makeHairline()
-        let settingsButton = CandelaChrome.makeQuietButton(title: String(localized: "Settings"), symbolName: "gearshape")
+        let settingsButton = CandelaChrome.makeQuietButton(title: localizedText("Settings"), symbolName: "gearshape")
         settingsButton.target = self
         settingsButton.action = #selector(openSettings)
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        settingsButton.identifier = NSUserInterfaceItemIdentifier("settings")
         sizeFooterButton(settingsButton)
-        let wallButton = CandelaChrome.makeQuietButton(title: String(localized: "Overview"), symbolName: "rectangle.split.2x2")
+        let wallButton = CandelaChrome.makeQuietButton(title: localizedText("Overview"), symbolName: "rectangle.split.2x2")
         wallButton.target = self
         wallButton.action = #selector(toggleWall)
         wallButton.translatesAutoresizingMaskIntoConstraints = false
+        wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
         sizeFooterButton(wallButton)
         wallButton.toolTip = session.isPictureInPictureWallOpen
-            ? String(localized: "Close Display Overview")
-            : String(localized: "Open Display Overview")
+            ? localizedText("Close Display Overview")
+            : localizedText("Open Display Overview")
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.setAccessibilityLabel(wallButton.toolTip)
-        wallButton.identifier = NSUserInterfaceItemIdentifier("monitor-wall")
-        let quitButton = CandelaChrome.makeQuietButton(title: String(localized: "Quit"), symbolName: "power")
+        let mirrorButton = CandelaChrome.makeQuietButton(
+            title: localizedText("Mirror"),
+            symbolName: "rectangle.split.2x1"
+        )
+        mirrorButton.target = self
+        mirrorButton.action = #selector(toggleBuiltInMirror)
+        mirrorButton.translatesAutoresizingMaskIntoConstraints = false
+        mirrorButton.identifier = NSUserInterfaceItemIdentifier("mirror-builtin")
+        sizeFooterButton(mirrorButton)
+        let quitButton = CandelaChrome.makeQuietButton(title: localizedText("Quit"), symbolName: "power")
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
         quitButton.translatesAutoresizingMaskIntoConstraints = false
+        quitButton.identifier = NSUserInterfaceItemIdentifier("quit")
         sizeFooterButton(quitButton)
         footer.addSubview(line)
-        footer.addSubview(quitButton)
 
-        let actions = NSStackView(views: [settingsButton, wallButton])
+        let actions = NSStackView(views: [settingsButton, wallButton, mirrorButton])
         actions.orientation = .horizontal
         actions.alignment = .centerY
-        actions.spacing = 10
+        actions.spacing = 6
         actions.translatesAutoresizingMaskIntoConstraints = false
         actions.setHuggingPriority(.required, for: .horizontal)
         footer.addSubview(actions)
+        footer.addSubview(quitButton)
 
         NSLayoutConstraint.activate([
             footer.heightAnchor.constraint(equalToConstant: 28),
             line.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
             line.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
             line.topAnchor.constraint(equalTo: footer.topAnchor),
-            actions.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
-            actions.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
-            quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
+            actions.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: -4),
+            actions.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 3),
+            quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: 4),
             quitButton.centerYAnchor.constraint(equalTo: actions.centerYAnchor),
             quitButton.leadingAnchor.constraint(greaterThanOrEqualTo: actions.trailingAnchor, constant: 8),
         ])
@@ -443,29 +481,102 @@ final class StatusPanelView: NSView {
         reload(session.snapshots)
     }
 
+    @objc private func toggleBuiltInMirror() {
+        _ = session.toggleBuiltInMirror()
+        reload(session.snapshots)
+    }
+
+    private func footerButton(_ identifier: String) -> NSButton? {
+        if let button = footer.subviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == identifier }) {
+            return button
+        }
+        for view in footer.subviews {
+            if let stack = view as? NSStackView,
+               let button = stack.arrangedSubviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == identifier }) {
+                return button
+            }
+        }
+        return nil
+    }
+
     private func syncWallButton() {
-        guard let wallButton = footer.subviews.compactMap({ $0 as? NSButton }).first(where: { $0.identifier?.rawValue == "monitor-wall" }) else {
+        guard let wallButton = footerButton("monitor-wall") else {
             return
         }
         wallButton.toolTip = session.isPictureInPictureWallOpen
-            ? String(localized: "Close Display Overview")
-            : String(localized: "Open Display Overview")
+            ? localizedText("Close Display Overview")
+            : localizedText("Open Display Overview")
         wallButton.setAccessibilityLabel(wallButton.toolTip)
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
-        wallButton.title = session.isPictureInPictureWallOpen ? String(localized: "Close Overview") : String(localized: "Overview")
+        wallButton.title = localizedText("Overview")
         sizeFooterButton(wallButton)
     }
 
+    private func syncMirrorButton() {
+        guard let mirrorButton = footerButton("mirror-builtin") else { return }
+        let mirroring = session.isMirroringBuiltIn
+        let available = session.canToggleBuiltInMirror
+        mirrorButton.isHidden = !available && !mirroring
+        mirrorButton.isEnabled = available
+        mirrorButton.toolTip = mirroring
+            ? localizedText("Stop mirroring and restore the previous arrangement.")
+            : localizedText("Mirror every display onto the built-in display.")
+        mirrorButton.setAccessibilityLabel(mirrorButton.toolTip)
+        mirrorButton.contentTintColor = mirroring ? CandelaChrome.accent : .secondaryLabelColor
+        mirrorButton.title = mirroring ? localizedText("Unmirror") : localizedText("Mirror")
+        if let image = CandelaChrome.symbol(mirroring ? "rectangle.fill.on.rectangle.fill" : "rectangle.split.2x1", size: 13) {
+            mirrorButton.image = image
+        }
+        sizeFooterButton(mirrorButton)
+    }
+
+
+    @objc private func toggleFollowKeyboard() {
+        _ = session.toggleFollowKeyboardBrightness()
+        reload(session.snapshots)
+    }
+
+    private func syncFollowButton(_ button: NSButton? = nil) {
+        let followButton = button ?? scenesStack.arrangedSubviews.compactMap { $0 as? NSButton }.first(where: { $0.identifier?.rawValue == "follow-keyboard" })
+        guard let followButton else { return }
+        let enabled = session.isFollowingKeyboardBrightness
+        let available = session.canFollowKeyboardBrightness
+        followButton.isEnabled = available || enabled
+        followButton.contentTintColor = enabled ? CandelaChrome.accent : .secondaryLabelColor
+        followButton.toolTip = enabled
+            ? localizedText("Stop following keyboard brightness")
+            : localizedText("Follow keyboard brightness")
+        followButton.setAccessibilityLabel(followButton.toolTip)
+        if let image = CandelaChrome.symbol(enabled ? "sun.max.fill" : "sun.max", size: 13) {
+            followButton.image = image
+        }
+    }
+
     private func sizeFooterButton(_ button: NSButton) {
-        button.sizeToFit()
-        let fitting = button.fittingSize
-        let width = max(fitting.width + 4, 44)
+        button.lineBreakMode = .byClipping
+        if #available(macOS 11.0, *) {
+            button.imageHugsTitle = true
+        }
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let width = footerSlotWidth(for: button)
         if let existing = button.constraints.first(where: { $0.firstAttribute == .width && $0.secondItem == nil }) {
             existing.constant = width
         } else {
             button.widthAnchor.constraint(equalToConstant: width).isActive = true
         }
-        button.setContentHuggingPriority(.required, for: .horizontal)
-        button.setContentCompressionResistancePriority(.required, for: .horizontal)
+    }
+
+    private func footerSlotWidth(for button: NSButton) -> CGFloat {
+        switch button.identifier?.rawValue {
+        case "monitor-wall":
+            return 82
+        case "mirror-builtin":
+            return 70
+        case "quit":
+            return 50
+        default:
+            return 74
+        }
     }
 }

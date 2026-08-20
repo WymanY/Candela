@@ -16,11 +16,13 @@ public enum ControlAction: String, Codable, Sendable {
     case rename
     case preset
     case matchAll
+    case setBuiltInMirror
     case listScenes
     case applyScene
     case saveScene
     case renameScene
     case deleteScene
+    case setFollowKeyboardBrightness
     case dump
 }
 
@@ -40,6 +42,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
     public var name: String?
     public var preset: String?
     public var scene: String?
+    public var followKeyboardBrightness: Bool?
     public var redact: Bool?
 
     public init(
@@ -58,6 +61,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         name: String? = nil,
         preset: String? = nil,
         scene: String? = nil,
+        followKeyboardBrightness: Bool? = nil,
         redact: Bool? = nil
     ) {
         self.action = action
@@ -75,6 +79,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         self.name = name
         self.preset = preset
         self.scene = scene
+        self.followKeyboardBrightness = followKeyboardBrightness
         self.redact = redact
     }
 }
@@ -106,6 +111,8 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
     public var pictureInPictureMirrored: Bool?
     public var pictureInPictureWindow: String?
     public var pictureInPictureWall: Bool?
+    public var isMirroringBuiltIn: Bool
+    public var canMirrorBuiltIn: Bool
     public var resolution: String?
     public var refreshHz: Double?
     public var scale: Double?
@@ -137,6 +144,8 @@ public struct ControlDisplayDTO: Codable, Equatable, Sendable {
         pictureInPictureMirrored = supportsPictureInPicture ? snapshot.pictureInPictureMirrored : nil
         pictureInPictureWindow = snapshot.pictureInPictureWindow?.displayTitle
         pictureInPictureWall = nil
+        isMirroringBuiltIn = snapshot.isMirroringBuiltIn
+        canMirrorBuiltIn = snapshot.canMirrorBuiltIn
         resolution = DisplayPresentation.modeTitle(for: snapshot)
         refreshHz = snapshot.refreshHz > 0.5 ? snapshot.refreshHz : nil
         scale = snapshot.hasMode ? snapshot.scaleFactor : nil
@@ -170,6 +179,8 @@ public struct ControlResponse: Codable, Equatable, Sendable {
     public var scenes: [ControlSceneDTO]?
     public var dump: String?
     public var pictureInPictureWall: Bool?
+    public var isMirroringBuiltIn: Bool?
+    public var followKeyboardBrightness: Bool?
 
     public init(
         ok: Bool,
@@ -177,7 +188,9 @@ public struct ControlResponse: Codable, Equatable, Sendable {
         displays: [ControlDisplayDTO]? = nil,
         scenes: [ControlSceneDTO]? = nil,
         dump: String? = nil,
-        pictureInPictureWall: Bool? = nil
+        pictureInPictureWall: Bool? = nil,
+        isMirroringBuiltIn: Bool? = nil,
+        followKeyboardBrightness: Bool? = nil
     ) {
         self.ok = ok
         self.error = error
@@ -185,6 +198,8 @@ public struct ControlResponse: Codable, Equatable, Sendable {
         self.scenes = scenes
         self.dump = dump
         self.pictureInPictureWall = pictureInPictureWall
+        self.isMirroringBuiltIn = isMirroringBuiltIn
+        self.followKeyboardBrightness = followKeyboardBrightness
     }
 
     public static func failure(_ message: String) -> ControlResponse {

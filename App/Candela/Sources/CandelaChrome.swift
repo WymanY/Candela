@@ -223,6 +223,10 @@ final class CandelaSlider: NSSlider {
         }
     }
 
+    var onTrackingBegan: (() -> Void)?
+    var onTrackingEnded: (() -> Void)?
+    private(set) var isUserTracking = false
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         configure()
@@ -236,6 +240,24 @@ final class CandelaSlider: NSSlider {
     private func configure() {
         cell = CandelaSliderCell()
         sliderType = .linear
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        beginTracking()
+        super.mouseDown(with: event)
+        endTracking()
+    }
+
+    private func beginTracking() {
+        guard !isUserTracking else { return }
+        isUserTracking = true
+        onTrackingBegan?()
+    }
+
+    private func endTracking() {
+        guard isUserTracking else { return }
+        isUserTracking = false
+        onTrackingEnded?()
     }
 }
 

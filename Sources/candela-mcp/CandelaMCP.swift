@@ -138,6 +138,8 @@ final class MCPStdioTransport {
             return ControlRequest(action: .preset, display: object["display"]?.stringValue, preset: try required(object, "preset"))
         case "candela_match_all":
             return ControlRequest(action: .matchAll, display: try required(object, "display"))
+        case "candela_set_builtin_mirror":
+            return ControlRequest(action: .setBuiltInMirror)
         case "candela_list_scenes":
             return ControlRequest(action: .listScenes)
         case "candela_apply_scene":
@@ -148,6 +150,8 @@ final class MCPStdioTransport {
             return ControlRequest(action: .renameScene, name: try required(object, "name"), scene: try required(object, "scene"))
         case "candela_delete_scene":
             return ControlRequest(action: .deleteScene, scene: try required(object, "scene"))
+        case "candela_set_follow_keyboard":
+            return ControlRequest(action: .setFollowKeyboardBrightness, followKeyboardBrightness: try requiredBool(object, "enabled"))
         case "candela_debug_dump":
             return ControlRequest(action: .dump, redact: object["redact"]?.boolValue ?? true)
         default:
@@ -225,6 +229,7 @@ final class MCPStdioTransport {
         tool("candela_match_all", "Copy this display's brightness, volume, and contrast onto the others.", [
             "display": schema("string", "Source display query"),
         ], ["display"]),
+        tool("candela_set_builtin_mirror", "Mirror every attached display onto the built-in panel, or restore the previous arrangement."),
         tool("candela_list_scenes", "List saved display scenes."),
         tool("candela_apply_scene", "Apply a saved scene by name or id.", [
             "scene": schema("string", "Scene name or id"),
@@ -239,6 +244,9 @@ final class MCPStdioTransport {
         tool("candela_delete_scene", "Delete a saved scene.", [
             "scene": schema("string", "Scene name or id"),
         ], ["scene"]),
+        tool("candela_set_follow_keyboard", "For this launch only, make external displays follow the built-in keyboard brightness keys.", [
+            "enabled": schema("boolean", "true to follow keyboard brightness"),
+        ], ["enabled"]),
         tool("candela_debug_dump", "Copy a redacted debug dump of the live catalog.", [
             "redact": schema("boolean", "Redact serials"),
         ], []),

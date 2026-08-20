@@ -36,6 +36,8 @@ candela-cli rename --display DELL --name "Desk"
 candela-cli preset night
 candela-cli preset --display external desk
 candela-cli match-all --display main
+candela-cli set-mirror
+candela-cli set-follow-keyboard --enabled true
 candela-cli set-pip --display DELL --enabled true
 candela-cli set-pip --display DELL --mode window --window Slack --mirror true
 candela-cli set-pip --display DELL --mode magnifier --zoom 3

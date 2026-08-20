@@ -376,6 +376,68 @@ final class ControlRouterTests: XCTestCase {
         XCTAssertEqual(wall.pictureInPictureWall, true)
         XCTAssertTrue(wallOpen)
     }
+
+    func testToggleBuiltInMirror() {
+        var snapshots = FakeSnapshots.standard()
+        var mirrored = false
+        let backend = ControlBackend(
+            snapshots: { snapshots },
+            setBrightness: { _, _ in },
+            setVolume: { _, _ in },
+            setMuted: { _, _ in },
+            setContrast: { _, _ in },
+            setInput: { _, _ in },
+            setRotation: { _, _ in },
+            setPictureInPicture: { _, _ in true },
+            rename: { _, _ in true },
+            applyPreset: { _, _ in },
+            matchAll: { _ in },
+            toggleBuiltInMirror: {
+                mirrored.toggle()
+                for index in snapshots.indices {
+                    snapshots[index].isMirroringBuiltIn = mirrored
+                    snapshots[index].canMirrorBuiltIn = true
+                }
+                return true
+            },
+            isMirroringBuiltIn: { mirrored },
+            dump: { _ in "" }
+        )
+        let response = ControlRouter.apply(
+            ControlRequest(action: .setBuiltInMirror),
+            backend: backend
+        )
+        XCTAssertTrue(response.ok)
+        XCTAssertEqual(response.isMirroringBuiltIn, true)
+        XCTAssertTrue(snapshots[0].isMirroringBuiltIn)
+    }
+    func testSetFollowKeyboardBrightness() {
+        let snapshots = FakeSnapshots.standard()
+        var follow = true
+        let backend = ControlBackend(
+            snapshots: { snapshots },
+            setBrightness: { _, _ in },
+            setVolume: { _, _ in },
+            setMuted: { _, _ in },
+            setContrast: { _, _ in },
+            setInput: { _, _ in },
+            setRotation: { _, _ in },
+            setPictureInPicture: { _, _ in true },
+            rename: { _, _ in true },
+            applyPreset: { _, _ in },
+            matchAll: { _ in },
+            followKeyboardBrightness: { follow },
+            setFollowKeyboardBrightness: { follow = $0 },
+            dump: { _ in "" }
+        )
+        let response = ControlRouter.apply(
+            ControlRequest(action: .setFollowKeyboardBrightness, followKeyboardBrightness: false),
+            backend: backend
+        )
+        XCTAssertTrue(response.ok)
+        XCTAssertEqual(response.followKeyboardBrightness, false)
+        XCTAssertFalse(follow)
+    }
 }
 
 final class DisplayQueryTests: XCTestCase {
@@ -395,4 +457,5 @@ final class DisplayNameResolverTests: XCTestCase {
         XCTAssertEqual(DisplayNameResolver.displayName(hardwareName: "DELL", customName: " Desk "), "Desk")
         XCTAssertEqual(DisplayNameResolver.displayName(hardwareName: "DELL", customName: "  "), "DELL")
     }
+
 }

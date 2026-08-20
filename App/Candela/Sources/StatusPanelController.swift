@@ -141,7 +141,7 @@ final class StatusPanelController {
 
     func reload() {
         panelView.reload(session.snapshots)
-        if isVisible {
+        if isVisible, !panelView.isDraggingBrightness {
             panelView.needsLayout = true
             panelView.layoutSubtreeIfNeeded()
             let measured = panelView.fittingSize.height

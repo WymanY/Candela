@@ -18,6 +18,7 @@
 		1E93EAC3CE0E8E9448E33928 /* SpeakerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */; };
 		28544AC3C17324B984A50B02 /* SpeakerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0738DD47233AA6C607EECF50 /* SpeakerRowView.swift */; };
 		287815A8BF009C34C6D6C7E8 /* GammaTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810C0393E03779607DA87A7F /* GammaTable.swift */; };
+		2CB7B94B22876C0BB2FEC013 /* DisplayArrangementControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3EF9683C1B04C03535D3B8 /* DisplayArrangementControl.swift */; };
 		33BB80714314B12B3DECBD35 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
 		374DA311737FE3389AD7B8B7 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F8025C56D2F05F5E8F195926 /* InfoPlist.xcstrings */; };
 		382EBC0BE210CC5DC2D4EE9D /* SettingsShortcutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */; };
@@ -129,6 +130,7 @@
 		CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySessionController.swift; sourceTree = "<group>"; };
 		D225743D028BAEC554DC333A /* SystemDisplayCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemDisplayCatalog.swift; sourceTree = "<group>"; };
 		D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDisplaysView.swift; sourceTree = "<group>"; };
+		DA3EF9683C1B04C03535D3B8 /* DisplayArrangementControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayArrangementControl.swift; sourceTree = "<group>"; };
 		DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DDCPacket.swift; sourceTree = "<group>"; };
 		DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryStatusView.swift; sourceTree = "<group>"; };
 		E5705532336236260D9C43BA /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
@@ -273,6 +275,7 @@
 				CCC0402D868CAED63B7BC4F1 /* BrightnessProbe.swift */,
 				82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */,
 				DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */,
+				DA3EF9683C1B04C03535D3B8 /* DisplayArrangementControl.swift */,
 				6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */,
 				416F0D17CCE7F056BC5E3614 /* DisplayRotationControl.swift */,
 				09B9C7B47351DF19375E872B /* DisplayServicesBackend.swift */,
@@ -460,6 +463,7 @@
 				8B4629877D7CB41F513E7B48 /* CandelaChrome.swift in Sources */,
 				7FAE06AAC14875CA2082C4F4 /* CoreDisplayInfo.swift in Sources */,
 				02363366446ED003772BB623 /* DDCPacket.swift in Sources */,
+				2CB7B94B22876C0BB2FEC013 /* DisplayArrangementControl.swift in Sources */,
 				A29DA4472371F6613A18E023 /* DisplayIOBox.swift in Sources */,
 				9B27FB9C5D8BE0D9EDB0F32F /* DisplayRotationControl.swift in Sources */,
 				11987C674586E024C0599DB2 /* DisplayRowView.swift in Sources */,

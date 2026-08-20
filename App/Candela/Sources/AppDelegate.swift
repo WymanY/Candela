@@ -27,6 +27,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let session = DisplaySessionController.makeDefault()
         self.session = session
         statusItem = StatusItemController(session: session)
+        installApplicationMenu()
+        statusItem?.revealOnLaunch()
         session.start()
         // Hop to the main actor asynchronously; a sync hop can deadlock
         // against applicationWillTerminate stopping the server.
@@ -51,6 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        if NSApp.mainMenu == nil {
+            installApplicationMenu()
+        }
         if NSApp.windows.contains(where: { $0.isVisible && $0.canBecomeMain }) == false {
             statusItem?.showMainUI()
         }
@@ -59,7 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         let settings = NSMenuItem(
-            title: String(localized: "Settings"),
+            title: localizedText("Settings"),
             action: #selector(StatusItemController.openSettings),
             keyEquivalent: ""
         )
@@ -68,12 +73,66 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return menu
     }
 
+    func reloadApplicationMenu() {
+        installApplicationMenu()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         controlServer?.stop()
         controlServer = nil
         session?.prepareToQuit()
     }
 
+    private func installApplicationMenu() {
+        let menu = NSMenu()
+        let appMenuItem = NSMenuItem()
+        menu.addItem(appMenuItem)
+
+        let appMenu = NSMenu()
+        let about = NSMenuItem(
+            title: localizedText("About Candela"),
+            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+            keyEquivalent: ""
+        )
+        appMenu.addItem(about)
+        appMenu.addItem(.separator())
+        let settings = NSMenuItem(
+            title: localizedText("Settings"),
+            action: #selector(StatusItemController.openSettings),
+            keyEquivalent: ","
+        )
+        settings.target = statusItem
+        appMenu.addItem(settings)
+        appMenu.addItem(.separator())
+        let hide = NSMenuItem(
+            title: localizedText("Hide Candela"),
+            action: #selector(NSApplication.hide(_:)),
+            keyEquivalent: "h"
+        )
+        appMenu.addItem(hide)
+        let hideOthers = NSMenuItem(
+            title: localizedText("Hide Others"),
+            action: #selector(NSApplication.hideOtherApplications(_:)),
+            keyEquivalent: "h"
+        )
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        appMenu.addItem(hideOthers)
+        let showAll = NSMenuItem(
+            title: localizedText("Show All"),
+            action: #selector(NSApplication.unhideAllApplications(_:)),
+            keyEquivalent: ""
+        )
+        appMenu.addItem(showAll)
+        appMenu.addItem(.separator())
+        let quit = NSMenuItem(
+            title: localizedText("Quit Candela"),
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        appMenu.addItem(quit)
+        appMenuItem.submenu = appMenu
+        NSApp.mainMenu = menu
+    }
 }
 
 enum BootLog {

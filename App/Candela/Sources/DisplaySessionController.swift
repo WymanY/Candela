@@ -25,6 +25,8 @@ final class DisplaySessionController {
     private var pendingRotationByKey: [String: DisplayRotation] = [:]
     private var pictureInPictureWindows: [String: PictureInPictureWindowController] = [:]
     private var pictureInPictureWall: PictureInPictureWallWindowController?
+    private var lastExtendedArrangementOverride: DisplayArrangementSnapshot?
+    private var knownDisplayIDsByKey: [String: CGDirectDisplayID] = [:]
 
     var snapshots: [DisplaySnapshot] = []
     var pictureInPictureKeys: Set<String> {
@@ -36,14 +38,42 @@ final class DisplaySessionController {
     var speaker: SpeakerOutput?
     var speakerChoices: [SpeakerChoice] = []
     var powerStatus = PowerStatus(source: .unknown, isPresent: false, percent: nil)
+    var brightnessFollow = BrightnessFollowEngine()
+    private var brightnessFollowTimer: DispatchSourceTimer?
     private var powerSourceRunLoopSource: CFRunLoopSource?
     private var lowPowerModeObserver: NSObjectProtocol?
     var onChange: (() -> Void)?
     var launchAtLoginError: String?
     private var audioRouteObserver: HALAudioRouteObserver?
+    var isAdjustingSpeakerVolume = false
+    var lastLiveVolumeWrite: Date?
 
     var settings: GlobalSettings {
         persistence.global()
+    }
+
+    var isFollowingKeyboardBrightness: Bool {
+        brightnessFollow.enabled
+    }
+
+    var canFollowKeyboardBrightness: Bool {
+        BrightnessFollowPolicy.canFollow(in: snapshots)
+    }
+
+    func setFollowKeyboardBrightness(_ enabled: Bool) {
+        if brightnessFollow.enabled == enabled { return }
+        brightnessFollow.enabled = enabled
+        if enabled {
+            brightnessFollow.recapture(snapshots: snapshots)
+        }
+        onChange?()
+    }
+
+    @discardableResult
+    func toggleFollowKeyboardBrightness() -> Bool {
+        let enabled = !brightnessFollow.enabled
+        setFollowKeyboardBrightness(enabled)
+        return enabled
     }
 
     init(catalog: DisplayCataloging, persistence: PersistenceStoring) {
@@ -92,8 +122,10 @@ final class DisplaySessionController {
             observeActiveSpeakerVolume()
             startPowerSourceObserver()
             startLowPowerModeObserver()
+            startBrightnessFollowObserver()
         } else {
             refreshPowerStatus()
+            syncBrightnessFollowFromSettings()
         }
     }
 
@@ -104,6 +136,7 @@ final class DisplaySessionController {
         audioRouteObserver = nil
         stopPowerSourceObserver()
         stopLowPowerModeObserver()
+        stopBrightnessFollowObserver()
         updatesTask?.cancel()
         updatesTask = nil
         for task in restoreTasks.values {
@@ -121,7 +154,7 @@ final class DisplaySessionController {
         }
     }
 
-    func setBrightness(key: String, value: Double) {
+    func setBrightness(key: String, value: Double, origin: BrightnessWriteOrigin = .user) {
         let clamped = min(1, max(0, value))
         boxes[key]?.setBrightness(clamped)
         if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
@@ -130,36 +163,20 @@ final class DisplaySessionController {
         var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
         record.lastBrightness = clamped
         persistence.save(record)
-        onChange?()
+        if origin == .user {
+            noteBrightnessFollowWrite(key: key, value: clamped)
+        }
+        if origin != .follow {
+            onChange?()
+        }
     }
 
     func setVolume(key: String, value: Double) {
-        let clamped = min(1, max(0, value))
-        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
-        record.lastVolume = clamped
-        persistence.save(record)
-        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
-            snapshots[index].volume.current = clamped
-            boxes[key]?.setVolume(clamped)
-            applyLiveVolume(snapshots[index])
-        } else {
-            boxes[key]?.setVolume(clamped)
-        }
-        refreshSpeaker()
-        onChange?()
+        applySpeakerVolume(key: key, value: value, persist: true, notify: true)
     }
 
     func setMuted(key: String, muted: Bool) {
-        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
-        record.lastMuted = muted
-        persistence.save(record)
-        boxes[key]?.setMuted(muted)
-        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
-            snapshots[index].volume.isMuted = muted
-            applyLiveVolume(snapshots[index])
-        }
-        refreshSpeaker()
-        onChange?()
+        applySpeakerMute(key: key, muted: muted, persist: true, notify: true)
     }
 
     func setContrast(key: String, value: Double) {
@@ -330,6 +347,13 @@ final class DisplaySessionController {
         onChange?()
     }
 
+    func reloadLocalizedChrome() {
+        for controller in pictureInPictureWindows.values {
+            controller.reloadLocalizedChrome()
+        }
+        pictureInPictureWall?.reloadLocalizedChrome()
+    }
+
     private func savePictureInPictureWallPlacement(_ placement: PictureInPicturePlacement) {
         var next = settings
         next.pictureInPictureWall = placement
@@ -380,17 +404,81 @@ final class DisplaySessionController {
         for target in targets {
             guard let snapshot = snapshots.first(where: { $0.id.persistentKey == target }) else { continue }
             if snapshot.brightness.showsBrightnessSlider {
-                setBrightness(key: target, value: preset.value)
+                setBrightness(key: target, value: preset.value, origin: .explicit)
             }
         }
+        brightnessFollow.recapture(snapshots: snapshots)
         onChange?()
+    }
+
+    var isMirroringBuiltIn: Bool {
+        snapshots.contains(where: \.isMirroringBuiltIn)
+            || DisplayArrangementPlanning.kind(for: liveMirrorTargets()) == .builtin
+    }
+
+    var canToggleBuiltInMirror: Bool {
+        switch DisplayArrangementPlanning.availability(
+            targets: liveMirrorTargets(),
+            savedArrangement: savedExtendedArrangement
+        ) {
+        case .unavailable:
+            return false
+        case .available, .mirroringBuiltIn:
+            return true
+        }
+    }
+
+    private var savedExtendedArrangement: DisplayArrangementSnapshot? {
+        lastExtendedArrangementOverride ?? settings.lastExtendedArrangement
+    }
+
+    @discardableResult
+    func toggleBuiltInMirror() -> Bool {
+        if isMirroringBuiltIn {
+            return restoreExtendedArrangement()
+        }
+        return mirrorToBuiltIn()
+    }
+
+    @discardableResult
+    func mirrorToBuiltIn() -> Bool {
+        let targets = liveMirrorTargets()
+        guard DisplayArrangementPlanning.canMirrorToBuiltIn(targets: targets) else { return false }
+        if DisplayArrangementPlanning.kind(for: targets) != .builtin {
+            rememberExtendedArrangement(from: targets)
+        }
+        if Self.shouldUseFakeHardware {
+            applyFakeMirrorState(isMirroring: true)
+            return true
+        }
+        guard DisplayArrangementControl.mirrorToBuiltIn(keysByDisplayID: liveKeysByDisplayID()) else {
+            return false
+        }
+        applyOptimisticMirrorState(isMirroring: true)
+        catalog.requestRescan()
+        return true
+    }
+
+    @discardableResult
+    func restoreExtendedArrangement() -> Bool {
+        guard let saved = savedExtendedArrangement else { return false }
+        if Self.shouldUseFakeHardware {
+            applyFakeMirrorState(isMirroring: false)
+            return true
+        }
+        guard DisplayArrangementControl.restore(saved, keysByDisplayID: liveKeysByDisplayID()) else {
+            return false
+        }
+        applyOptimisticMirrorState(isMirroring: false)
+        catalog.requestRescan()
+        return true
     }
 
     func matchAll(to key: String) {
         guard let source = snapshots.first(where: { $0.id.persistentKey == key }) else { return }
         for snapshot in snapshots where snapshot.id.persistentKey != key && snapshot.kind != .virtualUnsupported {
             if snapshot.brightness.showsBrightnessSlider && source.brightness.showsBrightnessSlider {
-                setBrightness(key: snapshot.id.persistentKey, value: source.brightness.current)
+                setBrightness(key: snapshot.id.persistentKey, value: source.brightness.current, origin: .explicit)
             }
             if snapshot.volume.supportsVolume && source.volume.supportsVolume {
                 setVolume(key: snapshot.id.persistentKey, value: source.volume.current)
@@ -402,6 +490,7 @@ final class DisplaySessionController {
                 setContrast(key: snapshot.id.persistentKey, value: source.contrast.current)
             }
         }
+        brightnessFollow.recapture(snapshots: snapshots)
         onChange?()
     }
 
@@ -432,6 +521,7 @@ final class DisplaySessionController {
         applySpeaker(from: scene, commands: plan.commands)
         reconcileAppliedScene(plan)
         refreshSpeaker()
+        brightnessFollow.recapture(snapshots: snapshots)
         onChange?()
         return scene
     }
@@ -532,7 +622,7 @@ final class DisplaySessionController {
 
     private func apply(_ command: DisplaySceneCommand) {
         if let brightness = command.brightness {
-            setBrightness(key: command.persistentKey, value: brightness)
+            setBrightness(key: command.persistentKey, value: brightness, origin: .explicit)
         }
         if let volume = command.volume {
             setVolume(key: command.persistentKey, value: volume)
@@ -573,7 +663,7 @@ final class DisplaySessionController {
             }
         }
         #endif
-        return enabled ? String(localized: "Launch at Login requires macOS 13 or later.") : nil
+        return enabled ? localizedText("Launch at Login requires macOS 13 or later.") : nil
     }
 
     func syncLaunchAtLoginFromSystem() {
@@ -628,11 +718,15 @@ final class DisplaySessionController {
             rename: { self.renameDisplay(key: $0, customName: $1) },
             applyPreset: { self.applyPreset($0, key: $1) },
             matchAll: { self.matchAll(to: $0) },
+            toggleBuiltInMirror: { self.toggleBuiltInMirror() },
+            isMirroringBuiltIn: { self.isMirroringBuiltIn },
             scenes: { self.scenes },
             applyScene: { self.applyScene($0) },
             saveScene: { self.saveScene(named: $0) },
             renameScene: { self.renameScene($0, to: $1) },
             deleteScene: { self.deleteScene($0) },
+            followKeyboardBrightness: { self.isFollowingKeyboardBrightness },
+            setFollowKeyboardBrightness: { self.setFollowKeyboardBrightness($0) },
             dump: { self.debugDump(redact: $0) }
         ))
     }
@@ -666,6 +760,7 @@ final class DisplaySessionController {
             "fakeHardware=\(Self.shouldUseFakeHardware)",
             "displays=\(snapshots.count)",
             "scenes=\(scenes.count)",
+            "followKeyboard=\(isFollowingKeyboardBrightness)",
         ]
         for snapshot in snapshots {
             var key = snapshot.id.persistentKey
@@ -681,6 +776,90 @@ final class DisplaySessionController {
             )
         }
         return lines.joined(separator: "\n")
+    }
+
+    private func liveKeysByDisplayID() -> [CGDirectDisplayID: String] {
+        var keys: [CGDirectDisplayID: String] = [:]
+        for (key, id) in knownDisplayIDsByKey where id != 0 {
+            keys[id] = key
+        }
+        for snapshot in snapshots {
+            keys[snapshot.sessionDisplayID] = snapshot.id.persistentKey
+        }
+        return keys
+    }
+
+    private func liveMirrorTargets() -> [DisplayMirrorTarget] {
+        if Self.shouldUseFakeHardware {
+            return snapshots.map { snapshot in
+                DisplayMirrorTarget(
+                    displayID: snapshot.sessionDisplayID,
+                    persistentKey: snapshot.id.persistentKey,
+                    isBuiltin: snapshot.isBuiltin,
+                    isVirtual: snapshot.kind == .virtualUnsupported,
+                    origin: .zero,
+                    pixelWidth: snapshot.pixelWidth,
+                    pixelHeight: snapshot.pixelHeight,
+                    refreshHz: snapshot.refreshHz,
+                    isMain: snapshot.isMain,
+                    mirrorsDisplayID: snapshot.isMirroringBuiltIn && !snapshot.isBuiltin
+                        ? (snapshots.first(where: \.isBuiltin)?.sessionDisplayID ?? 0)
+                        : 0
+                )
+            }
+        }
+        let visible = snapshots.map { snapshot in
+            DisplayMirrorTarget(
+                displayID: snapshot.sessionDisplayID,
+                persistentKey: snapshot.id.persistentKey,
+                isBuiltin: snapshot.isBuiltin,
+                isVirtual: snapshot.kind == .virtualUnsupported,
+                origin: .zero,
+                pixelWidth: snapshot.pixelWidth,
+                pixelHeight: snapshot.pixelHeight,
+                refreshHz: snapshot.refreshHz,
+                isMain: snapshot.isMain
+            )
+        }
+        let hardware = DisplayArrangementControl.currentTargets(keysByDisplayID: liveKeysByDisplayID())
+        if hardware.isEmpty {
+            return visible
+        }
+        var merged = hardware
+        // Keep catalog-only identities such as Sidecar that CoreGraphics still lists.
+        let hardwareIDs = Set(hardware.map(\.displayID))
+        for extra in visible where !hardwareIDs.contains(extra.displayID) {
+            merged.append(extra)
+        }
+        return merged
+    }
+
+    private func rememberExtendedArrangement(from targets: [DisplayMirrorTarget]) {
+        let snapshot = DisplayArrangementPlanning.capture(
+            targets: targets,
+            keysByDisplayID: liveKeysByDisplayID()
+        )
+        guard snapshot.slots.count > 1 else { return }
+        lastExtendedArrangementOverride = snapshot
+        var next = settings
+        next.lastExtendedArrangement = snapshot
+        persistence.saveGlobal(next)
+    }
+
+    private func applyFakeMirrorState(isMirroring: Bool) {
+        for index in snapshots.indices {
+            snapshots[index].isMirroringBuiltIn = isMirroring
+            snapshots[index].canMirrorBuiltIn = true
+        }
+        onChange?()
+    }
+
+    private func applyOptimisticMirrorState(isMirroring: Bool) {
+        for index in snapshots.indices {
+            snapshots[index].isMirroringBuiltIn = isMirroring
+            snapshots[index].canMirrorBuiltIn = true
+        }
+        onChange?()
     }
 
     private func apply(_ next: [DisplaySnapshot]) {
@@ -717,9 +896,14 @@ final class DisplaySessionController {
         }
         boxes = kept
         snapshots = preserveProbedState(next)
+        for snapshot in snapshots {
+            knownDisplayIDsByKey[snapshot.id.persistentKey] = snapshot.sessionDisplayID
+        }
         refreshRotationSupport()
         syncPictureInPictureWindows()
         stampPictureInPictureState()
+        stampMirrorState()
+        refreshBrightnessFollowOffsets()
         lastAppliedKeys = nextKeys
         probedKeys = probedKeys.intersection(nextKeys)
         pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
@@ -766,6 +950,19 @@ final class DisplaySessionController {
                     previousKeys: []
                 )
             }
+        }
+    }
+
+    private func stampMirrorState() {
+        let availability = DisplayArrangementPlanning.availability(
+            targets: liveMirrorTargets(),
+            savedArrangement: savedExtendedArrangement
+        )
+        let mirroring = availability == .mirroringBuiltIn
+        let canToggle = availability != .unavailable
+        for index in snapshots.indices {
+            snapshots[index].isMirroringBuiltIn = mirroring
+            snapshots[index].canMirrorBuiltIn = canToggle
         }
     }
 
@@ -881,7 +1078,7 @@ final class DisplaySessionController {
         )
     }
 
-    private func applyLiveVolume(_ snapshot: DisplaySnapshot) {
+    func applyLiveVolume(_ snapshot: DisplaySnapshot) {
         guard let uid = snapshot.volume.audioDeviceUID else { return }
         switch snapshot.volume.backend {
         case .coreAudio:
@@ -1014,7 +1211,7 @@ final class DisplaySessionController {
                 await MainActor.run {
                     guard let self, !Task.isCancelled, let record = self.persistence.record(for: key) else { return }
                     if let last = record.lastBrightness {
-                        self.setBrightness(key: key, value: last)
+                        self.setBrightness(key: key, value: last, origin: .explicit)
                     }
                     if let last = record.lastVolume,
                        let snapshot = self.snapshots.first(where: { $0.id.persistentKey == key }),
@@ -1042,12 +1239,19 @@ final class DisplaySessionController {
                     {
                         self.setRotation(key: key, rotation: rotation)
                     }
+                    self.refreshBrightnessFollowOffsets()
                 }
             }
         }
     }
 
     func handleAudioRouteChange() {
+        if VolumeInteractionPolicy.shouldIgnoreHALEcho(
+            isAdjusting: isAdjustingSpeakerVolume,
+            lastWrite: lastLiveVolumeWrite
+        ) {
+            return
+        }
         refreshAudioBindings()
         syncSoftwareVolumeSessions()
         onChange?()
@@ -1148,6 +1352,98 @@ final class DisplaySessionController {
         if let lowPowerModeObserver {
             NotificationCenter.default.removeObserver(lowPowerModeObserver)
             self.lowPowerModeObserver = nil
+        }
+    }
+
+    private func noteBrightnessFollowWrite(key: String, value: Double) {
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
+        if key == source.id.persistentKey {
+            brightnessFollow.noteLocalSourceWrite(value)
+            guard brightnessFollow.enabled else { return }
+            let commands = brightnessFollow.plan(snapshots: snapshots, sourceBrightness: value)
+            for command in commands {
+                setBrightness(key: command.persistentKey, value: command.brightness, origin: .follow)
+            }
+            return
+        }
+        brightnessFollow.noteFollowerWrite(
+            key: key,
+            brightness: value,
+            sourceBrightness: source.brightness.current
+        )
+    }
+
+    private func syncBrightnessFollowFromSettings() {
+        if brightnessFollow.enabled {
+            brightnessFollow.recapture(snapshots: snapshots)
+        }
+    }
+
+    private func refreshBrightnessFollowOffsets() {
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else {
+            brightnessFollow.offsets = [:]
+            return
+        }
+        brightnessFollow.offsets = BrightnessFollowPolicy.mergingOffsets(
+            existing: brightnessFollow.offsets,
+            snapshots: snapshots,
+            sourceKey: source.id.persistentKey,
+            sourceBrightness: source.brightness.current
+        )
+    }
+
+    private func startBrightnessFollowObserver() {
+        syncBrightnessFollowFromSettings()
+        guard brightnessFollowTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(
+            deadline: .now() + BrightnessFollowTiming.pollInterval,
+            repeating: BrightnessFollowTiming.pollInterval
+        )
+        timer.setEventHandler { [weak self] in
+            self?.pollKeyboardBrightness()
+        }
+        timer.resume()
+        brightnessFollowTimer = timer
+    }
+
+    private func stopBrightnessFollowObserver() {
+        brightnessFollowTimer?.cancel()
+        brightnessFollowTimer = nil
+    }
+
+    private func pollKeyboardBrightness() {
+        guard brightnessFollow.enabled else { return }
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
+        let live: Double?
+        if Self.shouldUseFakeHardware {
+            live = source.brightness.current
+        } else {
+            live = LiveBrightnessReader.current(displayID: source.sessionDisplayID)
+        }
+        guard let live else { return }
+        applyLiveBuiltinBrightness(live)
+    }
+
+    func applyLiveBuiltinBrightness(_ live: Double) {
+        let commands = brightnessFollow.ingestLiveSource(snapshots: snapshots, live: live)
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
+        var changed = false
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == source.id.persistentKey }),
+           abs(snapshots[index].brightness.current - live) > BrightnessFollowTiming.changeEpsilon
+        {
+            snapshots[index].brightness.current = min(1, max(0, live))
+            var record = persistence.record(for: source.id.persistentKey) ?? DisplayRecord(persistentKey: source.id.persistentKey)
+            record.lastBrightness = snapshots[index].brightness.current
+            persistence.save(record)
+            changed = true
+        }
+        for command in commands {
+            setBrightness(key: command.persistentKey, value: command.brightness, origin: .follow)
+            changed = true
+        }
+        if changed {
+            onChange?()
         }
     }
 }

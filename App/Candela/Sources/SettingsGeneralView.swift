@@ -8,6 +8,7 @@ final class SettingsGeneralView: NSView {
     private let softwareDimming = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let allowDimToBlack = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let showPercent = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let followKeyboard = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let languagePopup = NSPopUpButton()
     private let errorLabel = CandelaChrome.makeCaption()
 
@@ -28,14 +29,14 @@ final class SettingsGeneralView: NSView {
         stack.spacing = 20
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        let title = CandelaChrome.makeTitle(String(localized: "General"), size: 22, weight: .semibold)
-        let subtitle = CandelaChrome.makeCaption(String(localized: "Startup, dimming, and panel labels."))
+        let title = CandelaChrome.makeTitle(localizedText("General"), size: 22, weight: .semibold)
+        let subtitle = CandelaChrome.makeCaption(localizedText("Startup, dimming, and panel labels."))
         let header = NSStackView(views: [title, subtitle])
         header.orientation = .vertical
         header.alignment = .leading
         header.spacing = 2
 
-        for button in [launchAtLogin, restoreOnReconnect, softwareDimming, allowDimToBlack, showPercent] {
+        for button in [launchAtLogin, restoreOnReconnect, softwareDimming, allowDimToBlack, showPercent, followKeyboard] {
             button.target = self
             button.action = #selector(settingChanged(_:))
             button.setButtonType(.switch)
@@ -54,20 +55,21 @@ final class SettingsGeneralView: NSView {
 
         stack.addArrangedSubview(header)
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Startup"),
-            rows: [(launchAtLogin, String(localized: "Launch at Login"), String(localized: "Open Candela when you log in."))]
+            title: localizedText("Startup"),
+            rows: [(launchAtLogin, localizedText("Launch at Login"), localizedText("Open Candela when you log in."))]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Displays"),
+            title: localizedText("Displays"),
             rows: [
-                (restoreOnReconnect, String(localized: "Restore last brightness on reconnect"), String(localized: "Brightness restored after unplug.")),
-                (softwareDimming, String(localized: "Software dimming"), String(localized: "Use gamma when hardware control is missing.")),
-                (allowDimToBlack, String(localized: "Allow dim to black"), String(localized: "Let software dimming reach 0%.")),
+                (restoreOnReconnect, localizedText("Restore last brightness on reconnect"), localizedText("Brightness restored after unplug.")),
+                (followKeyboard, localizedText("Follow keyboard brightness"), localizedText("This launch only. Other displays keep a relative offset while keyboard brightness keys move the built-in panel.")),
+                (softwareDimming, localizedText("Software dimming"), localizedText("Use gamma when hardware control is missing.")),
+                (allowDimToBlack, localizedText("Allow dim to black"), localizedText("Let software dimming reach 0%.")),
             ]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Panel"),
-            rows: [(showPercent, String(localized: "Show percent next to sliders"), String(localized: "Show 50% beside each slider."))]
+            title: localizedText("Panel"),
+            rows: [(showPercent, localizedText("Show percent next to sliders"), localizedText("Show 50% beside each slider."))]
         ))
         stack.addArrangedSubview(makeLanguageGroup())
         stack.addArrangedSubview(errorLabel)
@@ -106,6 +108,7 @@ final class SettingsGeneralView: NSView {
         softwareDimming.state = settings.softwareDimmingEnabled ? .on : .off
         allowDimToBlack.state = settings.allowDimToBlack ? .on : .off
         showPercent.state = settings.showPercentText ? .on : .off
+        followKeyboard.state = session.isFollowingKeyboardBrightness ? .on : .off
         reloadLanguageMenu()
         if let error = session.launchAtLoginError, !error.isEmpty {
             errorLabel.stringValue = error
@@ -123,6 +126,7 @@ final class SettingsGeneralView: NSView {
         next.allowDimToBlack = allowDimToBlack.state == .on
         next.showPercentText = showPercent.state == .on
         session.saveSettings(next)
+        session.setFollowKeyboardBrightness(followKeyboard.state == .on)
         reload()
     }
 
@@ -149,12 +153,12 @@ final class SettingsGeneralView: NSView {
     }
 
     private func makeLanguageGroup() -> NSView {
-        let heading = CandelaChrome.makeCaption(String(localized: "Language").uppercased())
+        let heading = CandelaChrome.makeCaption(localizedText("Language").uppercased())
         heading.font = .systemFont(ofSize: 11, weight: .semibold)
         heading.textColor = CandelaChrome.accent
         let card = CandelaChrome.makeModule()
-        let titleField = CandelaChrome.makeTitle(String(localized: "App Language"), size: 13, weight: .medium)
-        let caption = CandelaChrome.makeCaption(String(localized: "Defaults to the language set in System Settings."))
+        let titleField = CandelaChrome.makeTitle(localizedText("App Language"), size: 13, weight: .medium)
+        let caption = CandelaChrome.makeCaption(localizedText("Defaults to the language set in System Settings."))
         let texts = NSStackView(views: [titleField, caption])
         texts.orientation = .vertical
         texts.alignment = .leading

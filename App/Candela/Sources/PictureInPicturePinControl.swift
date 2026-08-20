@@ -25,6 +25,16 @@ final class PictureInPicturePinControl: NSPopUpButton {
         fatalError("init(coder:) has not been implemented")
     }
 
+    func reloadLocalizedChrome() {
+        let selected = selectedItem?.representedObject as? String
+        rebuildMenu()
+        if let selected {
+            select(corner: PictureInPictureCorner(rawValue: selected))
+        }
+        setAccessibilityLabel(localizedText("Snap to Corner"))
+        refreshTitleImage()
+    }
+
     func select(corner: PictureInPictureCorner?) {
         let selected = corner?.rawValue ?? ""
         if let index = itemArray.dropFirst().firstIndex(where: { ($0.representedObject as? String) == selected }) {
@@ -43,8 +53,8 @@ final class PictureInPicturePinControl: NSPopUpButton {
         preferredEdge = .minY
         target = self
         action = #selector(selectionChanged(_:))
-        setAccessibilityLabel(String(localized: "Snap to Corner"))
-        toolTip = String(localized: "Snap to Corner")
+        setAccessibilityLabel(localizedText("Snap to Corner"))
+        toolTip = localizedText("Snap to Corner")
         translatesAutoresizingMaskIntoConstraints = false
         widthAnchor.constraint(equalToConstant: 28).isActive = true
         heightAnchor.constraint(equalToConstant: 26).isActive = true
@@ -57,12 +67,12 @@ final class PictureInPicturePinControl: NSPopUpButton {
         addItem(withTitle: "")
         item(at: 0)?.image = Self.symbol("arrow.up.and.down.and.arrow.left.and.right")
 
-        addOption(title: String(localized: "Free Position"), value: "", symbolName: "arrow.up.and.down.and.arrow.left.and.right")
-        addOption(title: String(localized: "Snap Top Left"), value: PictureInPictureCorner.topLeft.rawValue, symbolName: "arrow.up.left.square")
-        addOption(title: String(localized: "Snap Top Right"), value: PictureInPictureCorner.topRight.rawValue, symbolName: "arrow.up.right.square")
-        addOption(title: String(localized: "Snap Bottom Left"), value: PictureInPictureCorner.bottomLeft.rawValue, symbolName: "arrow.down.left.square")
-        addOption(title: String(localized: "Snap Bottom Right"), value: PictureInPictureCorner.bottomRight.rawValue, symbolName: "arrow.down.right.square")
-        addOption(title: String(localized: "Snap Center"), value: PictureInPictureCorner.center.rawValue, symbolName: "rectangle.center.inset.filled")
+        addOption(title: localizedText("Free Position"), value: "", symbolName: "arrow.up.and.down.and.arrow.left.and.right")
+        addOption(title: localizedText("Snap Top Left"), value: PictureInPictureCorner.topLeft.rawValue, symbolName: "arrow.up.left.square")
+        addOption(title: localizedText("Snap Top Right"), value: PictureInPictureCorner.topRight.rawValue, symbolName: "arrow.up.right.square")
+        addOption(title: localizedText("Snap Bottom Left"), value: PictureInPictureCorner.bottomLeft.rawValue, symbolName: "arrow.down.left.square")
+        addOption(title: localizedText("Snap Bottom Right"), value: PictureInPictureCorner.bottomRight.rawValue, symbolName: "arrow.down.right.square")
+        addOption(title: localizedText("Snap Center"), value: PictureInPictureCorner.center.rawValue, symbolName: "rectangle.center.inset.filled")
         isRebuilding = false
         select(corner: nil)
     }
@@ -99,7 +109,7 @@ final class PictureInPicturePinControl: NSPopUpButton {
             symbolName = "arrow.up.and.down.and.arrow.left.and.right"
         }
         item(at: 0)?.image = Self.symbol(symbolName)
-        let title = selectedItem?.title.isEmpty == false ? selectedItem?.title : String(localized: "Snap to Corner")
+        let title = selectedItem?.title.isEmpty == false ? selectedItem?.title : localizedText("Snap to Corner")
         toolTip = title
         setAccessibilityValue(title)
     }

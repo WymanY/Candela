@@ -23,6 +23,8 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
     public var pictureInPictureMode: PictureInPictureMode
     public var pictureInPictureMirrored: Bool
     public var pictureInPictureWindow: PictureInPictureWindowIdentity?
+    public var isMirroringBuiltIn: Bool
+    public var canMirrorBuiltIn: Bool
 
     public init(
         id: DisplayIdentity,
@@ -45,7 +47,9 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
         pictureInPictureActive: Bool = false,
         pictureInPictureMode: PictureInPictureMode = .display,
         pictureInPictureMirrored: Bool = false,
-        pictureInPictureWindow: PictureInPictureWindowIdentity? = nil
+        pictureInPictureWindow: PictureInPictureWindowIdentity? = nil,
+        isMirroringBuiltIn: Bool = false,
+        canMirrorBuiltIn: Bool = false
     ) {
         self.id = id
         self.sessionDisplayID = sessionDisplayID
@@ -68,6 +72,8 @@ public struct DisplaySnapshot: Identifiable, Equatable, Sendable {
         self.pictureInPictureMode = pictureInPictureMode
         self.pictureInPictureMirrored = pictureInPictureMirrored
         self.pictureInPictureWindow = pictureInPictureWindow
+        self.isMirroringBuiltIn = isMirroringBuiltIn
+        self.canMirrorBuiltIn = canMirrorBuiltIn
     }
 
     public var displayName: String { name }

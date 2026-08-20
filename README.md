@@ -2,6 +2,8 @@
 
 Candela 是一款原生 macOS 菜单栏应用，用来控制本机接上的每一块显示器。它可以调节苹果屏和第三方显示器的亮度，在显示器带 HDMI/DP 音箱时调节音量，旋转外接屏，切换 DDC 输入，并把指定屏幕镜像到浮动画中画窗口。1.1 起，画中画可以调透明度、点击穿透、钉角落，也能记住上次的位置和大小。1.2 起还可以跟窗口、左右镜像、放大光标附近，以及把多块屏收成监视墙。
 
+1.3 起，键盘亮度键调节内建屏时，其他显示器可以按相对偏移一起变化，不必接管媒体键。
+
 这是一个 AppKit 菜单栏应用。Bundle ID：`app.candela.macos`。
 
 English: [README.en.md](README.en.md)
@@ -21,6 +23,7 @@ English: [README.en.md](README.en.md)
 - 第三方 HDMI / DisplayPort / USB-C 显示器在 Apple Silicon 上走 DDC/CI VCP `0x10`。
 - 硬件控制不可用或失败时，回退到软件 gamma 调光，并保持 LUT，避免被 WindowServer 冲掉。
 - Night / Desk / Max 预设：20%、50%、100%。
+- 可选择跟随键盘亮度：打开后，F1/F2 只动内建屏时，外接屏按相对偏移一起变。该开关只对本次启动有效。拖某一块屏的滑条只会改它自己的偏移。
 - 场景会记住每块屏当时的亮度、音量、静音、对比度、输入、旋转和画中画状态，以及当前扬声器输出、音量和静音，之后一键还原。
 - Match All 会把一块屏的亮度（以及可用的音量/对比度）同步到其他屏。
 - 显示器重新接入时，可以恢复上次亮度。
@@ -37,6 +40,7 @@ English: [README.en.md](README.en.md)
 - 显示器响应对应 VCP 时，支持 DDC 对比度（`0x12`）和输入切换（`0x60`）。
 - 外接屏可旋转时，支持 0° / 90° / 180° / 270°。
 - 内建屏不提供旋转。
+- 面板底部的 Mirror 会把外接屏镜像到内置屏；再点一次按上次的排列恢复。镜像后外接行会暂时隐藏，按钮仍留在底部。
 
 ### 画中画
 
@@ -50,7 +54,7 @@ English: [README.en.md](README.en.md)
 - 标题栏可调透明度（最低 25%），也能打开点击穿透：点预览画面会点到下面的窗口，鼠标停在 PiP 上时滚轮仍缩放这个窗口。鼠标停在窗口上时，⌘W 关闭这个 PiP。
 - 可钉在左上 / 右上 / 左下 / 右下，或居中。拖离钉住的位置会自动取消。
 - 每块屏会记住上次的位置、大小、透明度、点击穿透、钉角、镜像、模式和窗口身份，关掉后再开会回到原处。
-- 监视墙把所有真实屏缩成一格，位置单独记住，缩放上限跟着当前屏幕走。Sidecar 等虚拟屏不会进墙。窗口列表会去掉 Display Backstop 这类系统垫底层。
+- 监视墙把所有真实屏缩成一格，位置单独记住，缩放上限跟着当前屏幕走。Sidecar 等虚拟屏不会进墙。窗口列表会去掉 Display Backstop 这类系统垫底层，以及 Screen Studio Window Picker Highlighter 这类纯黑覆盖窗。
 - 按源屏像素采集，文字更清楚。
 - 需要「屏幕录制」权限。
 - Sidecar 等虚拟屏不支持。
@@ -74,6 +78,7 @@ English: [README.en.md](README.en.md)
 
 - 登录时启动
 - 重新接入时恢复上次亮度
+- 跟随键盘亮度
 - 开关软件调光
 - 允许调到全黑
 - 滑条旁显示百分比
@@ -100,6 +105,8 @@ swift run --package-path . candela-cli set-pip-wall --enabled true
 swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
+swift run --package-path . candela-cli set-mirror
+swift run --package-path . candela-cli set-follow-keyboard --enabled true
 swift run --package-path . candela-cli scenes
 swift run --package-path . candela-cli save-scene --name Night
 swift run --package-path . candela-cli apply-scene Night
@@ -207,6 +214,11 @@ swift test --package-path .
 ```
 
 CI 还会在 macOS 14 上构建 **Candela** 和 **CandelaMAS**。
+
+## 1.3
+
+- 键盘亮度键调节内建屏时，其他显示器按相对偏移一起变化。
+- 菜单栏和设置里都可以打开跟随，只对本次启动有效；下次启动仍是关闭。关掉后，每块屏仍可单独调节。
 
 ## 1.2
 

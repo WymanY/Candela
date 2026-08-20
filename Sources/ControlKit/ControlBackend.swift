@@ -16,11 +16,15 @@ public struct ControlBackend {
     public var rename: (String, String?) -> Bool
     public var applyPreset: (BrightnessPreset, String?) -> Void
     public var matchAll: (String) -> Void
+    public var toggleBuiltInMirror: () -> Bool
+    public var isMirroringBuiltIn: () -> Bool
     public var scenes: () -> [DisplayScene]
     public var applyScene: (String) -> DisplayScene?
     public var saveScene: (String) -> DisplayScene?
     public var renameScene: (String, String) -> DisplayScene?
     public var deleteScene: (String) -> Bool
+    public var followKeyboardBrightness: () -> Bool
+    public var setFollowKeyboardBrightness: (Bool) -> Void
     public var dump: (Bool) -> String
 
     public init(
@@ -38,11 +42,15 @@ public struct ControlBackend {
         rename: @escaping (String, String?) -> Bool,
         applyPreset: @escaping (BrightnessPreset, String?) -> Void,
         matchAll: @escaping (String) -> Void,
+        toggleBuiltInMirror: @escaping () -> Bool = { false },
+        isMirroringBuiltIn: @escaping () -> Bool = { false },
         scenes: @escaping () -> [DisplayScene] = { [] },
         applyScene: @escaping (String) -> DisplayScene? = { _ in nil },
         saveScene: @escaping (String) -> DisplayScene? = { _ in nil },
         renameScene: @escaping (String, String) -> DisplayScene? = { _, _ in nil },
         deleteScene: @escaping (String) -> Bool = { _ in false },
+        followKeyboardBrightness: @escaping () -> Bool = { false },
+        setFollowKeyboardBrightness: @escaping (Bool) -> Void = { _ in },
         dump: @escaping (Bool) -> String
     ) {
         self.snapshots = snapshots
@@ -59,11 +67,15 @@ public struct ControlBackend {
         self.rename = rename
         self.applyPreset = applyPreset
         self.matchAll = matchAll
+        self.toggleBuiltInMirror = toggleBuiltInMirror
+        self.isMirroringBuiltIn = isMirroringBuiltIn
         self.scenes = scenes
         self.applyScene = applyScene
         self.saveScene = saveScene
         self.renameScene = renameScene
         self.deleteScene = deleteScene
+        self.followKeyboardBrightness = followKeyboardBrightness
+        self.setFollowKeyboardBrightness = setFollowKeyboardBrightness
         self.dump = dump
     }
 }
@@ -89,6 +101,26 @@ public enum ControlRouter {
                 ok: true,
                 displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
                 pictureInPictureWall: backend.isPictureInPictureWallOpen()
+            )
+        case .setBuiltInMirror:
+            guard backend.toggleBuiltInMirror() else {
+                return .failure("Could not update built-in mirroring.")
+            }
+            return ControlResponse(
+                ok: true,
+                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
+                isMirroringBuiltIn: backend.isMirroringBuiltIn()
+            )
+        case .setFollowKeyboardBrightness:
+            let enabled = request.followKeyboardBrightness ?? request.muted
+            guard let enabled else {
+                return .failure("followKeyboardBrightness true/false is required.")
+            }
+            backend.setFollowKeyboardBrightness(enabled)
+            return ControlResponse(
+                ok: true,
+                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
+                followKeyboardBrightness: backend.followKeyboardBrightness()
             )
         case .applyScene:
             guard let query = sceneQuery(request) else {
@@ -256,7 +288,7 @@ public enum ControlRouter {
         case .matchAll:
             backend.matchAll(key)
         case .list, .dump, .listScenes, .setPictureInPictureWall, .preset,
-             .applyScene, .saveScene, .renameScene, .deleteScene:
+             .applyScene, .saveScene, .renameScene, .deleteScene, .setBuiltInMirror, .setFollowKeyboardBrightness:
             return .failure("unreachable")
         }
         return summary(displayKey: key, backend: backend)

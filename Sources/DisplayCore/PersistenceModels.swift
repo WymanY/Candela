@@ -10,6 +10,8 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
     public var hasShownGammaInterferenceAlert: Bool
     public var hasOpenedPanelOnce: Bool
     public var pictureInPictureWall: PictureInPicturePlacement?
+    /// Last extended arrangement captured before mirroring onto the built-in display.
+    public var lastExtendedArrangement: DisplayArrangementSnapshot?
     /// Empty string follows the system language. Otherwise a language identifier such as `en` or `zh-Hans`.
     public var preferredLanguage: String
 
@@ -23,6 +25,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         hasShownGammaInterferenceAlert: Bool = false,
         hasOpenedPanelOnce: Bool = false,
         pictureInPictureWall: PictureInPicturePlacement? = nil,
+        lastExtendedArrangement: DisplayArrangementSnapshot? = nil,
         preferredLanguage: String = ""
     ) {
         self.schemaVersion = schemaVersion
@@ -34,6 +37,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         self.hasShownGammaInterferenceAlert = hasShownGammaInterferenceAlert
         self.hasOpenedPanelOnce = hasOpenedPanelOnce
         self.pictureInPictureWall = pictureInPictureWall
+        self.lastExtendedArrangement = lastExtendedArrangement
         self.preferredLanguage = preferredLanguage
     }
 
@@ -48,6 +52,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         hasShownGammaInterferenceAlert = try container.decodeIfPresent(Bool.self, forKey: .hasShownGammaInterferenceAlert) ?? false
         hasOpenedPanelOnce = try container.decodeIfPresent(Bool.self, forKey: .hasOpenedPanelOnce) ?? false
         pictureInPictureWall = try container.decodeIfPresent(PictureInPicturePlacement.self, forKey: .pictureInPictureWall)
+        lastExtendedArrangement = try container.decodeIfPresent(DisplayArrangementSnapshot.self, forKey: .lastExtendedArrangement)
         preferredLanguage = try container.decodeIfPresent(String.self, forKey: .preferredLanguage) ?? ""
     }
 }
