@@ -205,9 +205,10 @@ public enum PictureInPictureWindowMatching {
 
     public static func match(
         identity: PictureInPictureWindowIdentity,
-        candidates: [PictureInPictureWindowCandidate]
+        candidates: [PictureInPictureWindowCandidate],
+        preferringDisplay displayID: UInt32? = nil
     ) -> PictureInPictureWindowCandidate? {
-        let pool = sameApp(as: identity, in: candidates)
+        let pool = sameApp(as: identity, in: scopedToDisplay(candidates, displayID: displayID))
         guard !pool.isEmpty else { return nil }
         if let exact = pool.first(where: { normalize($0.title) == normalize(identity.title) && !identity.title.isEmpty }) {
             return exact
@@ -237,6 +238,7 @@ public enum PictureInPictureWindowMatching {
         if !bundle.isEmpty {
             pool = pool.filter { $0.bundleIdentifier.compare(bundle, options: .caseInsensitive) == .orderedSame }
         }
+        pool = scopedToDisplay(pool, displayID: displayID)
         if query.isEmpty {
             return preferred(pool, displayID: displayID)
         }
@@ -260,6 +262,35 @@ public enum PictureInPictureWindowMatching {
             return lhs.0.title.localizedCaseInsensitiveCompare(rhs.0.title) == .orderedAscending
         }
         return scored.first?.0
+    }
+
+    /// Prefer the display whose frame covers the most of this window.
+    public static func displayIDContaining(
+        _ frame: CGRect,
+        displays: [(id: UInt32, bounds: CGRect)]
+    ) -> UInt32? {
+        let ranked = displays
+            .map { item -> (id: UInt32, area: CGFloat) in
+                let overlap = item.bounds.intersection(frame)
+                let area = overlap.isNull ? 0 : overlap.width * overlap.height
+                return (item.id, area)
+            }
+            .filter { $0.area > 1 }
+            .sorted { $0.area > $1.area }
+        if let best = ranked.first {
+            return best.id
+        }
+        let point = CGPoint(x: frame.midX, y: frame.midY)
+        return displays.first(where: { $0.bounds.insetBy(dx: -2, dy: -2).contains(point) })?.id
+    }
+
+    /// A display's PiP should only follow windows that currently sit on that display.
+    public static func scopedToDisplay(
+        _ candidates: [PictureInPictureWindowCandidate],
+        displayID: UInt32?
+    ) -> [PictureInPictureWindowCandidate] {
+        guard let displayID else { return candidates }
+        return candidates.filter { $0.displayID == displayID }
     }
 
     public static func preferred(

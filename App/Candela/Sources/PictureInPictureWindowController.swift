@@ -953,7 +953,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         in candidates: [PictureInPictureWindowCandidate],
         displayID: CGDirectDisplayID
     ) -> PictureInPictureWindowCandidate? {
-        if let match = PictureInPictureWindowMatching.match(identity: identity, candidates: candidates) {
+        if let match = PictureInPictureWindowMatching.match(
+            identity: identity,
+            candidates: candidates,
+            preferringDisplay: displayID
+        ) {
             return match
         }
         let query = identity.title.isEmpty ? identity.ownerName : identity.title
