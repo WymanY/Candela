@@ -90,121 +90,6 @@ public enum ControlRouter {
             return ControlResponse(ok: true, dump: backend.dump(request.redact ?? true))
         case .listScenes:
             return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: all) })
-        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .configurePictureInPicture, .setPictureInPictureWall, .rename, .preset, .matchAll, .setBuiltInMirror, .applyScene, .saveScene, .renameScene, .deleteScene, .setFollowKeyboardBrightness:
-            break
-        }
-
-        let query = request.display?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let resolved: DisplaySnapshot?
-        if request.action == .preset, query.isEmpty || query.lowercased() == "all" {
-            resolved = nil
-        } else if [.applyScene, .saveScene, .renameScene, .deleteScene, .setPictureInPictureWall, .setBuiltInMirror, .setFollowKeyboardBrightness].contains(request.action) {
-            resolved = nil
-        } else {
-            guard !query.isEmpty else {
-                return .failure("Display query required. Use a name, persistentKey, main, builtin, or external.")
-            }
-            guard let match = DisplayQuery.resolve(query, in: all) else {
-                return .failure("No display matched '\(query)'.")
-            }
-            resolved = match
-        }
-
-        switch request.action {
-        case .list, .dump, .listScenes:
-            return .failure("unreachable")
-        case .get:
-            return .success(displays: [ControlDisplayDTO(snapshot: resolved!)])
-        case .setBrightness:
-            guard let value = request.value else { return .failure("Brightness value 0...1 is required.") }
-            guard resolved!.brightness.showsBrightnessSlider else {
-                return .failure("\(resolved!.name) has no brightness control.")
-            }
-            backend.setBrightness(resolved!.id.persistentKey, value)
-        case .setVolume:
-            guard let value = request.value else { return .failure("Volume value 0...1 is required.") }
-            guard resolved!.volume.supportsVolume else {
-                return .failure("\(resolved!.name) has no volume control.")
-            }
-            backend.setVolume(resolved!.id.persistentKey, value)
-        case .setMuted:
-            guard let muted = request.muted else { return .failure("muted true/false is required.") }
-            guard resolved!.volume.supportsMute || resolved!.volume.supportsVolume else {
-                return .failure("\(resolved!.name) has no mute control.")
-            }
-            backend.setMuted(resolved!.id.persistentKey, muted)
-        case .setContrast:
-            guard let value = request.value else { return .failure("Contrast value 0...1 is required.") }
-            guard resolved!.contrast.supportsContrast else {
-                return .failure("\(resolved!.name) has no contrast control.")
-            }
-            backend.setContrast(resolved!.id.persistentKey, value)
-        case .setInput:
-            guard let raw = request.input, let source = DisplayInputSource.from(query: raw) else {
-                return .failure("Input must be hdmi1, hdmi2, dp, dp2, usbc, or a VCP 0x60 code.")
-            }
-            guard resolved!.input.supportsInputSelect else {
-                return .failure("\(resolved!.name) has no DDC input select.")
-            }
-            backend.setInput(resolved!.id.persistentKey, source)
-        case .setRotation:
-            guard let raw = request.rotation, let rotation = DisplayRotation.from(query: raw) else {
-                return .failure("Rotation must be 0, 90, 180, 270, landscape, or portrait.")
-            }
-            guard !resolved!.isBuiltin, resolved!.rotation.supportsRotation else {
-                return .failure("\(resolved!.name) cannot rotate.")
-            }
-            backend.setRotation(resolved!.id.persistentKey, rotation)
-        case .setPictureInPicture:
-            guard let enabled = request.pictureInPicture else {
-                return .failure("pictureInPicture true/false is required.")
-            }
-            guard PictureInPictureLayout.supports(kind: resolved!.kind) else {
-                return .failure("\(resolved!.name) cannot open Picture in Picture.")
-            }
-            guard backend.setPictureInPicture(resolved!.id.persistentKey, enabled) else {
-                return .failure("Could not update Picture in Picture for \(resolved!.name).")
-            }
-        case .configurePictureInPicture:
-            guard PictureInPictureLayout.supports(kind: resolved!.kind) else {
-                return .failure("\(resolved!.name) cannot open Picture in Picture.")
-            }
-            let mode: PictureInPictureMode?
-            if let raw = request.pictureInPictureMode {
-                guard let parsed = PictureInPictureMode.from(query: raw) else {
-                    return .failure("Picture in Picture mode must be display, window, or magnifier.")
-                }
-                mode = parsed
-            } else {
-                mode = nil
-            }
-            let window: PictureInPictureWindowIdentity?
-            if let raw = request.pictureInPictureWindow?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
-                window = PictureInPictureWindowIdentity(
-                    bundleIdentifier: request.pictureInPictureBundle ?? "",
-                    title: raw,
-                    ownerName: raw
-                )
-            } else if mode == .display || mode == .magnifier {
-                window = nil
-            } else {
-                window = nil
-            }
-            if mode == .window, window == nil {
-                return .failure("Window name or bundle is required for window Picture in Picture.")
-            }
-            if request.pictureInPicture == true {
-                _ = backend.setPictureInPicture(resolved!.id.persistentKey, true)
-            }
-            guard backend.configurePictureInPicture(
-                resolved!.id.persistentKey,
-                mode,
-                request.pictureInPictureMirrored,
-                window,
-                request.pictureInPictureZoom
-            ) else {
-                return .failure("Could not configure Picture in Picture for \(resolved!.name).")
-            }
         case .setPictureInPictureWall:
             guard let enabled = request.pictureInPicture else {
                 return .failure("pictureInPicture true/false is required.")
@@ -217,17 +102,6 @@ public enum ControlRouter {
                 displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
                 pictureInPictureWall: backend.isPictureInPictureWallOpen()
             )
-        case .rename:
-            guard backend.rename(resolved!.id.persistentKey, request.name) else {
-                return .failure("Could not rename \(resolved!.name).")
-            }
-        case .preset:
-            guard let raw = request.preset, let preset = BrightnessPreset(rawValue: raw.lowercased()) else {
-                return .failure("Preset must be night, desk, or max.")
-            }
-            backend.applyPreset(preset, resolved?.id.persistentKey)
-        case .matchAll:
-            backend.matchAll(resolved!.id.persistentKey)
         case .setBuiltInMirror:
             guard backend.toggleBuiltInMirror() else {
                 return .failure("Could not update built-in mirroring.")
@@ -236,6 +110,17 @@ public enum ControlRouter {
                 ok: true,
                 displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
                 isMirroringBuiltIn: backend.isMirroringBuiltIn()
+            )
+        case .setFollowKeyboardBrightness:
+            let enabled = request.followKeyboardBrightness ?? request.muted
+            guard let enabled else {
+                return .failure("followKeyboardBrightness true/false is required.")
+            }
+            backend.setFollowKeyboardBrightness(enabled)
+            return ControlResponse(
+                ok: true,
+                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
+                followKeyboardBrightness: backend.followKeyboardBrightness()
             )
         case .applyScene:
             guard let query = sceneQuery(request) else {
@@ -264,17 +149,6 @@ public enum ControlRouter {
                 return .failure("No scene matched '\(query)'.")
             }
             return sceneResponse(scene, backend: backend)
-        case .setFollowKeyboardBrightness:
-            let enabled = request.followKeyboardBrightness ?? request.muted
-            guard let enabled else {
-                return .failure("followKeyboardBrightness true/false is required.")
-            }
-            backend.setFollowKeyboardBrightness(enabled)
-            return ControlResponse(
-                ok: true,
-                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
-                followKeyboardBrightness: backend.followKeyboardBrightness()
-            )
         case .deleteScene:
             guard let query = sceneQuery(request) else {
                 return .failure("Scene name or id is required.")
@@ -283,11 +157,163 @@ public enum ControlRouter {
                 return .failure("No scene matched '\(query)'.")
             }
             return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: backend.snapshots()) })
+        case .preset:
+            return applyPreset(request, all: all, backend: backend)
+        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation,
+             .setPictureInPicture, .configurePictureInPicture, .rename, .matchAll:
+            switch resolveDisplay(request.display, in: all) {
+            case .failure(let failure):
+                return failure
+            case .success(let display):
+                return applyDisplayAction(request, display: display, backend: backend)
+            }
         }
+    }
 
+    private static func applyPreset(_ request: ControlRequest, all: [DisplaySnapshot], backend: ControlBackend) -> ControlResponse {
+        let query = request.display?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var target: DisplaySnapshot?
+        if !query.isEmpty, query.lowercased() != "all" {
+            switch resolveDisplay(request.display, in: all) {
+            case .failure(let failure):
+                return failure
+            case .success(let display):
+                target = display
+            }
+        }
+        guard let raw = request.preset, let preset = BrightnessPreset(rawValue: raw.lowercased()) else {
+            return .failure("Preset must be night, desk, or max.")
+        }
+        backend.applyPreset(preset, target?.id.persistentKey)
+        return summary(displayKey: target?.id.persistentKey, backend: backend)
+    }
+
+    private static func applyDisplayAction(_ request: ControlRequest, display: DisplaySnapshot, backend: ControlBackend) -> ControlResponse {
+        let key = display.id.persistentKey
+        switch request.action {
+        case .get:
+            return .success(displays: [ControlDisplayDTO(snapshot: display)])
+        case .setBrightness:
+            guard let value = request.value else { return .failure("Brightness value 0...1 is required.") }
+            guard display.brightness.showsBrightnessSlider else {
+                return .failure("\(display.name) has no brightness control.")
+            }
+            backend.setBrightness(key, value)
+        case .setVolume:
+            guard let value = request.value else { return .failure("Volume value 0...1 is required.") }
+            guard display.volume.supportsVolume else {
+                return .failure("\(display.name) has no volume control.")
+            }
+            backend.setVolume(key, value)
+        case .setMuted:
+            guard let muted = request.muted else { return .failure("muted true/false is required.") }
+            guard display.volume.supportsMute || display.volume.supportsVolume else {
+                return .failure("\(display.name) has no mute control.")
+            }
+            backend.setMuted(key, muted)
+        case .setContrast:
+            guard let value = request.value else { return .failure("Contrast value 0...1 is required.") }
+            guard display.contrast.supportsContrast else {
+                return .failure("\(display.name) has no contrast control.")
+            }
+            backend.setContrast(key, value)
+        case .setInput:
+            guard let raw = request.input, let source = DisplayInputSource.from(query: raw) else {
+                return .failure("Input must be hdmi1, hdmi2, dp, dp2, usbc, or a VCP 0x60 code.")
+            }
+            guard display.input.supportsInputSelect else {
+                return .failure("\(display.name) has no DDC input select.")
+            }
+            backend.setInput(key, source)
+        case .setRotation:
+            guard let raw = request.rotation, let rotation = DisplayRotation.from(query: raw) else {
+                return .failure("Rotation must be 0, 90, 180, 270, landscape, or portrait.")
+            }
+            guard !display.isBuiltin, display.rotation.supportsRotation else {
+                return .failure("\(display.name) cannot rotate.")
+            }
+            backend.setRotation(key, rotation)
+        case .setPictureInPicture:
+            guard let enabled = request.pictureInPicture else {
+                return .failure("pictureInPicture true/false is required.")
+            }
+            guard PictureInPictureLayout.supports(kind: display.kind) else {
+                return .failure("\(display.name) cannot open Picture in Picture.")
+            }
+            guard backend.setPictureInPicture(key, enabled) else {
+                return .failure("Could not update Picture in Picture for \(display.name).")
+            }
+        case .configurePictureInPicture:
+            guard PictureInPictureLayout.supports(kind: display.kind) else {
+                return .failure("\(display.name) cannot open Picture in Picture.")
+            }
+            let mode: PictureInPictureMode?
+            if let raw = request.pictureInPictureMode {
+                guard let parsed = PictureInPictureMode.from(query: raw) else {
+                    return .failure("Picture in Picture mode must be display, window, or magnifier.")
+                }
+                mode = parsed
+            } else {
+                mode = nil
+            }
+            let window: PictureInPictureWindowIdentity?
+            if let raw = request.pictureInPictureWindow?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+                window = PictureInPictureWindowIdentity(
+                    bundleIdentifier: request.pictureInPictureBundle ?? "",
+                    title: raw,
+                    ownerName: raw
+                )
+            } else {
+                window = nil
+            }
+            if mode == .window, window == nil {
+                return .failure("Window name or bundle is required for window Picture in Picture.")
+            }
+            if request.pictureInPicture == true {
+                _ = backend.setPictureInPicture(key, true)
+            }
+            guard backend.configurePictureInPicture(
+                key,
+                mode,
+                request.pictureInPictureMirrored,
+                window,
+                request.pictureInPictureZoom
+            ) else {
+                return .failure("Could not configure Picture in Picture for \(display.name).")
+            }
+        case .rename:
+            guard backend.rename(key, request.name) else {
+                return .failure("Could not rename \(display.name).")
+            }
+        case .matchAll:
+            backend.matchAll(key)
+        case .list, .dump, .listScenes, .setPictureInPictureWall, .preset,
+             .applyScene, .saveScene, .renameScene, .deleteScene, .setBuiltInMirror, .setFollowKeyboardBrightness:
+            return .failure("unreachable")
+        }
+        return summary(displayKey: key, backend: backend)
+    }
+
+    private enum DisplayResolution {
+        case success(DisplaySnapshot)
+        case failure(ControlResponse)
+    }
+
+    private static func resolveDisplay(_ rawQuery: String?, in all: [DisplaySnapshot]) -> DisplayResolution {
+        let query = rawQuery?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !query.isEmpty else {
+            return .failure(.failure("Display query required. Use a name, persistentKey, main, builtin, or external."))
+        }
+        guard let match = DisplayQuery.resolve(query, in: all) else {
+            return .failure(.failure("No display matched '\(query)'."))
+        }
+        return .success(match)
+    }
+
+    private static func summary(displayKey: String?, backend: ControlBackend) -> ControlResponse {
         let latest = backend.snapshots()
         let wall = backend.isPictureInPictureWallOpen()
-        if let resolved, let current = latest.first(where: { $0.id.persistentKey == resolved.id.persistentKey }) {
+        if let displayKey, let current = latest.first(where: { $0.id.persistentKey == displayKey }) {
             return ControlResponse(ok: true, displays: [ControlDisplayDTO(snapshot: current)], pictureInPictureWall: wall)
         }
         return ControlResponse(ok: true, displays: latest.map(ControlDisplayDTO.init(snapshot:)), pictureInPictureWall: wall)
