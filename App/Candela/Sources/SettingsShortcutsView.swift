@@ -51,6 +51,7 @@ final class SettingsShortcutsView: NSView {
             title: localizedText("Picture in Picture"),
             rows: [
                 (localizedText("Close Picture in Picture"), "⌘W"),
+                (localizedText("Exit source control"), "⌃Esc"),
                 (localizedText("Scroll to zoom"), localizedText("Scroll")),
                 (localizedText("Space-drag to pan"), localizedText("Space-drag")),
             ]

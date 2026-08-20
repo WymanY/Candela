@@ -51,6 +51,7 @@ public struct PictureInPicturePlacement: Codable, Equatable, Sendable {
     public var mode: PictureInPictureMode
     public var window: PictureInPictureWindowIdentity?
     public var magnifierZoom: Double
+    public var controlSource: Bool
 
     public init(
         opacity: Double = 1,
@@ -61,10 +62,15 @@ public struct PictureInPicturePlacement: Codable, Equatable, Sendable {
         mirrored: Bool = false,
         mode: PictureInPictureMode = .display,
         window: PictureInPictureWindowIdentity? = nil,
-        magnifierZoom: Double = PictureInPictureMagnifier.defaultZoom
+        magnifierZoom: Double = PictureInPictureMagnifier.defaultZoom,
+        controlSource: Bool = false
     ) {
         self.opacity = PictureInPictureLayout.clampedOpacity(opacity)
-        self.clickThrough = clickThrough
+        self.controlSource = controlSource
+        self.clickThrough = PictureInPictureInteraction.resolvedClickThrough(
+            clickThrough: clickThrough,
+            controlSource: controlSource
+        )
         self.corner = corner
         self.frame = frame
         self.hostDisplayID = hostDisplayID
@@ -79,7 +85,11 @@ public struct PictureInPicturePlacement: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         opacity = PictureInPictureLayout.clampedOpacity(try container.decodeIfPresent(Double.self, forKey: .opacity) ?? 1)
-        clickThrough = try container.decodeIfPresent(Bool.self, forKey: .clickThrough) ?? false
+        controlSource = try container.decodeIfPresent(Bool.self, forKey: .controlSource) ?? false
+        clickThrough = PictureInPictureInteraction.resolvedClickThrough(
+            clickThrough: try container.decodeIfPresent(Bool.self, forKey: .clickThrough) ?? false,
+            controlSource: controlSource
+        )
         corner = try container.decodeIfPresent(PictureInPictureCorner.self, forKey: .corner)
         frame = try container.decodeIfPresent(PictureInPictureFrame.self, forKey: .frame)
         hostDisplayID = try container.decodeIfPresent(UInt32.self, forKey: .hostDisplayID)

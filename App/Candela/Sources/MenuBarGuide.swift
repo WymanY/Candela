@@ -101,7 +101,7 @@ final class MenuBarGuideController: NSWindowController {
         title.translatesAutoresizingMaskIntoConstraints = false
 
         let body = NSTextField(wrappingLabelWithString: localizedText("""
-        Candela does not need Accessibility, Screen Recording, or other privacy permissions.
+        The hidden icon is not a privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.
 
         macOS 26 added a switch that hides third-party status items by default. Open:
 

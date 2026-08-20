@@ -130,6 +130,7 @@ final class PersistenceStoreTests: XCTestCase {
         let loaded = store.record(for: "v1:tv")?.pictureInPicture
         XCTAssertEqual(loaded?.opacity ?? -1, 0.55, accuracy: 0.0001)
         XCTAssertEqual(loaded?.clickThrough, true)
+        XCTAssertEqual(loaded?.controlSource, false)
         XCTAssertEqual(loaded?.corner, .topLeft)
         XCTAssertEqual(loaded?.frame?.x ?? -1, 80, accuracy: 0.0001)
         XCTAssertEqual(loaded?.hostDisplayID, 7)
@@ -137,6 +138,11 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertEqual(loaded?.mode, .magnifier)
         XCTAssertEqual(loaded?.window?.title, "#design")
         XCTAssertEqual(loaded?.magnifierZoom ?? -1, 3, accuracy: 0.0001)
+
+        record.pictureInPicture = PictureInPicturePlacement(clickThrough: true, controlSource: true)
+        store.save(record)
+        XCTAssertEqual(store.record(for: "v1:tv")?.pictureInPicture?.controlSource, true)
+        XCTAssertEqual(store.record(for: "v1:tv")?.pictureInPicture?.clickThrough, false)
 
         var settings = store.global()
         settings.pictureInPictureWall = PictureInPicturePlacement(opacity: 0.8, corner: .bottomLeft)
