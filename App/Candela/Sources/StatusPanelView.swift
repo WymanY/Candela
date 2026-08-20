@@ -29,6 +29,7 @@ final class StatusPanelView: NSView {
     private let footer = NSView()
     private var rows: [DisplayRowView] = []
     private var rowKeys: [String] = []
+    var isDraggingBrightness = false
     var onOpenSettings: (() -> Void)?
     var onQuit: (() -> Void)?
 
@@ -128,10 +129,12 @@ final class StatusPanelView: NSView {
             applySpeaker()
             applyBattery()
             syncPresetSelection(with: snapshots)
-            reloadScenes()
-            syncWallButton()
-            syncMirrorButton()
-            syncFollowButton()
+            if !isDraggingBrightness {
+                reloadScenes()
+                syncWallButton()
+                syncMirrorButton()
+                syncFollowButton()
+            }
             return
         }
         rowKeys = keys
@@ -158,8 +161,14 @@ final class StatusPanelView: NSView {
             let key = snapshot.id.persistentKey
             row.onBrightness = { [weak self] value in
                 guard let self else { return }
+                self.isDraggingBrightness = true
                 self.session.setBrightness(key: key, value: value)
                 self.syncPresetSelection(with: self.session.snapshots)
+            }
+            row.onBrightnessTrackingEnded = { [weak self] in
+                guard let self else { return }
+                self.isDraggingBrightness = false
+                self.reload(self.session.snapshots)
             }
             row.onContrast = { [weak self] value in
                 self?.session.setContrast(key: key, value: value)
@@ -397,14 +406,13 @@ final class StatusPanelView: NSView {
         quitButton.translatesAutoresizingMaskIntoConstraints = false
         sizeFooterButton(quitButton)
         footer.addSubview(line)
-        footer.addSubview(quitButton)
 
-        let actions = NSStackView(views: [settingsButton, wallButton, mirrorButton])
+        let actions = NSStackView(views: [settingsButton, wallButton, mirrorButton, quitButton])
         actions.orientation = .horizontal
         actions.alignment = .centerY
-        actions.spacing = 10
+        actions.distribution = .fillEqually
+        actions.spacing = 4
         actions.translatesAutoresizingMaskIntoConstraints = false
-        actions.setHuggingPriority(.required, for: .horizontal)
         footer.addSubview(actions)
 
         NSLayoutConstraint.activate([
@@ -413,10 +421,8 @@ final class StatusPanelView: NSView {
             line.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
             line.topAnchor.constraint(equalTo: footer.topAnchor),
             actions.leadingAnchor.constraint(equalTo: footer.leadingAnchor),
+            actions.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
             actions.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 4),
-            quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor),
-            quitButton.centerYAnchor.constraint(equalTo: actions.centerYAnchor),
-            quitButton.leadingAnchor.constraint(greaterThanOrEqualTo: actions.trailingAnchor, constant: 8),
         ])
     }
 
@@ -542,15 +548,8 @@ final class StatusPanelView: NSView {
     }
 
     private func sizeFooterButton(_ button: NSButton) {
-        button.sizeToFit()
-        let fitting = button.fittingSize
-        let width = max(fitting.width + 4, 44)
-        if let existing = button.constraints.first(where: { $0.firstAttribute == .width && $0.secondItem == nil }) {
-            existing.constant = width
-        } else {
-            button.widthAnchor.constraint(equalToConstant: width).isActive = true
-        }
-        button.setContentHuggingPriority(.required, for: .horizontal)
-        button.setContentCompressionResistancePriority(.required, for: .horizontal)
+        button.lineBreakMode = .byTruncatingTail
+        button.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        button.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     }
 }

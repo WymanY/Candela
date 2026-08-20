@@ -4,6 +4,7 @@ import DisplayCore
 @MainActor
 final class DisplayRowView: NSView {
     var onBrightness: ((Double) -> Void)?
+    var onBrightnessTrackingEnded: (() -> Void)?
     var onContrast: ((Double) -> Void)?
     var onInput: ((DisplayInputSource) -> Void)?
     var onRotation: ((DisplayRotation) -> Void)?
@@ -47,6 +48,9 @@ final class DisplayRowView: NSView {
 
         brightnessSlider.target = self
         brightnessSlider.action = #selector(brightnessChanged(_:))
+        (brightnessSlider as? CandelaSlider)?.onTrackingEnded = { [weak self] in
+            self?.onBrightnessTrackingEnded?()
+        }
         contrastSlider.target = self
         contrastSlider.action = #selector(contrastChanged(_:))
         matchButton.target = self
@@ -156,10 +160,13 @@ final class DisplayRowView: NSView {
         let showsBrightness = !unsupported && snapshot.brightness.showsBrightnessSlider
         brightnessRow.isHidden = !showsBrightness
         if showsBrightness {
-            brightnessSlider.doubleValue = snapshot.brightness.current * 100
-            updateBrightnessPercent(snapshot.brightness.current)
+            let slider = brightnessSlider as? CandelaSlider
+            if slider?.isUserTracking != true {
+                brightnessSlider.doubleValue = snapshot.brightness.current * 100
+                updateBrightnessPercent(snapshot.brightness.current)
+            }
             brightnessSlider.setAccessibilityLabel("\(String(localized: "Brightness")), \(snapshot.name)")
-            brightnessSlider.setAccessibilityValueDescription(percentPhrase(snapshot.brightness.current))
+            brightnessSlider.setAccessibilityValueDescription(percentPhrase(brightnessSlider.doubleValue / 100))
         }
 
         let showHDR = showsBrightness && snapshot.brightness.hdrWashes
