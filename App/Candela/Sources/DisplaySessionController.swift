@@ -327,12 +327,24 @@ final class DisplaySessionController {
             onChange?()
             return true
         }
+        let settings = persistence.global()
+        let hiddenKeys = PictureInPictureWallLayout.restoredHiddenKeys(
+            stored: settings.pictureInPictureWallHiddenKeys,
+            snapshots: snapshots
+        )
+        if hiddenKeys != settings.pictureInPictureWallHiddenKeys {
+            savePictureInPictureWallHiddenKeys(hiddenKeys)
+        }
         let controller = PictureInPictureWallWindowController(
             usePlaceholder: Self.shouldUseFakeHardware,
-            placement: persistence.global().pictureInPictureWall ?? .default
+            placement: settings.pictureInPictureWall ?? .default,
+            hiddenKeys: hiddenKeys
         )
         controller.onPlacementChange = { [weak self] placement in
             self?.savePictureInPictureWallPlacement(placement)
+        }
+        controller.onHiddenKeysChange = { [weak self] keys in
+            self?.savePictureInPictureWallHiddenKeys(keys)
         }
         controller.onClose = { [weak self] in
             guard let self else { return }
@@ -365,6 +377,12 @@ final class DisplaySessionController {
     private func savePictureInPictureWallPlacement(_ placement: PictureInPicturePlacement) {
         var next = settings
         next.pictureInPictureWall = placement
+        persistence.saveGlobal(next)
+    }
+
+    private func savePictureInPictureWallHiddenKeys(_ keys: [String]) {
+        var next = settings
+        next.pictureInPictureWallHiddenKeys = PictureInPictureWallLayout.sanitizedHiddenKeys(keys)
         persistence.saveGlobal(next)
     }
 

@@ -140,8 +140,10 @@ final class PersistenceStoreTests: XCTestCase {
 
         var settings = store.global()
         settings.pictureInPictureWall = PictureInPicturePlacement(opacity: 0.8, corner: .bottomLeft)
+        settings.pictureInPictureWallHiddenKeys = ["v1:tv", "v1:tv", ""]
         store.saveGlobal(settings)
         XCTAssertEqual(store.global().pictureInPictureWall?.corner, .bottomLeft)
+        XCTAssertEqual(store.global().pictureInPictureWallHiddenKeys, ["v1:tv", "v1:tv", ""])
     }
 
     func testSavesLastExtendedArrangement() {

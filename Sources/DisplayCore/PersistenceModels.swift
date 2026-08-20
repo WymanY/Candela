@@ -12,6 +12,8 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
     public var pictureInPictureWall: PictureInPicturePlacement?
     /// Last extended arrangement captured before mirroring onto the built-in display.
     public var lastExtendedArrangement: DisplayArrangementSnapshot?
+    /// Display Overview tiles the user dismissed. Keys stay until restored or every live display is hidden.
+    public var pictureInPictureWallHiddenKeys: [String]
     /// Empty string follows the system language. Otherwise a language identifier such as `en` or `zh-Hans`.
     public var preferredLanguage: String
 
@@ -26,6 +28,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         hasOpenedPanelOnce: Bool = false,
         pictureInPictureWall: PictureInPicturePlacement? = nil,
         lastExtendedArrangement: DisplayArrangementSnapshot? = nil,
+        pictureInPictureWallHiddenKeys: [String] = [],
         preferredLanguage: String = ""
     ) {
         self.schemaVersion = schemaVersion
@@ -38,6 +41,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         self.hasOpenedPanelOnce = hasOpenedPanelOnce
         self.pictureInPictureWall = pictureInPictureWall
         self.lastExtendedArrangement = lastExtendedArrangement
+        self.pictureInPictureWallHiddenKeys = pictureInPictureWallHiddenKeys
         self.preferredLanguage = preferredLanguage
     }
 
@@ -53,6 +57,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         hasOpenedPanelOnce = try container.decodeIfPresent(Bool.self, forKey: .hasOpenedPanelOnce) ?? false
         pictureInPictureWall = try container.decodeIfPresent(PictureInPicturePlacement.self, forKey: .pictureInPictureWall)
         lastExtendedArrangement = try container.decodeIfPresent(DisplayArrangementSnapshot.self, forKey: .lastExtendedArrangement)
+        pictureInPictureWallHiddenKeys = try container.decodeIfPresent([String].self, forKey: .pictureInPictureWallHiddenKeys) ?? []
         preferredLanguage = try container.decodeIfPresent(String.self, forKey: .preferredLanguage) ?? ""
     }
 }

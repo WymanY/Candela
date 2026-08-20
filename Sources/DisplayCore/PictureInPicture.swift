@@ -479,6 +479,58 @@ public enum PictureInPictureWallLayout {
         snapshots.filter { PictureInPictureLayout.supports(kind: $0.kind) }
     }
 
+    public static func sanitizedHiddenKeys(_ stored: [String]) -> [String] {
+        var seen = Set<String>()
+        return stored.filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+
+    public static func visibleSnapshots(
+        _ snapshots: [DisplaySnapshot],
+        hiddenKeys: [String]
+    ) -> [DisplaySnapshot] {
+        let hidden = Set(sanitizedHiddenKeys(hiddenKeys))
+        return self.snapshots(snapshots).filter { !hidden.contains($0.id.persistentKey) }
+    }
+
+    public static func hiding(
+        _ key: String,
+        in stored: [String],
+        among snapshots: [DisplaySnapshot]
+    ) -> [String] {
+        let available = Set(self.snapshots(snapshots).map(\.id.persistentKey))
+        guard available.contains(key) else {
+            return sanitizedHiddenKeys(stored)
+        }
+        return sanitizedHiddenKeys(stored + [key])
+    }
+
+    /// If every live display is hidden, the next open restores the full wall.
+    public static func restoredHiddenKeys(
+        stored: [String],
+        snapshots: [DisplaySnapshot]
+    ) -> [String] {
+        let available = Set(self.snapshots(snapshots).map(\.id.persistentKey))
+        let hidden = sanitizedHiddenKeys(stored)
+        let hiddenLiveCount = hidden.reduce(into: 0) { count, key in
+            if available.contains(key) {
+                count += 1
+            }
+        }
+        if !available.isEmpty, hiddenLiveCount >= available.count {
+            return []
+        }
+        return hidden
+    }
+
+    public static func hasHiddenTiles(
+        stored: [String],
+        snapshots: [DisplaySnapshot]
+    ) -> Bool {
+        let available = Set(self.snapshots(snapshots).map(\.id.persistentKey))
+        let hidden = Set(sanitizedHiddenKeys(stored))
+        return available.contains { hidden.contains($0) }
+    }
+
     public static func grid(for count: Int) -> (columns: Int, rows: Int) {
         switch max(count, 0) {
         case 0: return (0, 0)

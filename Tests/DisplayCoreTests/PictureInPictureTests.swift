@@ -642,6 +642,42 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(grown[1].maxX, 1280, accuracy: 0.001)
     }
 
+    func testMonitorWallCanHideIndividualDisplays() {
+        let snapshots = FakeSnapshots.standard()
+        let available = PictureInPictureWallLayout.snapshots(snapshots)
+        XCTAssertEqual(available.count, 3)
+
+        let hidden = PictureInPictureWallLayout.hiding(
+            available[1].id.persistentKey,
+            in: [],
+            among: snapshots
+        )
+        XCTAssertEqual(hidden, [available[1].id.persistentKey])
+        XCTAssertEqual(
+            PictureInPictureWallLayout.visibleSnapshots(snapshots, hiddenKeys: hidden).map(\.name),
+            [FakeSnapshots.builtInName, FakeSnapshots.hdmiTVName]
+        )
+        XCTAssertTrue(PictureInPictureWallLayout.hasHiddenTiles(stored: hidden, snapshots: snapshots))
+
+        let allHidden = available.reduce(into: [String]()) { keys, snapshot in
+            keys = PictureInPictureWallLayout.hiding(snapshot.id.persistentKey, in: keys, among: snapshots)
+        }
+        XCTAssertEqual(allHidden.count, 3)
+        XCTAssertTrue(PictureInPictureWallLayout.visibleSnapshots(snapshots, hiddenKeys: allHidden).isEmpty)
+        XCTAssertEqual(
+            PictureInPictureWallLayout.restoredHiddenKeys(stored: allHidden, snapshots: snapshots),
+            []
+        )
+        XCTAssertEqual(
+            PictureInPictureWallLayout.restoredHiddenKeys(stored: hidden, snapshots: snapshots),
+            hidden
+        )
+        XCTAssertEqual(
+            PictureInPictureWallLayout.sanitizedHiddenKeys(["", hidden[0], hidden[0], "gone"]),
+            [hidden[0], "gone"]
+        )
+    }
+
     func testLegacyPlacementDecodesAsDisplayMode() throws {
         let data = Data(#"{"opacity":0.4,"clickThrough":true,"corner":"topLeft"}"#.utf8)
         let placement = try JSONDecoder().decode(PictureInPicturePlacement.self, from: data)

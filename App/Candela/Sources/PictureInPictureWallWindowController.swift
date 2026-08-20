@@ -12,10 +12,16 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     private let clickThroughButton: NSButton
     private let pinControl = PictureInPicturePinControl()
     private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: localizedText("Close Display Overview"))
+    private let restoreHiddenButton = CandelaChrome.makeQuietButton(
+        title: localizedText("Show Hidden"),
+        symbolName: "eye"
+    )
     private let chrome = NSStackView()
     private let tilesHost = WallTilesHost()
     private var tiles: [WallTile] = []
     private var lastTileCount = 0
+    private var hiddenKeys: [String]
+    private var latestSnapshots: [DisplaySnapshot] = []
     private var placement: PictureInPicturePlacement
     private var isApplying = false
     private var clickThroughTimer: Timer?
@@ -24,9 +30,15 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     private let usePlaceholder: Bool
     var onClose: (() -> Void)?
     var onPlacementChange: ((PictureInPicturePlacement) -> Void)?
+    var onHiddenKeysChange: (([String]) -> Void)?
 
-    init(usePlaceholder: Bool, placement: PictureInPicturePlacement = .default) {
+    init(
+        usePlaceholder: Bool,
+        placement: PictureInPicturePlacement = .default,
+        hiddenKeys: [String] = []
+    ) {
         self.usePlaceholder = usePlaceholder
+        self.hiddenKeys = hiddenKeys
         self.placement = PictureInPicturePlacement(
             opacity: placement.opacity,
             clickThrough: placement.clickThrough,
@@ -107,19 +119,21 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     func reloadLocalizedChrome() {
         closeButton.toolTip = localizedText("Close Display Overview")
         closeButton.setAccessibilityLabel(localizedText("Close Display Overview"))
+        restoreHiddenButton.title = localizedText("Show Hidden")
+        restoreHiddenButton.toolTip = localizedText("Show Hidden Displays")
+        restoreHiddenButton.setAccessibilityLabel(localizedText("Show Hidden Displays"))
         opacitySlider.setAccessibilityLabel(localizedText("Opacity"))
         pinControl.reloadLocalizedChrome()
         applyOpacity()
         applyClickThrough()
-        if lastTileCount > 0 {
-            titleLabel.stringValue = localizedText("Display Overview") + " · \(lastTileCount)"
-        } else {
-            titleLabel.stringValue = localizedText("Display Overview")
-        }
+        applyTitle()
+        tiles.forEach { $0.reloadLocalizedChrome() }
     }
 
     func update(snapshots: [DisplaySnapshot]) {
-        let sources = PictureInPictureWallLayout.snapshots(snapshots)
+        latestSnapshots = snapshots
+        hiddenKeys = PictureInPictureWallLayout.sanitizedHiddenKeys(hiddenKeys)
+        let sources = PictureInPictureWallLayout.visibleSnapshots(snapshots, hiddenKeys: hiddenKeys)
         if sources.count != lastTileCount {
             resize(for: max(sources.count, 1))
             lastTileCount = sources.count
@@ -182,6 +196,11 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
 
         closeButton.target = self
         closeButton.action = #selector(closeWall)
+        restoreHiddenButton.target = self
+        restoreHiddenButton.action = #selector(restoreHiddenTiles)
+        restoreHiddenButton.toolTip = localizedText("Show Hidden Displays")
+        restoreHiddenButton.setAccessibilityLabel(localizedText("Show Hidden Displays"))
+        restoreHiddenButton.isHidden = true
         opacitySlider.minValue = PictureInPictureLayout.minimumOpacity * 100
         opacitySlider.maxValue = 100
         opacitySlider.controlSize = .small
@@ -201,11 +220,14 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         }
 
         titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        restoreHiddenButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         chrome.orientation = .horizontal
         chrome.alignment = .centerY
         chrome.spacing = 6
         chrome.translatesAutoresizingMaskIntoConstraints = false
         chrome.addArrangedSubview(titleLabel)
+        chrome.addArrangedSubview(restoreHiddenButton)
         chrome.addArrangedSubview(NSView())
         chrome.addArrangedSubview(opacitySlider)
         chrome.addArrangedSubview(clickThroughButton)
@@ -252,19 +274,56 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     }
 
     private func rebuildTiles(_ snapshots: [DisplaySnapshot]) {
-        tiles.forEach { $0.stop(); $0.view.removeFromSuperview() }
-        tiles = snapshots.map { snapshot in
-            let tile = WallTile(snapshot: snapshot, usePlaceholder: usePlaceholder)
-            tilesHost.addSubview(tile.view)
-            return tile
+        let existing = Dictionary(uniqueKeysWithValues: tiles.map { ($0.persistentKey, $0) })
+        var next: [WallTile] = []
+        var reused = Set<String>()
+        for snapshot in snapshots {
+            let key = snapshot.id.persistentKey
+            if let tile = existing[key] {
+                tile.update(snapshot: snapshot)
+                reused.insert(key)
+                next.append(tile)
+            } else {
+                let tile = WallTile(snapshot: snapshot, usePlaceholder: usePlaceholder)
+                tile.onHide = { [weak self] in
+                    self?.hideTile(key: key)
+                }
+                tilesHost.addSubview(tile.view)
+                next.append(tile)
+            }
         }
+        for tile in tiles where !reused.contains(tile.persistentKey) {
+            tile.stop()
+            tile.view.removeFromSuperview()
+        }
+        tiles = next
         tilesHost.tileViews = tiles.map(\.view)
         layoutTiles()
-        if snapshots.isEmpty {
+        applyTitle()
+    }
+
+    private func applyTitle() {
+        restoreHiddenButton.isHidden = !PictureInPictureWallLayout.hasHiddenTiles(
+            stored: hiddenKeys,
+            snapshots: latestSnapshots
+        )
+        if tiles.isEmpty {
             titleLabel.stringValue = localizedText("Display Overview")
         } else {
-            titleLabel.stringValue = localizedText("Display Overview") + " · \(snapshots.count)"
+            titleLabel.stringValue = localizedText("Display Overview") + " · \(tiles.count)"
         }
+    }
+
+    @objc private func restoreHiddenTiles() {
+        hiddenKeys = []
+        onHiddenKeysChange?(hiddenKeys)
+        update(snapshots: latestSnapshots)
+    }
+
+    private func hideTile(key: String) {
+        hiddenKeys = PictureInPictureWallLayout.hiding(key, in: hiddenKeys, among: latestSnapshots)
+        onHiddenKeysChange?(hiddenKeys)
+        update(snapshots: latestSnapshots)
     }
 
     private func layoutTiles() {
@@ -360,10 +419,16 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
             window?.ignoresMouseEvents = false
             return
         }
+        let mouse = NSEvent.mouseLocation
         let hoveringChrome = window.convertToScreen(chrome.convert(chrome.bounds, to: nil))
             .insetBy(dx: -10, dy: -10)
-            .contains(NSEvent.mouseLocation)
-        window.ignoresMouseEvents = !hoveringChrome
+            .contains(mouse)
+        let hoveringHide = tiles.contains { tile in
+            window.convertToScreen(tile.hideButton.convert(tile.hideButton.bounds, to: nil))
+                .insetBy(dx: -6, dy: -6)
+                .contains(mouse)
+        }
+        window.ignoresMouseEvents = !(hoveringChrome || hoveringHide)
     }
 
     private func installClickThroughScrollMonitor() {
@@ -519,24 +584,32 @@ private final class WallTilesHost: NSView {
 }
 
 @MainActor
-private final class WallTile {
+private final class WallTile: NSObject {
     let view = NSView()
+    var persistentKey: String { snapshot.id.persistentKey }
+    var onHide: (() -> Void)?
     private let preview = PictureInPicturePreviewView()
     private let label = CandelaChrome.makeCaption()
     private let placeholder = CandelaChrome.makeCaption()
+    let hideButton = CandelaChrome.makeIconButton(
+        symbolName: "xmark",
+        help: localizedText("Hide Display")
+    )
     private var stream: SCStream?
     private let streamQueue = DispatchQueue(label: "candela.pip.wall.tile")
-    private let snapshot: DisplaySnapshot
+    private var snapshot: DisplaySnapshot
     private let usePlaceholder: Bool
 
     init(snapshot: DisplaySnapshot, usePlaceholder: Bool) {
         self.snapshot = snapshot
         self.usePlaceholder = usePlaceholder
+        super.init()
         view.wantsLayer = true
         view.layer?.cornerRadius = 8
         view.layer?.masksToBounds = true
         view.layer?.backgroundColor = NSColor.black.cgColor
         preview.translatesAutoresizingMaskIntoConstraints = false
+        preview.allowsWindowDrag = true
         label.translatesAutoresizingMaskIntoConstraints = false
         label.stringValue = snapshot.name
         label.textColor = .white
@@ -546,22 +619,63 @@ private final class WallTile {
             ? localizedText("Preview only in fake-hardware mode.")
             : localizedText("Waiting for display…")
         placeholder.isHidden = !usePlaceholder
+        hideButton.target = self
+        hideButton.action = #selector(hideTile)
+        hideButton.contentTintColor = .white
+        hideButton.wantsLayer = true
+        hideButton.layer?.cornerRadius = 13
+        hideButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.45).cgColor
         view.addSubview(preview)
         view.addSubview(placeholder)
         view.addSubview(label)
+        view.addSubview(hideButton)
         NSLayoutConstraint.activate([
             preview.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             preview.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             preview.topAnchor.constraint(equalTo: view.topAnchor),
             preview.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: hideButton.leadingAnchor, constant: -6),
             label.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -6),
             placeholder.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             placeholder.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            hideButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
+            hideButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
         ])
+        applyHideHelp()
         if !usePlaceholder {
             Task { await startCapture() }
         }
+    }
+
+    func update(snapshot: DisplaySnapshot) {
+        let displayChanged = self.snapshot.sessionDisplayID != snapshot.sessionDisplayID
+            || self.snapshot.pixelWidth != snapshot.pixelWidth
+            || self.snapshot.pixelHeight != snapshot.pixelHeight
+        self.snapshot = snapshot
+        label.stringValue = snapshot.name
+        applyHideHelp()
+        if displayChanged, !usePlaceholder {
+            stop()
+            Task { await startCapture() }
+        }
+    }
+
+    func reloadLocalizedChrome() {
+        applyHideHelp()
+        if usePlaceholder {
+            placeholder.stringValue = localizedText("Preview only in fake-hardware mode.")
+        }
+    }
+
+    @objc private func hideTile() {
+        onHide?()
+    }
+
+    private func applyHideHelp() {
+        let help = String(format: localizedText("Hide %@"), snapshot.name)
+        hideButton.toolTip = help
+        hideButton.setAccessibilityLabel(help)
     }
 
     func stop() {
