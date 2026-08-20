@@ -202,4 +202,69 @@ final class BrightnessFollowTests: XCTestCase {
         engine = BrightnessFollowEngine()
         XCTAssertFalse(engine.enabled)
     }
+
+    func testLiveReadIsAdoptedWhenItDiffersFromThePanel() {
+        XCTAssertEqual(
+            BrightnessSyncPolicy.adoptedValue(
+                current: 0.40,
+                live: 0.70,
+                lastWrite: nil
+            ) ?? -1,
+            0.70,
+            accuracy: 0.0001
+        )
+        XCTAssertNil(
+            BrightnessSyncPolicy.adoptedValue(
+                current: 0.40,
+                live: 0.41,
+                lastWrite: nil
+            )
+        )
+    }
+
+    func testOwnBrightnessWritesAreNotAdoptedAsExternalChanges() {
+        let now = Date()
+        XCTAssertNil(
+            BrightnessSyncPolicy.adoptedValue(
+                current: 0.40,
+                live: 0.70,
+                lastWrite: now.addingTimeInterval(-0.10),
+                now: now
+            )
+        )
+        XCTAssertEqual(
+            BrightnessSyncPolicy.adoptedValue(
+                current: 0.40,
+                live: 0.70,
+                lastWrite: now.addingTimeInterval(-0.50),
+                now: now
+            ) ?? -1,
+            0.70,
+            accuracy: 0.0001
+        )
+    }
+
+    func testDDCEchoWindowIsLongerThanApplePanels() {
+        let now = Date()
+        XCTAssertNil(
+            BrightnessSyncPolicy.adoptedValue(
+                current: 0.40,
+                live: 0.70,
+                lastWrite: now.addingTimeInterval(-1.80),
+                now: now,
+                backend: .ddc
+            )
+        )
+        XCTAssertEqual(
+            BrightnessSyncPolicy.adoptedValue(
+                current: 0.40,
+                live: 0.70,
+                lastWrite: now.addingTimeInterval(-1.80),
+                now: now,
+                backend: .displayServices
+            ) ?? -1,
+            0.70,
+            accuracy: 0.0001
+        )
+    }
 }

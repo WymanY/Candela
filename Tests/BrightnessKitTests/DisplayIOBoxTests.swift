@@ -70,6 +70,19 @@ final class DisplayIOBoxTests: XCTestCase {
         XCTAssertEqual(caps.current, 0.50, accuracy: 0.000_1)
     }
 
+    func testLiveBrightnessSampleSkipsFakeHardware() async {
+        let box = DisplayIOBox(snapshot: FakeSnapshots.dellUSBC())
+        let live = await box.sampleLiveBrightness()
+        XCTAssertNil(live)
+    }
+
+    func testLiveBrightnessSampleSkipsPendingMailboxWrite() async {
+        let box = DisplayIOBox(snapshot: FakeSnapshots.hdmiTV(), brightnessWriter: RecordingBrightnessSink())
+        box.setBrightness(0.33)
+        let live = await box.sampleLiveBrightness()
+        XCTAssertNil(live)
+    }
+
     private static func waitPastSliderHold() async throws {
         let ns = UInt64(BrightnessTiming.sliderHoldMilliseconds + 120) * 1_000_000
         try await Task.sleep(nanoseconds: ns)

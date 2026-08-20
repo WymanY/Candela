@@ -27,6 +27,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Scenes remember each display's brightness, volume, mute, contrast, input, rotation, and Picture in Picture, plus the current speaker output, volume, and mute, then restore that mix later.
 - Match All copies one display's brightness (and volume/contrast when available) onto the others.
 - Last brightness can be restored when a display reconnects.
+- Menu-bar sliders follow hardware brightness after keyboard, System Settings, or OSD changes, without writing the sampled value back.
 
 ### Volume
 

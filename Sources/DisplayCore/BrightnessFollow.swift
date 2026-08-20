@@ -16,10 +16,68 @@ public enum BrightnessFollowTiming {
     public static let echoIgnoreInterval: TimeInterval = 0.35
 }
 
+public enum BrightnessSyncTiming {
+    public static let ddcPollInterval: TimeInterval = 2.0
+    public static let persistDelta = 0.02
+    public static let ddcEchoIgnoreInterval: TimeInterval = 2.5
+}
+
 public enum BrightnessWriteOrigin: String, Equatable, Sendable {
     case user
     case follow
     case explicit
+}
+
+/// Adopt a live hardware brightness read into the panel without writing it back.
+public enum BrightnessSyncPolicy {
+    public static func echoInterval(for backend: BrightnessBackendKind) -> TimeInterval {
+        switch backend {
+        case .ddc:
+            return BrightnessSyncTiming.ddcEchoIgnoreInterval
+        case .displayServices, .softwareGamma, .none:
+            return BrightnessFollowTiming.echoIgnoreInterval
+        }
+    }
+
+    public static func shouldIgnoreOwnWrite(
+        lastWrite: Date?,
+        now: Date = Date(),
+        echoInterval: TimeInterval = BrightnessFollowTiming.echoIgnoreInterval
+    ) -> Bool {
+        guard let lastWrite else { return false }
+        return now.timeIntervalSince(lastWrite) < echoInterval
+    }
+
+    public static func adoptedValue(
+        current: Double,
+        live: Double,
+        lastWrite: Date?,
+        now: Date = Date(),
+        backend: BrightnessBackendKind = .displayServices,
+        epsilon: Double = BrightnessFollowTiming.changeEpsilon
+    ) -> Double? {
+        let clamped = min(1, max(0, live))
+        if shouldIgnoreOwnWrite(
+            lastWrite: lastWrite,
+            now: now,
+            echoInterval: echoInterval(for: backend)
+        ) {
+            return nil
+        }
+        guard abs(clamped - current) > epsilon else {
+            return nil
+        }
+        return clamped
+    }
+
+    public static func shouldPersist(
+        previous: Double?,
+        next: Double,
+        delta: Double = BrightnessSyncTiming.persistDelta
+    ) -> Bool {
+        guard let previous else { return true }
+        return abs(previous - next) > delta
+    }
 }
 
 /// Keyboard brightness keys only move the built-in panel. Candela keeps every
