@@ -1616,6 +1616,91 @@
         }
       }
     },
+    "Control Source": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control Source"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制源画面"
+          }
+        }
+      }
+    },
+    "Control is on. Clicks and scrolls go to the other display. Hover the title bar to move this window.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control is on. Clicks and scrolls go to the other display. Hover the title bar to move this window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制已开启。点击和滚动会送到另一块显示器。要移动此窗口，请拖标题栏。"
+          }
+        }
+      }
+    },
+    "Move Picture in Picture to another display to control the source.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Picture in Picture to another display to control the source."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请把画中画移到另一块显示器，才能控制源画面。"
+          }
+        }
+      }
+    },
+    "Accessibility permission is required to control the source display.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission is required to control the source display."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制源画面需要辅助功能权限。"
+          }
+        }
+      }
+    },
+    "Control is unavailable in the Mac App Store build.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control is unavailable in the Mac App Store build."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac App Store 版本无法控制源画面。"
+          }
+        }
+      }
+    },
     "Click through is on. Hover the title bar to adjust. Scroll still zooms.": {
       "extractionState": "manual",
       "localizations": {
@@ -2364,19 +2449,19 @@
         }
       }
     },
-    "Candela does not need Accessibility, Screen Recording, or other privacy permissions.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.": {
+    "The hidden icon is not a privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Candela does not need Accessibility, Screen Recording, or other privacy permissions.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item."
+            "value": "The hidden icon is not a privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Candela 不需要辅助功能、屏幕录制或其他隐私权限。\n\nmacOS 26 新增了一道开关：第三方状态栏图标默认不允许显示。请打开：\n\n系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela\n\n打开后图标会出现在主显示器（笔记本屏幕）菜单栏右侧。外接屏菜单栏通常不会出现第三方图标。\n\n如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
+            "value": "菜单栏图标被隐藏，不是隐私权限的问题。画中画需要屏幕录制；从画中画控制另一块显示器还需要辅助功能。\n\nmacOS 26 新增了一道开关：第三方状态栏图标默认不允许显示。请打开：\n\n系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela\n\n打开后图标会出现在主显示器（笔记本屏幕）菜单栏右侧。外接屏菜单栏通常不会出现第三方图标。\n\n如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
           }
         }
       }

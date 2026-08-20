@@ -15,6 +15,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private let zoomPopup = NSPopUpButton()
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
+    private let controlButton: NSButton
     private let pinControl = PictureInPicturePinControl()
     private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: localizedText("Close Picture in Picture"))
     private let preview = PictureInPicturePreviewView()
@@ -32,7 +33,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private var spaceKeyMonitor: Any?
     private var localSpaceKeyMonitor: Any?
     private var commandWMonitor: Any?
+    private var controlKeyMonitor: Any?
     private var sourceDisplayID: CGDirectDisplayID
+    private var sourceQuartzBounds: CGRect = .null
     private var windowCandidates: [PictureInPictureWindowCandidate] = []
     private var lastMagnifierRect: CGRect = .null
     private var magnifierFocus: CGPoint?
@@ -80,11 +83,16 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             mirrored: placement.mirrored,
             mode: placement.mode,
             window: placement.window,
-            magnifierZoom: placement.magnifierZoom
+            magnifierZoom: placement.magnifierZoom,
+            controlSource: placement.controlSource
         )
         clickThroughButton = CandelaChrome.makeIconButton(
             symbolName: "cursorarrow.slash",
             help: localizedText("Click Through")
+        )
+        controlButton = CandelaChrome.makeIconButton(
+            symbolName: "cursorarrow.click",
+            help: localizedText("Control Source")
         )
         mirrorButton = CandelaChrome.makeIconButton(
             symbolName: "arrow.left.and.right.righttriangle.left.righttriangle.right",
@@ -145,6 +153,12 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         root.onMouseUp = { [weak self] event in
             self?.handlePreviewMouseUp(event) ?? false
         }
+        preview.onControlEvent = { [weak self] event in
+            self?.handleControlEvent(event) ?? false
+        }
+        preview.onControlCursorMove = { [weak self] point in
+            self?.handleControlCursorMove(point)
+        }
         panel.contentView = root
         applyPlacementToWindow()
         persistCurrentPlacement()
@@ -186,6 +200,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         if let commandWMonitor {
             NSEvent.removeMonitor(commandWMonitor)
         }
+        if let controlKeyMonitor {
+            NSEvent.removeMonitor(controlKeyMonitor)
+        }
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -215,6 +232,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         pinControl.reloadLocalizedChrome()
         applyOpacity()
         applyClickThrough()
+        applyControlSource()
         applyMirror()
         applyCurrentTitle()
         reloadWindowMenu()
@@ -295,12 +313,14 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         magnifierTimer?.invalidate()
         magnifierTimer = nil
         removeClickThroughScrollMonitor()
+        removeControlKeyMonitor()
         endMagnifierPan(force: true)
         persistCurrentPlacement()
         stopStream()
         preview.flush()
         window?.delegate = nil
         window?.ignoresMouseEvents = false
+        preview.setControlCursor(visible: false, at: nil)
         window?.orderOut(nil)
     }
 
@@ -315,6 +335,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             return
         }
         unpinIfDraggedAway()
+        disableControlIfHostIsSource()
         persistCurrentPlacement()
     }
 
@@ -323,6 +344,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         if placement.corner != nil {
             snapToPinnedCorner()
         }
+        disableControlIfHostIsSource()
         persistCurrentPlacement()
     }
 
@@ -336,6 +358,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             beginMagnifierPanSession()
             panMagnifier(deltaX: event.scrollingDeltaX != 0 ? event.scrollingDeltaX : event.deltaX,
                          deltaY: event.scrollingDeltaY != 0 ? event.scrollingDeltaY : event.deltaY)
+            return
+        }
+        if placement.controlSource, handleControlEvent(event) {
             return
         }
         let raw = event.scrollingDeltaY != 0 ? event.scrollingDeltaY : event.deltaY
@@ -396,6 +421,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     @objc private func toggleClickThrough() {
         placement.clickThrough.toggle()
+        if placement.clickThrough {
+            placement.controlSource = false
+            applyControlSource()
+        }
         applyClickThrough()
         persistCurrentPlacement()
     }
@@ -428,6 +457,29 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         persistCurrentPlacement()
         applyCurrentTitle()
         Task { await startCapture() }
+    }
+
+    @objc private func toggleControlSource() {
+        guard !isApplying else { return }
+        if placement.controlSource {
+            placement.controlSource = false
+            applyControlSource()
+            persistCurrentPlacement()
+            return
+        }
+        guard canControlSourceNow else {
+            applyControlSource()
+            return
+        }
+        guard PictureInPictureEventInjector.isTrusted(prompt: true) else {
+            applyControlSource()
+            return
+        }
+        placement.controlSource = true
+        placement.clickThrough = false
+        applyClickThrough()
+        applyControlSource()
+        persistCurrentPlacement()
     }
 
     @objc private func windowChanged(_ sender: NSPopUpButton) {
@@ -469,6 +521,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 isApplying = false
             }
         }
+        disableControlIfHostIsSource()
         persistCurrentPlacement()
     }
 
@@ -497,6 +550,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         clickThroughButton.setButtonType(.toggle)
         clickThroughButton.target = self
         clickThroughButton.action = #selector(toggleClickThrough)
+
+        controlButton.setButtonType(.toggle)
+        controlButton.target = self
+        controlButton.action = #selector(toggleControlSource)
+        controlButton.isHidden = PictureInPictureEventInjector.isSandboxed
 
         mirrorButton.setButtonType(.toggle)
         mirrorButton.target = self
@@ -537,6 +595,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         chrome.addArrangedSubview(NSView())
         chrome.addArrangedSubview(opacitySlider)
         chrome.addArrangedSubview(clickThroughButton)
+        chrome.addArrangedSubview(controlButton)
         chrome.addArrangedSubview(pinControl)
         chrome.addArrangedSubview(closeButton)
 
@@ -599,6 +658,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         opacitySlider.doubleValue = placement.opacity * 100
         applyOpacity()
         applyClickThrough()
+        applyControlSource()
         applyMirror()
         applySourceChrome()
         applyCurrentTitle()
@@ -664,6 +724,168 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             removeClickThroughScrollMonitor()
             window?.ignoresMouseEvents = false
         }
+    }
+
+    private var canControlSourceNow: Bool {
+        !PictureInPictureEventInjector.isSandboxed
+            && PictureInPictureInteraction.canControlSource(
+                hostDisplayID: currentHostDisplayID(),
+                sourceDisplayID: sourceDisplayID
+            )
+    }
+
+    private func applyControlSource() {
+        let active = placement.controlSource && canControlSourceNow
+        if placement.controlSource && !active {
+            placement.controlSource = false
+        }
+        controlButton.state = active ? .on : .off
+        controlButton.isEnabled = canControlSourceNow
+        controlButton.contentTintColor = active ? CandelaChrome.accent : .secondaryLabelColor
+        controlButton.toolTip = controlTooltip(active: active)
+        controlButton.setAccessibilityLabel(controlButton.toolTip)
+        preview.controlActive = active
+        preview.allowsWindowDrag = !active && !shouldPanMagnifierCanvas
+        if active {
+            installControlKeyMonitor()
+        } else {
+            removeControlKeyMonitor()
+            preview.setControlCursor(visible: false, at: nil)
+        }
+    }
+
+    private func controlTooltip(active: Bool) -> String {
+        if PictureInPictureEventInjector.isSandboxed {
+            return localizedText("Control is unavailable in the Mac App Store build.")
+        }
+        if !canControlSourceNow {
+            return localizedText("Move Picture in Picture to another display to control the source.")
+        }
+        if !PictureInPictureEventInjector.isTrusted(prompt: false) {
+            return localizedText("Accessibility permission is required to control the source display.")
+        }
+        if active {
+            return localizedText("Control is on. Clicks and scrolls go to the other display. Hover the title bar to move this window.")
+        }
+        return localizedText("Control Source")
+    }
+
+    private func disableControlIfHostIsSource() {
+        guard placement.controlSource else { return }
+        guard !canControlSourceNow else { return }
+        placement.controlSource = false
+        applyControlSource()
+    }
+
+    private func installControlKeyMonitor() {
+        guard controlKeyMonitor == nil else { return }
+        controlKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+            guard let self else { return event }
+            return self.handleControlKey(event)
+        }
+    }
+
+    private func removeControlKeyMonitor() {
+        if let controlKeyMonitor {
+            NSEvent.removeMonitor(controlKeyMonitor)
+            self.controlKeyMonitor = nil
+        }
+    }
+
+    private func handleControlKey(_ event: NSEvent) -> NSEvent? {
+        guard placement.controlSource else { return event }
+        guard isPointerOverPreview else { return event }
+        if event.keyCode == 49 && shouldPanMagnifierCanvas { return event }
+        guard PictureInPictureEventInjector.shouldForwardKey(event) else { return event }
+        if usePlaceholder { return nil }
+        PictureInPictureEventInjector.postKey(event)
+        return nil
+    }
+
+    private var isPointerOverPreview: Bool {
+        guard let window else { return false }
+        let rect = window.convertToScreen(preview.convert(preview.bounds, to: nil))
+        return rect.contains(NSEvent.mouseLocation)
+    }
+
+    private func handleControlCursorMove(_ point: CGPoint?) {
+        guard placement.controlSource else {
+            preview.setControlCursor(visible: false, at: nil)
+            return
+        }
+        guard let point, preview.bounds.contains(point) else {
+            preview.setControlCursor(visible: false, at: nil)
+            return
+        }
+        preview.setControlCursor(visible: true, at: point)
+    }
+
+    private func handleControlEvent(_ event: NSEvent) -> Bool {
+        guard placement.controlSource else { return false }
+        if shouldPanMagnifierCanvas { return false }
+        switch event.type {
+        case .scrollWheel:
+            return injectControlScroll(event)
+        case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
+            return injectControlMouse(event, type: cgEventType(for: event), button: .left)
+        case .rightMouseDown, .rightMouseDragged, .rightMouseUp:
+            return injectControlMouse(event, type: cgEventType(for: event), button: .right)
+        case .otherMouseDown, .otherMouseDragged, .otherMouseUp:
+            return injectControlMouse(event, type: cgEventType(for: event), button: .center)
+        default:
+            return true
+        }
+    }
+
+    private func cgEventType(for event: NSEvent) -> CGEventType {
+        switch event.type {
+        case .leftMouseDown: return .leftMouseDown
+        case .leftMouseUp: return .leftMouseUp
+        case .leftMouseDragged: return .leftMouseDragged
+        case .rightMouseDown: return .rightMouseDown
+        case .rightMouseUp: return .rightMouseUp
+        case .rightMouseDragged: return .rightMouseDragged
+        case .otherMouseDown: return .otherMouseDown
+        case .otherMouseUp: return .otherMouseUp
+        case .otherMouseDragged: return .otherMouseDragged
+        default: return .null
+        }
+    }
+
+    private func injectControlMouse(_ event: NSEvent, type: CGEventType, button: CGMouseButton) -> Bool {
+        guard type != .null else { return true }
+        guard let quartz = mappedQuartzPoint(from: event) else { return true }
+        if usePlaceholder { return true }
+        guard PictureInPictureEventInjector.isTrusted(prompt: false) else { return true }
+        let pointer = NSEvent.mouseLocation
+        PictureInPictureEventInjector.postMouse(
+            type: type,
+            at: quartz,
+            button: button,
+            clickCount: event.clickCount
+        )
+        PictureInPictureEventInjector.restoreCursor(toAppKit: pointer)
+        return true
+    }
+
+    private func injectControlScroll(_ event: NSEvent) -> Bool {
+        guard let quartz = mappedQuartzPoint(from: event) else { return true }
+        if usePlaceholder { return true }
+        guard PictureInPictureEventInjector.isTrusted(prompt: false) else { return true }
+        let pointer = NSEvent.mouseLocation
+        PictureInPictureEventInjector.postScroll(at: quartz, event: event)
+        PictureInPictureEventInjector.restoreCursor(toAppKit: pointer)
+        return true
+    }
+
+    private func mappedQuartzPoint(from event: NSEvent) -> CGPoint? {
+        let local = preview.convert(event.locationInWindow, from: nil)
+        return PictureInPictureInteraction.quartzPoint(
+            previewPoint: local,
+            previewBounds: preview.bounds,
+            sourceBounds: sourceQuartzBounds,
+            mirrored: placement.mirrored
+        )
     }
 
     private func updateClickThroughIgnoring() {
@@ -890,6 +1112,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 showsCursor = false
                 titleLabel.stringValue = currentChromeTitle(windowSource: match.identity)
                 self.window?.title = titleLabel.stringValue
+                sourceQuartzBounds = window.frame
             } else if placement.mode == .magnifier {
                 guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
                     showPlaceholder(localizedText("Could not find this display for capture."))
@@ -911,6 +1134,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 )
                 captureWidth = size.width
                 captureHeight = size.height
+                sourceQuartzBounds = PictureInPictureInteraction.quartzBounds(
+                    displayBounds: display.frame,
+                    cropInDisplayPoints: sourceRect
+                )
             } else {
                 if PictureInPictureLayout.shouldFallBackToDisplay(mode: placement.mode, hasResolvedWindow: resolvedWindow != nil) {
                     applyCurrentTitle()
@@ -926,6 +1153,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 )
                 captureWidth = size.width
                 captureHeight = size.height
+                sourceQuartzBounds = display.frame
             }
             let configuration = PictureInPictureCapture.streamConfiguration(
                 width: captureWidth,
@@ -1078,6 +1306,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         let active = shouldPanMagnifierCanvas
         isPanningMagnifier = active
         setMagnifierCanvasPanActive(active)
+        if placement.controlSource {
+            preview.allowsWindowDrag = false
+        }
         updateMagnifierCursor()
     }
 
@@ -1194,6 +1425,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 showsCursor: true
             )
             try await stream?.updateConfiguration(configuration)
+            sourceQuartzBounds = PictureInPictureInteraction.quartzBounds(
+                displayBounds: display.frame,
+                cropInDisplayPoints: sourceRect
+            )
         } catch {
             return
         }
@@ -1247,10 +1482,18 @@ final class PictureInPictureRootView: NSView {
 final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegate {
     private let hostLayer = CALayer()
     private var displayLayer = AVSampleBufferDisplayLayer()
+    private let controlCursor = CALayer()
     private var mirrored = false
     var allowsWindowDrag = true
+    var controlActive = false
+    var onControlEvent: ((NSEvent) -> Bool)?
+    var onControlCursorMove: ((CGPoint?) -> Void)?
 
     override var mouseDownCanMoveWindow: Bool { allowsWindowDrag }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        controlActive
+    }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -1262,6 +1505,14 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         hostLayer.backgroundColor = NSColor.black.cgColor
         hostLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         layer?.addSublayer(hostLayer)
+        controlCursor.bounds = CGRect(x: 0, y: 0, width: 10, height: 10)
+        controlCursor.cornerRadius = 5
+        controlCursor.backgroundColor = NSColor.white.withAlphaComponent(0.92).cgColor
+        controlCursor.borderColor = NSColor.black.withAlphaComponent(0.85).cgColor
+        controlCursor.borderWidth = 1.5
+        controlCursor.isHidden = true
+        controlCursor.zPosition = 50
+        layer?.addSublayer(controlCursor)
         configureDisplayLayer(displayLayer)
         hostLayer.addSublayer(displayLayer)
     }
@@ -1285,9 +1536,96 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
     func updatePanCursor(_ panning: Bool) {
         if panning {
             NSCursor.openHand.set()
+        } else if controlActive {
+            NSCursor.crosshair.set()
         } else {
             NSCursor.arrow.set()
         }
+    }
+
+    func setControlCursor(visible: Bool, at point: CGPoint?) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        controlCursor.isHidden = !visible
+        if let point {
+            controlCursor.position = point
+        }
+        CATransaction.commit()
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(
+            NSTrackingArea(
+                rect: bounds,
+                options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect],
+                owner: self,
+                userInfo: nil
+            )
+        )
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        onControlCursorMove?(convert(event.locationInWindow, from: nil))
+        super.mouseMoved(with: event)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onControlCursorMove?(convert(event.locationInWindow, from: nil))
+        if controlActive { NSCursor.crosshair.set() }
+        super.mouseEntered(with: event)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onControlCursorMove?(nil)
+        super.mouseExited(with: event)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.mouseDown(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        onControlCursorMove?(convert(event.locationInWindow, from: nil))
+        if onControlEvent?(event) == true { return }
+        super.mouseDragged(with: event)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.mouseUp(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.rightMouseDown(with: event)
+    }
+
+    override func rightMouseDragged(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.rightMouseDragged(with: event)
+    }
+
+    override func rightMouseUp(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.rightMouseUp(with: event)
+    }
+
+    override func otherMouseDown(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.otherMouseDown(with: event)
+    }
+
+    override func otherMouseUp(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.otherMouseUp(with: event)
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        if onControlEvent?(event) == true { return }
+        super.scrollWheel(with: event)
     }
 
     func flush() {

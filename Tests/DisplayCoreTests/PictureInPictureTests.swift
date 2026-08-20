@@ -648,8 +648,104 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(placement.opacity, 0.4, accuracy: 0.0001)
         XCTAssertEqual(placement.mode, .display)
         XCTAssertFalse(placement.mirrored)
+        XCTAssertFalse(placement.controlSource)
         XCTAssertEqual(placement.magnifierZoom, 2, accuracy: 0.0001)
         XCTAssertEqual(PictureInPictureMode.from(query: "loupe"), .magnifier)
+    }
+
+    func testControlSourceTurnsOffClickThroughWhenDecodedTogether() throws {
+        let data = Data(#"{"clickThrough":true,"controlSource":true}"#.utf8)
+        let placement = try JSONDecoder().decode(PictureInPicturePlacement.self, from: data)
+        XCTAssertTrue(placement.controlSource)
+        XCTAssertFalse(placement.clickThrough)
+        XCTAssertFalse(PictureInPictureInteraction.resolvedClickThrough(clickThrough: true, controlSource: true))
+        XCTAssertTrue(PictureInPictureInteraction.resolvedClickThrough(clickThrough: true, controlSource: false))
+    }
+
+    func testLetterboxedPreviewMapsOntoQuartzSource() {
+        let preview = CGRect(x: 0, y: 0, width: 400, height: 225)
+        let source = CGRect(x: 1920, y: 0, width: 1920, height: 1080)
+
+        let topLeft = PictureInPictureInteraction.quartzPoint(
+            previewPoint: CGPoint(x: 0, y: 225),
+            previewBounds: preview,
+            sourceBounds: source,
+            mirrored: false
+        )
+        XCTAssertEqual(topLeft?.x ?? -1, 1920, accuracy: 0.5)
+        XCTAssertEqual(topLeft?.y ?? -1, 0, accuracy: 0.5)
+
+        let bottomRight = PictureInPictureInteraction.quartzPoint(
+            previewPoint: CGPoint(x: 400, y: 0),
+            previewBounds: preview,
+            sourceBounds: source,
+            mirrored: false
+        )
+        XCTAssertEqual(bottomRight?.x ?? -1, 3840, accuracy: 0.5)
+        XCTAssertEqual(bottomRight?.y ?? -1, 1080, accuracy: 0.5)
+
+        let center = PictureInPictureInteraction.quartzPoint(
+            previewPoint: CGPoint(x: 200, y: 112.5),
+            previewBounds: preview,
+            sourceBounds: source,
+            mirrored: false
+        )
+        XCTAssertEqual(center?.x ?? -1, 2880, accuracy: 0.5)
+        XCTAssertEqual(center?.y ?? -1, 540, accuracy: 0.5)
+
+        let mirroredLeft = PictureInPictureInteraction.quartzPoint(
+            previewPoint: CGPoint(x: 0, y: 112.5),
+            previewBounds: preview,
+            sourceBounds: source,
+            mirrored: true
+        )
+        XCTAssertEqual(mirroredLeft?.x ?? -1, 3840, accuracy: 0.5)
+    }
+
+    func testLetterboxBarsDoNotMap() {
+        let preview = CGRect(x: 0, y: 0, width: 400, height: 400)
+        let content = PictureInPictureInteraction.letterboxedContentRect(
+            previewBounds: preview,
+            sourceSize: CGSize(width: 1920, height: 1080)
+        )
+        XCTAssertEqual(content.width, 400, accuracy: 0.001)
+        XCTAssertEqual(content.height, 225, accuracy: 0.001)
+        XCTAssertEqual(content.midY, 200, accuracy: 0.001)
+
+        XCTAssertNil(
+            PictureInPictureInteraction.normalizedPoint(
+                previewPoint: CGPoint(x: 200, y: 390),
+                previewBounds: preview,
+                sourceSize: CGSize(width: 1920, height: 1080),
+                mirrored: false
+            )
+        )
+        XCTAssertNotNil(
+            PictureInPictureInteraction.normalizedPoint(
+                previewPoint: CGPoint(x: 200, y: 200),
+                previewBounds: preview,
+                sourceSize: CGSize(width: 1920, height: 1080),
+                mirrored: false
+            )
+        )
+    }
+
+    func testMagnifierCropShiftsQuartzBounds() {
+        let display = CGRect(x: 1920, y: 0, width: 1920, height: 1080)
+        let crop = CGRect(x: 200, y: 100, width: 640, height: 360)
+        let bounds = PictureInPictureInteraction.quartzBounds(displayBounds: display, cropInDisplayPoints: crop)
+        XCTAssertEqual(bounds.origin.x, 2120, accuracy: 0.001)
+        XCTAssertEqual(bounds.origin.y, 100, accuracy: 0.001)
+        XCTAssertEqual(bounds.width, 640, accuracy: 0.001)
+        XCTAssertEqual(PictureInPictureInteraction.quartzBounds(displayBounds: display, cropInDisplayPoints: nil), display)
+    }
+
+    func testControlRequiresADifferentHostDisplay() {
+        XCTAssertTrue(PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 2))
+        XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 2, sourceDisplayID: 2))
+        XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: nil, sourceDisplayID: 2))
+        XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 0))
+        XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 0, sourceDisplayID: 2))
     }
 
     func testMirrorKeepsThePreviewCentered() {
