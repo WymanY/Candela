@@ -781,6 +781,15 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: nil, sourceDisplayID: 2))
         XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 0))
         XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 0, sourceDisplayID: 2))
+        XCTAssertTrue(PictureInPictureInteraction.showsControlSource(mode: .display))
+        XCTAssertFalse(PictureInPictureInteraction.showsControlSource(mode: .window))
+        XCTAssertFalse(PictureInPictureInteraction.showsControlSource(mode: .magnifier))
+        XCTAssertFalse(
+            PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 2, mode: .window)
+        )
+        XCTAssertFalse(
+            PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 2, mode: .magnifier)
+        )
     }
 
     func testMirrorKeepsThePreviewCentered() {

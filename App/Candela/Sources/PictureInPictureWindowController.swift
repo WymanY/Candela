@@ -461,6 +461,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             placement.window = nil
         }
         applySourceChrome()
+        applyControlSource()
         persistCurrentPlacement()
         applyCurrentTitle()
         Task { await startCapture() }
@@ -470,6 +471,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         guard !isApplying else { return }
         if placement.controlSource {
             exitControlSource()
+            return
+        }
+        guard PictureInPictureInteraction.showsControlSource(mode: placement.mode) else {
+            applyControlSource()
             return
         }
         guard canControlSourceNow else {
@@ -559,7 +564,6 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         controlButton.setButtonType(.toggle)
         controlButton.target = self
         controlButton.action = #selector(toggleControlSource)
-        controlButton.isHidden = PictureInPictureEventInjector.isSandboxed
 
         mirrorButton.setButtonType(.toggle)
         mirrorButton.target = self
@@ -735,15 +739,19 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         !PictureInPictureEventInjector.isSandboxed
             && PictureInPictureInteraction.canControlSource(
                 hostDisplayID: currentHostDisplayID(),
-                sourceDisplayID: sourceDisplayID
+                sourceDisplayID: sourceDisplayID,
+                mode: placement.mode
             )
     }
 
     private func applyControlSource() {
+        let showsButton = !PictureInPictureEventInjector.isSandboxed
+            && PictureInPictureInteraction.showsControlSource(mode: placement.mode)
         let active = placement.controlSource && canControlSourceNow
         if placement.controlSource && !active {
             placement.controlSource = false
         }
+        controlButton.isHidden = !showsButton
         controlButton.state = active ? .on : .off
         controlButton.isEnabled = canControlSourceNow
         controlButton.contentTintColor = active ? CandelaChrome.accent : .secondaryLabelColor

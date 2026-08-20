@@ -78,7 +78,16 @@ public enum PictureInPictureInteraction {
         )
     }
 
-    public static func canControlSource(hostDisplayID: UInt32?, sourceDisplayID: UInt32) -> Bool {
+    public static func showsControlSource(mode: PictureInPictureMode) -> Bool {
+        mode == .display
+    }
+
+    public static func canControlSource(
+        hostDisplayID: UInt32?,
+        sourceDisplayID: UInt32,
+        mode: PictureInPictureMode = .display
+    ) -> Bool {
+        guard showsControlSource(mode: mode) else { return false }
         guard sourceDisplayID != 0 else { return false }
         guard let hostDisplayID, hostDisplayID != 0 else { return false }
         return hostDisplayID != sourceDisplayID
