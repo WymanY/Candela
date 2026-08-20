@@ -40,6 +40,7 @@ public final class DisplayIOBox: @unchecked Sendable {
     private var muteLatest: Bool?
     private var contrastLatest: Double?
     private var inputLatest: UInt16?
+    private var pendingBrightnessWrite = false
     private var ddcInFlight = false
     private var lastDDC: ContinuousClock.Instant?
     private var writeScheduled = false
@@ -97,6 +98,7 @@ public final class DisplayIOBox: @unchecked Sendable {
             self.brightness = clamped
             self.brightnessCaps.current = clamped
             self.brightnessLatest = clamped
+            self.pendingBrightnessWrite = true
             if !self.writeScheduled {
                 self.armSliderHoldLocked()
             }
@@ -176,6 +178,14 @@ public final class DisplayIOBox: @unchecked Sendable {
     public func currentBrightnessCapabilities() async -> BrightnessCapabilities {
         await withCheckedContinuation { continuation in
             queue.async { continuation.resume(returning: self.brightnessCaps) }
+        }
+    }
+
+    /// Read the current hardware brightness without writing. Returns nil when
+    /// a mailbox write is in flight or the backend has no live path.
+    public func sampleLiveBrightness() async -> Double? {
+        await withCheckedContinuation { continuation in
+            queue.async { continuation.resume(returning: self.sampleLiveBrightnessLocked()) }
         }
     }
 
@@ -421,6 +431,7 @@ public final class DisplayIOBox: @unchecked Sendable {
     private func beginWriteBrightnessLocked() {
         let toSend = brightnessLatest
         brightnessLatest = nil
+        pendingBrightnessWrite = brightnessLatest != nil
         guard let toSend else { return }
         if brightnessUsesDDC {
             ddcInFlight = true
@@ -430,6 +441,7 @@ public final class DisplayIOBox: @unchecked Sendable {
         } else {
             _ = performBrightnessWriteLocked(toSend)
         }
+        pendingBrightnessWrite = brightnessLatest != nil
         scheduleNextLocked()
     }
 
@@ -638,6 +650,42 @@ public final class DisplayIOBox: @unchecked Sendable {
             ddcClient = Arm64DDCClient(displayID: sessionDisplayID)
         } else {
             try? ddcClient?.recreateHandle()
+        }
+    }
+
+    private func sampleLiveBrightnessLocked() -> Double? {
+        guard enablesHardware else { return nil }
+        if pendingBrightnessWrite || brightnessLatest != nil {
+            return nil
+        }
+        if brightnessUsesDDC, writeScheduled || ddcInFlight {
+            return nil
+        }
+        switch backend {
+        case .displayServices:
+            guard let live = LiveBrightnessReader.current(displayID: sessionDisplayID) else {
+                return nil
+            }
+            brightness = live
+            brightnessCaps.current = live
+            return live
+        case .ddc:
+            let wait = ddcWaitIntervalLocked()
+            if wait > .zero {
+                return nil
+            }
+            let read = probeDDCBrightnessLocked()
+            if let current = read.current {
+                brightness = current
+                brightnessCaps.current = current
+                if read.max > 0 {
+                    brightnessCaps.ddcMax = read.max
+                }
+                return current
+            }
+            return nil
+        case .softwareGamma, .none:
+            return nil
         }
     }
 

@@ -39,7 +39,12 @@ final class DisplaySessionController {
     var speakerChoices: [SpeakerChoice] = []
     var powerStatus = PowerStatus(source: .unknown, isPresent: false, percent: nil)
     var brightnessFollow = BrightnessFollowEngine()
-    private var brightnessFollowTimer: DispatchSourceTimer?
+    private var liveBrightnessTimer: DispatchSourceTimer?
+    private var lastBrightnessWriteByKey: [String: Date] = [:]
+    private var lastDDCBrightnessSample: Date?
+    private var liveBrightnessGeneration = 0
+    private var liveBrightnessRefreshInFlight = false
+    private var pendingLiveDDCSample = false
     private var powerSourceRunLoopSource: CFRunLoopSource?
     private var lowPowerModeObserver: NSObjectProtocol?
     var onChange: (() -> Void)?
@@ -123,6 +128,7 @@ final class DisplaySessionController {
             startPowerSourceObserver()
             startLowPowerModeObserver()
             startBrightnessFollowObserver()
+            startLiveBrightnessObserver()
         } else {
             refreshPowerStatus()
             syncBrightnessFollowFromSettings()
@@ -137,6 +143,7 @@ final class DisplaySessionController {
         stopPowerSourceObserver()
         stopLowPowerModeObserver()
         stopBrightnessFollowObserver()
+        stopLiveBrightnessObserver()
         updatesTask?.cancel()
         updatesTask = nil
         for task in restoreTasks.values {
@@ -157,6 +164,7 @@ final class DisplaySessionController {
     func setBrightness(key: String, value: Double, origin: BrightnessWriteOrigin = .user) {
         let clamped = min(1, max(0, value))
         boxes[key]?.setBrightness(clamped)
+        lastBrightnessWriteByKey[key] = Date()
         if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
             snapshots[index].brightness.current = clamped
         }
@@ -905,6 +913,7 @@ final class DisplaySessionController {
         stampMirrorState()
         refreshBrightnessFollowOffsets()
         lastAppliedKeys = nextKeys
+        lastBrightnessWriteByKey = lastBrightnessWriteByKey.filter { nextKeys.contains($0.key) }
         probedKeys = probedKeys.intersection(nextKeys)
         pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
         refreshAudioBindings()
@@ -1178,7 +1187,15 @@ final class DisplaySessionController {
            abs(next.current - last) > 0.02,
            abs(snapshots[index].brightness.current - last) <= 0.02
         {
-            next.current = last
+            let ignoreProbe = next.backend == .ddc
+                || restoreTasks[key] != nil
+                || BrightnessSyncPolicy.shouldIgnoreOwnWrite(
+                    lastWrite: lastBrightnessWriteByKey[key],
+                    echoInterval: BrightnessSyncPolicy.echoInterval(for: next.backend)
+                )
+            if ignoreProbe {
+                next.current = last
+            }
         }
         snapshots[index].brightness = next
         if next.backend == .displayServices && !isBuiltin {
@@ -1240,6 +1257,7 @@ final class DisplaySessionController {
                         self.setRotation(key: key, rotation: rotation)
                     }
                     self.refreshBrightnessFollowOffsets()
+                    self.restoreTasks[key] = nil
                 }
             }
         }
@@ -1259,6 +1277,30 @@ final class DisplaySessionController {
 
     func sampleLiveSpeakerVolume() {
         refreshSpeaker()
+    }
+
+    func sampleLiveBrightness() {
+        if sampleLiveAppleBrightness() {
+            onChange?()
+        }
+        Task { @MainActor [weak self] in
+            await self?.refreshLiveBrightness(includeDDC: true, skipDisplayServices: true)
+        }
+    }
+
+    @discardableResult
+    private func sampleLiveAppleBrightness() -> Bool {
+        guard !Self.shouldUseFakeHardware else { return false }
+        var changed = false
+        for snapshot in snapshots where snapshot.brightness.backend == .displayServices {
+            guard let live = LiveBrightnessReader.current(displayID: snapshot.sessionDisplayID) else {
+                continue
+            }
+            if adoptLiveBrightness(key: snapshot.id.persistentKey, live: live) {
+                changed = true
+            }
+        }
+        return changed
     }
 
     func observeActiveSpeakerVolume() {
@@ -1394,35 +1436,134 @@ final class DisplaySessionController {
 
     private func startBrightnessFollowObserver() {
         syncBrightnessFollowFromSettings()
-        guard brightnessFollowTimer == nil else { return }
+    }
+
+    private func stopBrightnessFollowObserver() {}
+
+    private func startLiveBrightnessObserver() {
+        lastDDCBrightnessSample = Date()
+        guard liveBrightnessTimer == nil else { return }
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(
             deadline: .now() + BrightnessFollowTiming.pollInterval,
             repeating: BrightnessFollowTiming.pollInterval
         )
         timer.setEventHandler { [weak self] in
-            self?.pollKeyboardBrightness()
+            self?.pollLiveBrightness()
         }
         timer.resume()
-        brightnessFollowTimer = timer
+        liveBrightnessTimer = timer
     }
 
-    private func stopBrightnessFollowObserver() {
-        brightnessFollowTimer?.cancel()
-        brightnessFollowTimer = nil
+    private func stopLiveBrightnessObserver() {
+        liveBrightnessTimer?.cancel()
+        liveBrightnessTimer = nil
     }
 
-    private func pollKeyboardBrightness() {
-        guard brightnessFollow.enabled else { return }
-        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
-        let live: Double?
-        if Self.shouldUseFakeHardware {
-            live = source.brightness.current
-        } else {
-            live = LiveBrightnessReader.current(displayID: source.sessionDisplayID)
+    private func pollLiveBrightness() {
+        if sampleLiveAppleBrightness() {
+            onChange?()
         }
-        guard let live else { return }
-        applyLiveBuiltinBrightness(live)
+        guard !liveBrightnessRefreshInFlight else { return }
+        let hasDDC = snapshots.contains { $0.brightness.backend == .ddc }
+        let dueDDC: Bool
+        if let lastDDCBrightnessSample {
+            dueDDC = Date().timeIntervalSince(lastDDCBrightnessSample) >= BrightnessSyncTiming.ddcPollInterval
+        } else {
+            dueDDC = true
+        }
+        guard hasDDC, dueDDC else { return }
+        Task { @MainActor [weak self] in
+            await self?.refreshLiveBrightness(includeDDC: true, skipDisplayServices: true)
+        }
+    }
+
+    private func refreshLiveBrightness(includeDDC: Bool, skipDisplayServices: Bool = false) async {
+        if liveBrightnessRefreshInFlight {
+            if includeDDC {
+                pendingLiveDDCSample = true
+            }
+            return
+        }
+        liveBrightnessRefreshInFlight = true
+        defer {
+            liveBrightnessRefreshInFlight = false
+            if pendingLiveDDCSample {
+                pendingLiveDDCSample = false
+                Task { @MainActor [weak self] in
+                    await self?.refreshLiveBrightness(includeDDC: true, skipDisplayServices: true)
+                }
+            }
+        }
+        if includeDDC {
+            lastDDCBrightnessSample = Date()
+        }
+        liveBrightnessGeneration += 1
+        let generation = liveBrightnessGeneration
+        let current = snapshots
+        var changed = false
+        for snapshot in current {
+            guard generation == liveBrightnessGeneration else { return }
+            let key = snapshot.id.persistentKey
+            let backend = snapshot.brightness.backend
+            guard snapshot.brightness.showsBrightnessSlider else { continue }
+            if backend == .ddc, !includeDDC { continue }
+            if skipDisplayServices, backend == .displayServices { continue }
+            if backend == .softwareGamma || backend == .none { continue }
+            let live: Double?
+            if Self.shouldUseFakeHardware {
+                live = nil
+            } else if let box = boxes[key] {
+                live = await box.sampleLiveBrightness()
+            } else if backend == .displayServices {
+                live = LiveBrightnessReader.current(displayID: snapshot.sessionDisplayID)
+            } else {
+                live = nil
+            }
+            guard generation == liveBrightnessGeneration, let live else { continue }
+            if adoptLiveBrightness(key: key, live: live) {
+                changed = true
+            }
+        }
+        if changed {
+            onChange?()
+        }
+    }
+
+    @discardableResult
+    func adoptLiveBrightness(key: String, live: Double, now: Date = Date()) -> Bool {
+        guard restoreTasks[key] == nil else { return false }
+        guard let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) else {
+            return false
+        }
+        let snapshot = snapshots[index]
+        let adopted = BrightnessSyncPolicy.adoptedValue(
+            current: snapshot.brightness.current,
+            live: live,
+            lastWrite: lastBrightnessWriteByKey[key],
+            now: now,
+            backend: snapshot.brightness.backend
+        )
+        guard let adopted else { return false }
+        snapshots[index].brightness.current = adopted
+        var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
+        if BrightnessSyncPolicy.shouldPersist(previous: record.lastBrightness, next: adopted) {
+            record.lastBrightness = adopted
+            persistence.save(record)
+        }
+        if snapshot.isBuiltin {
+            applyLiveBuiltinBrightness(adopted)
+        } else if brightnessFollow.enabled,
+                  let source = BrightnessFollowPolicy.source(in: snapshots),
+                  source.id.persistentKey != key
+        {
+            brightnessFollow.noteFollowerWrite(
+                key: key,
+                brightness: adopted,
+                sourceBrightness: source.brightness.current
+            )
+        }
+        return true
     }
 
     func applyLiveBuiltinBrightness(_ live: Double) {
