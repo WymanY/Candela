@@ -327,6 +327,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         window?.delegate = nil
         window?.ignoresMouseEvents = false
         preview.setControlCursor(visible: false, at: nil)
+        PictureInPictureCursorPulseOverlay.cancel()
         window?.orderOut(nil)
     }
 
@@ -781,11 +782,21 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         applyControlSource()
     }
 
-    private func exitControlSource() {
+    private func exitControlSource(revealCursor: Bool = false) {
         guard placement.controlSource else { return }
         placement.controlSource = false
         applyControlSource()
         persistCurrentPlacement()
+        if revealCursor {
+            revealCursorInPictureInPicture()
+        }
+    }
+
+    private func revealCursorInPictureInPicture() {
+        guard let window else { return }
+        let previewScreen = window.convertToScreen(preview.convert(preview.bounds, to: nil))
+        let point = PictureInPictureCursorPulse.warpPoint(previewFrameInScreen: previewScreen)
+        PictureInPictureCursorPulseOverlay.play(at: point)
     }
 
     private func installControlKeyMonitor() {
@@ -798,7 +809,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         if controlExitTap == nil {
             let tap = PictureInPictureControlExitTap()
             tap.onExit = { [weak self] in
-                self?.exitControlSource()
+                self?.exitControlSource(revealCursor: true)
             }
             if tap.start() {
                 controlExitTap = tap
@@ -818,7 +829,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 controlPressed: flags.contains(.control)
             ) else { return }
             Task { @MainActor in
-                self.exitControlSource()
+                self.exitControlSource(revealCursor: true)
             }
         }
     }
@@ -844,7 +855,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             controlPressed: flags.contains(.control)
         ) {
             if event.type == .keyDown {
-                exitControlSource()
+                exitControlSource(revealCursor: true)
             }
             return nil
         }

@@ -740,6 +740,34 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(PictureInPictureInteraction.quartzBounds(displayBounds: display, cropInDisplayPoints: nil), display)
     }
 
+    func testCursorPulseGrowsAroundTheHotspot() {
+        XCTAssertEqual(PictureInPictureCursorPulse.scale, 2, accuracy: 0.001)
+        let preview = CGRect(x: 100, y: 200, width: 400, height: 240)
+        let warp = PictureInPictureCursorPulse.warpPoint(previewFrameInScreen: preview)
+        XCTAssertEqual(warp.x, 300, accuracy: 0.001)
+        XCTAssertEqual(warp.y, 320, accuracy: 0.001)
+
+        let cursor = CGSize(width: 32, height: 32)
+        let overlay = PictureInPictureCursorPulse.overlayFrame(mouse: warp, cursorSize: cursor)
+        XCTAssertEqual(overlay.width, 64, accuracy: 0.001)
+        XCTAssertEqual(overlay.height, 64, accuracy: 0.001)
+        XCTAssertEqual(overlay.midX, warp.x, accuracy: 0.001)
+        XCTAssertEqual(overlay.midY, warp.y, accuracy: 0.001)
+
+        let hotSpot = CGPoint(x: 4, y: 4)
+        let origin = PictureInPictureCursorPulse.cursorOrigin(
+            overlaySize: overlay.size,
+            cursorSize: cursor,
+            hotSpot: hotSpot
+        )
+        XCTAssertEqual(origin.x, 32 - 4, accuracy: 0.001)
+        XCTAssertEqual(origin.y, 32 - (32 - 4), accuracy: 0.001)
+
+        let anchor = PictureInPictureCursorPulse.layerAnchorPoint(cursorSize: cursor, hotSpot: hotSpot)
+        XCTAssertEqual(anchor.x, 4 / 32, accuracy: 0.001)
+        XCTAssertEqual(anchor.y, (32 - 4) / 32, accuracy: 0.001)
+    }
+
     func testControlEscExitsSourceControl() {
         XCTAssertTrue(PictureInPictureInteraction.isExitControlShortcut(keyCode: 53, controlPressed: true))
         XCTAssertFalse(PictureInPictureInteraction.isExitControlShortcut(keyCode: 53, controlPressed: false))

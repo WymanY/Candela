@@ -44,11 +44,13 @@
 		7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C13464143DB251CFC1D652 /* AppLanguage.swift */; };
 		74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
 		765633F98315E4C36AC68A0D /* PictureInPictureCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */; };
+		781443D49D676488D6C2F481 /* PictureInPictureCursorPulseOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793C12C2B6450CCC0221E215 /* PictureInPictureCursorPulseOverlay.swift */; };
 		7D4B2F97AA79DB6DDF1CCB8B /* DisplaySessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */; };
 		7F771C0205EDD2945ED9E130 /* SettingsScenesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027F73801C8DC6A1491EE5A6 /* SettingsScenesView.swift */; };
 		7FAE06AAC14875CA2082C4F4 /* CoreDisplayInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */; };
 		8306540F60897D69FE9546DB /* SettingsShortcutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F947CAA7AB4EADD802EB007A /* SettingsShortcutsView.swift */; };
 		8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
+		870E0C763C04A2AA9E0D6FAC /* PictureInPictureCursorPulseOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793C12C2B6450CCC0221E215 /* PictureInPictureCursorPulseOverlay.swift */; };
 		87FAFF8076EE924CA5893831 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
 		8B4629877D7CB41F513E7B48 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
 		8B752083F19415DE630DC453 /* DisplayCore in Frameworks */ = {isa = PBXBuildFile; productRef = C2BBF6C2EEC9EDA7940995A3 /* DisplayCore */; };
@@ -113,6 +115,7 @@
 		6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayIOBox.swift; sourceTree = "<group>"; };
 		7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitDisplaySource.swift; sourceTree = "<group>"; };
 		71C014411DFBAC303BD3B900 /* CandelaMAS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CandelaMAS.entitlements; sourceTree = "<group>"; };
+		793C12C2B6450CCC0221E215 /* PictureInPictureCursorPulseOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureCursorPulseOverlay.swift; sourceTree = "<group>"; };
 		810C0393E03779607DA87A7F /* GammaTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaTable.swift; sourceTree = "<group>"; };
 		82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDisplayInfo.swift; sourceTree = "<group>"; };
 		84C65B68A38C3CFB42408055 /* CandelaChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CandelaChrome.swift; sourceTree = "<group>"; };
@@ -190,6 +193,7 @@
 				2A4BA76C4A073A74793903B7 /* MenuBarGuide.swift */,
 				97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */,
 				A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */,
+				793C12C2B6450CCC0221E215 /* PictureInPictureCursorPulseOverlay.swift */,
 				B67562031F0D46CD1FE12A4E /* PictureInPictureEventInjector.swift */,
 				55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */,
 				B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */,
@@ -437,6 +441,7 @@
 				9958854165B2F09560DA545D /* MenuBarGuide.swift in Sources */,
 				93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */,
 				FDC2756D29258B397D38AF69 /* PictureInPictureCapture.swift in Sources */,
+				781443D49D676488D6C2F481 /* PictureInPictureCursorPulseOverlay.swift in Sources */,
 				BD0764DA3CEDD6350A5C1C4A /* PictureInPictureEventInjector.swift in Sources */,
 				4C519E5C71C5AC8243AD9C3A /* PictureInPicturePinControl.swift in Sources */,
 				431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */,
@@ -481,6 +486,7 @@
 				55B62ED96EFBD695FB884C95 /* MenuBarGuide.swift in Sources */,
 				C69DE7949E11A766650A7D3B /* NSScreen+Candela.swift in Sources */,
 				765633F98315E4C36AC68A0D /* PictureInPictureCapture.swift in Sources */,
+				870E0C763C04A2AA9E0D6FAC /* PictureInPictureCursorPulseOverlay.swift in Sources */,
 				0EDC51A740249CDF2D36688B /* PictureInPictureEventInjector.swift in Sources */,
 				1671697A02F7E305214DCA82 /* PictureInPicturePinControl.swift in Sources */,
 				50A1E5A3A05FADEEF31276AD /* PictureInPictureWallWindowController.swift in Sources */,
