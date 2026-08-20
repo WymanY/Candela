@@ -14,7 +14,6 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
     public var lastExtendedArrangement: DisplayArrangementSnapshot?
     /// Empty string follows the system language. Otherwise a language identifier such as `en` or `zh-Hans`.
     public var preferredLanguage: String
-    public var followKeyboardBrightness: Bool
 
     public init(
         schemaVersion: Int = 1,
@@ -27,8 +26,7 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         hasOpenedPanelOnce: Bool = false,
         pictureInPictureWall: PictureInPicturePlacement? = nil,
         lastExtendedArrangement: DisplayArrangementSnapshot? = nil,
-        preferredLanguage: String = "",
-        followKeyboardBrightness: Bool = true
+        preferredLanguage: String = ""
     ) {
         self.schemaVersion = schemaVersion
         self.launchAtLogin = launchAtLogin
@@ -41,7 +39,6 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         self.pictureInPictureWall = pictureInPictureWall
         self.lastExtendedArrangement = lastExtendedArrangement
         self.preferredLanguage = preferredLanguage
-        self.followKeyboardBrightness = followKeyboardBrightness
     }
 
     public init(from decoder: Decoder) throws {
@@ -57,7 +54,6 @@ public struct GlobalSettings: Codable, Equatable, Sendable {
         pictureInPictureWall = try container.decodeIfPresent(PictureInPicturePlacement.self, forKey: .pictureInPictureWall)
         lastExtendedArrangement = try container.decodeIfPresent(DisplayArrangementSnapshot.self, forKey: .lastExtendedArrangement)
         preferredLanguage = try container.decodeIfPresent(String.self, forKey: .preferredLanguage) ?? ""
-        followKeyboardBrightness = try container.decodeIfPresent(Bool.self, forKey: .followKeyboardBrightness) ?? true
     }
 }
 

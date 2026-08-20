@@ -128,7 +128,7 @@ public struct BrightnessFollowEngine: Equatable, Sendable {
     public var lastSourceWrite: Date?
 
     public init(
-        enabled: Bool = true,
+        enabled: Bool = false,
         offsets: [String: Double] = [:],
         lastObservedSource: Double? = nil,
         lastSourceWrite: Date? = nil

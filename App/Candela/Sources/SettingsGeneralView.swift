@@ -62,7 +62,7 @@ final class SettingsGeneralView: NSView {
             title: String(localized: "Displays"),
             rows: [
                 (restoreOnReconnect, String(localized: "Restore last brightness on reconnect"), String(localized: "Brightness restored after unplug.")),
-                (followKeyboard, String(localized: "Follow keyboard brightness"), String(localized: "Keep other displays at a relative offset when the keyboard brightness keys move the built-in panel.")),
+                (followKeyboard, String(localized: "Follow keyboard brightness"), String(localized: "This launch only. Other displays keep a relative offset while keyboard brightness keys move the built-in panel.")),
                 (softwareDimming, String(localized: "Software dimming"), String(localized: "Use gamma when hardware control is missing.")),
                 (allowDimToBlack, String(localized: "Allow dim to black"), String(localized: "Let software dimming reach 0%.")),
             ]
@@ -108,7 +108,7 @@ final class SettingsGeneralView: NSView {
         softwareDimming.state = settings.softwareDimmingEnabled ? .on : .off
         allowDimToBlack.state = settings.allowDimToBlack ? .on : .off
         showPercent.state = settings.showPercentText ? .on : .off
-        followKeyboard.state = settings.followKeyboardBrightness ? .on : .off
+        followKeyboard.state = session.isFollowingKeyboardBrightness ? .on : .off
         reloadLanguageMenu()
         if let error = session.launchAtLoginError, !error.isEmpty {
             errorLabel.stringValue = error
@@ -125,8 +125,8 @@ final class SettingsGeneralView: NSView {
         next.softwareDimmingEnabled = softwareDimming.state == .on
         next.allowDimToBlack = allowDimToBlack.state == .on
         next.showPercentText = showPercent.state == .on
-        next.followKeyboardBrightness = followKeyboard.state == .on
         session.saveSettings(next)
+        session.setFollowKeyboardBrightness(followKeyboard.state == .on)
         reload()
     }
 

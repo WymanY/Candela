@@ -244,7 +244,7 @@ final class MCPStdioTransport {
         tool("candela_delete_scene", "Delete a saved scene.", [
             "scene": schema("string", "Scene name or id"),
         ], ["scene"]),
-        tool("candela_set_follow_keyboard", "Make external displays follow the built-in keyboard brightness keys.", [
+        tool("candela_set_follow_keyboard", "For this launch only, make external displays follow the built-in keyboard brightness keys.", [
             "enabled": schema("boolean", "true to follow keyboard brightness"),
         ], ["enabled"]),
         tool("candela_debug_dump", "Copy a redacted debug dump of the live catalog.", [

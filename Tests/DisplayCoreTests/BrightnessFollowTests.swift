@@ -151,7 +151,7 @@ final class BrightnessFollowTests: XCTestCase {
         snapshots[0].brightness.current = 0.40
         snapshots[1].brightness.current = 0.55
         snapshots[2].brightness.current = 0.20
-        var engine = BrightnessFollowEngine()
+        var engine = BrightnessFollowEngine(enabled: true)
         XCTAssertTrue(engine.ingestLiveSource(snapshots: snapshots, live: 0.40).isEmpty)
 
         let commands = engine.ingestLiveSource(snapshots: snapshots, live: 0.70)
@@ -172,7 +172,7 @@ final class BrightnessFollowTests: XCTestCase {
         var snapshots = FakeSnapshots.standard()
         snapshots[0].brightness.current = 0.40
         snapshots[1].brightness.current = 0.40
-        var engine = BrightnessFollowEngine()
+        var engine = BrightnessFollowEngine(enabled: true)
         _ = engine.ingestLiveSource(snapshots: snapshots, live: 0.40)
         engine.noteFollowerWrite(
             key: snapshots[1].id.persistentKey,
@@ -193,5 +193,13 @@ final class BrightnessFollowTests: XCTestCase {
         var engine = BrightnessFollowEngine(enabled: false)
         _ = engine.ingestLiveSource(snapshots: snapshots, live: 0.40)
         XCTAssertTrue(engine.ingestLiveSource(snapshots: snapshots, live: 0.90).isEmpty)
+    }
+
+    func testEngineDefaultsToOffForAFreshLaunch() {
+        XCTAssertFalse(BrightnessFollowEngine().enabled)
+        var engine = BrightnessFollowEngine(enabled: true)
+        XCTAssertTrue(engine.enabled)
+        engine = BrightnessFollowEngine()
+        XCTAssertFalse(engine.enabled)
     }
 }

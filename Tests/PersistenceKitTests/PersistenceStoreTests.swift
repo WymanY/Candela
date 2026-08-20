@@ -44,13 +44,11 @@ final class PersistenceStoreTests: XCTestCase {
         settings.hasOpenedPanelOnce = true
         settings.launchAtLogin = true
         settings.preferredLanguage = "zh-Hans"
-        settings.followKeyboardBrightness = false
         store.saveGlobal(settings)
         let loaded = store.global()
         XCTAssertTrue(loaded.hasOpenedPanelOnce)
         XCTAssertTrue(loaded.launchAtLogin)
         XCTAssertEqual(loaded.preferredLanguage, "zh-Hans")
-        XCTAssertFalse(loaded.followKeyboardBrightness)
     }
 
     func testSavesScenes() {

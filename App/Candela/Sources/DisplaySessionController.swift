@@ -53,7 +53,7 @@ final class DisplaySessionController {
     }
 
     var isFollowingKeyboardBrightness: Bool {
-        settings.followKeyboardBrightness
+        brightnessFollow.enabled
     }
 
     var canFollowKeyboardBrightness: Bool {
@@ -61,15 +61,17 @@ final class DisplaySessionController {
     }
 
     func setFollowKeyboardBrightness(_ enabled: Bool) {
-        var next = settings
-        if next.followKeyboardBrightness == enabled { return }
-        next.followKeyboardBrightness = enabled
-        saveSettings(next)
+        if brightnessFollow.enabled == enabled { return }
+        brightnessFollow.enabled = enabled
+        if enabled {
+            brightnessFollow.recapture(snapshots: snapshots)
+        }
+        onChange?()
     }
 
     @discardableResult
     func toggleFollowKeyboardBrightness() -> Bool {
-        let enabled = !settings.followKeyboardBrightness
+        let enabled = !brightnessFollow.enabled
         setFollowKeyboardBrightness(enabled)
         return enabled
     }
@@ -716,7 +718,7 @@ final class DisplaySessionController {
             saveScene: { self.saveScene(named: $0) },
             renameScene: { self.renameScene($0, to: $1) },
             deleteScene: { self.deleteScene($0) },
-            followKeyboardBrightness: { self.settings.followKeyboardBrightness },
+            followKeyboardBrightness: { self.isFollowingKeyboardBrightness },
             setFollowKeyboardBrightness: { self.setFollowKeyboardBrightness($0) },
             dump: { self.debugDump(redact: $0) }
         ))
@@ -739,7 +741,6 @@ final class DisplaySessionController {
             }
         }
         persistence.saveGlobal(next)
-        syncBrightnessFollowFromSettings()
         onChange?()
         if !Self.shouldUseFakeHardware {
             reprobeAll()
@@ -752,7 +753,7 @@ final class DisplaySessionController {
             "fakeHardware=\(Self.shouldUseFakeHardware)",
             "displays=\(snapshots.count)",
             "scenes=\(scenes.count)",
-            "followKeyboard=\(settings.followKeyboardBrightness)",
+            "followKeyboard=\(isFollowingKeyboardBrightness)",
         ]
         for snapshot in snapshots {
             var key = snapshot.id.persistentKey
@@ -1366,7 +1367,6 @@ final class DisplaySessionController {
     }
 
     private func syncBrightnessFollowFromSettings() {
-        brightnessFollow.enabled = settings.followKeyboardBrightness
         if brightnessFollow.enabled {
             brightnessFollow.recapture(snapshots: snapshots)
         }
@@ -1406,7 +1406,7 @@ final class DisplaySessionController {
     }
 
     private func pollKeyboardBrightness() {
-        guard settings.followKeyboardBrightness else { return }
+        guard brightnessFollow.enabled else { return }
         guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
         let live: Double?
         if Self.shouldUseFakeHardware {

@@ -23,7 +23,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Third-party HDMI / DisplayPort / USB-C monitors use DDC/CI VCP `0x10` on Apple Silicon.
 - If hardware control is missing or fails, Candela falls back to software gamma dimming and keeps the LUT alive so WindowServer does not revert it.
 - Night / Desk / Max presets: 20%, 50%, and 100%.
-- Keyboard brightness follow is on by default: F1/F2 still move the built-in panel, and other displays keep a relative offset. Dragging one slider only changes that display's offset.
+- Keyboard brightness follow is off by default and lasts only for the current launch: F1/F2 still move the built-in panel, and other displays keep a relative offset. Dragging one slider only changes that display's offset.
 - Scenes remember each display's brightness, volume, mute, contrast, input, rotation, and Picture in Picture, plus the current speaker output, volume, and mute, then restore that mix later.
 - Match All copies one display's brightness (and volume/contrast when available) onto the others.
 - Last brightness can be restored when a display reconnects.
@@ -218,7 +218,7 @@ CI also builds **Candela** and **CandelaMAS** on macOS 14.
 ## 1.3
 
 - Keyboard brightness keys now move every controllable display. External panels keep a relative offset from the built-in panel.
-- Follow can be toggled from the menu-bar panel or Settings. Each display can still be dimmed on its own.
+- Follow can be turned on from the menu-bar panel or Settings for this launch only. Each display can still be dimmed on its own.
 
 ## 1.2
 

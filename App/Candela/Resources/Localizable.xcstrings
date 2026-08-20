@@ -3129,23 +3129,6 @@
         }
       }
     },
-    "Keep other displays at a relative offset when the keyboard brightness keys move the built-in panel.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keep other displays at a relative offset when the keyboard brightness keys move the built-in panel."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "键盘亮度键调节内建屏时，其他显示器按相对偏移一起变化。"
-          }
-        }
-      }
-    },
     "Stop following keyboard brightness": {
       "extractionState": "manual",
       "localizations": {
@@ -3159,6 +3142,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "停止跟随键盘亮度"
+          }
+        }
+      }
+    },
+    "This launch only. Other displays keep a relative offset while keyboard brightness keys move the built-in panel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This launch only. Other displays keep a relative offset while keyboard brightness keys move the built-in panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅本次启动有效。键盘亮度键调节内建屏时，其他显示器按相对偏移一起变化。"
           }
         }
       }

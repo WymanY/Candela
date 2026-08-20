@@ -49,7 +49,7 @@ public struct ControlBackend {
         saveScene: @escaping (String) -> DisplayScene? = { _ in nil },
         renameScene: @escaping (String, String) -> DisplayScene? = { _, _ in nil },
         deleteScene: @escaping (String) -> Bool = { _ in false },
-        followKeyboardBrightness: @escaping () -> Bool = { true },
+        followKeyboardBrightness: @escaping () -> Bool = { false },
         setFollowKeyboardBrightness: @escaping (Bool) -> Void = { _ in },
         dump: @escaping (Bool) -> String
     ) {
