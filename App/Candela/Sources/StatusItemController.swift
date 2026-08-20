@@ -1,5 +1,4 @@
 import AppKit
-import DisplayCore
 import os
 
 @MainActor
@@ -58,12 +57,15 @@ final class StatusItemController: NSObject {
 
     private func presentFirstLaunchPanelIfPossible(attempt: Int) {
         guard !session.settings.hasOpenedPanelOnce else { return }
-        if canAnchorPanelToStatusItem() {
-            showPanel()
+        if let button = statusItem.button, button.window != nil {
+            showPanel(relativeTo: button)
             return
         }
-        guard attempt < 12 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+        guard attempt < 16 else {
+            showPanel(relativeTo: statusItem.button)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.presentFirstLaunchPanelIfPossible(attempt: attempt + 1)
         }
     }
@@ -128,20 +130,15 @@ final class StatusItemController: NSObject {
     }
 
     private func showPanel() {
-        guard let button = statusItem.button else { return }
+        showPanel(relativeTo: statusItem.button)
+    }
+
+    private func showPanel(relativeTo button: NSView?) {
         panelController.show(relativeTo: button)
         statusItem.button?.image = statusImage(filled: true)
         if !session.settings.hasOpenedPanelOnce {
             session.markPanelOpenedOnce()
         }
-    }
-
-    private func canAnchorPanelToStatusItem() -> Bool {
-        guard let button = statusItem.button, let window = button.window else { return false }
-        let visible = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
-        let converted = window.convertToScreen(button.convert(button.bounds, to: nil))
-        return StatusPanelLayout.isUsableStatusButtonFrame(converted, visible: visible)
-            || StatusPanelLayout.isUsableStatusButtonFrame(window.frame, visible: visible)
     }
 
     private func hidePanel() {

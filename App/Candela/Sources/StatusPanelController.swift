@@ -110,7 +110,7 @@ final class StatusPanelController {
         panel.onCommandComma = openSettings
     }
 
-    func show(relativeTo button: NSView) {
+    func show(relativeTo button: NSView?) {
         session.sampleLiveSpeakerVolume()
         session.sampleLiveBrightness()
         session.refreshPowerStatus()
@@ -163,15 +163,17 @@ final class StatusPanelController {
         return screen.visibleFrame.intersects(panel.frame.insetBy(dx: 8, dy: 8))
     }
 
-    private func position(relativeTo button: NSView, height: CGFloat) {
-        let screen = button.window?.screen ?? NSScreen.main ?? NSScreen.screens.first
+    private func position(relativeTo button: NSView?, height: CGFloat) {
+        let screen = button?.window?.screen ?? NSScreen.main ?? NSScreen.screens.first
         let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
-        let converted = button.window.map { window in
-            window.convertToScreen(button.convert(button.bounds, to: nil))
+        let converted = button.flatMap { item in
+            item.window.map { window in
+                window.convertToScreen(item.convert(item.bounds, to: nil))
+            }
         }
         let buttonScreen = StatusPanelLayout.resolvedButtonFrame(
             converted: converted,
-            windowFrame: button.window?.frame,
+            windowFrame: button?.window?.frame,
             visible: visible
         )
         panel.setFrame(

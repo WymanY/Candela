@@ -35,4 +35,21 @@ final class StatusPanelLayoutTests: XCTestCase {
         XCTAssertEqual(frame.maxY, button.minY - 8, accuracy: 0.001)
         XCTAssertEqual(frame.height, 520, accuracy: 0.001)
     }
+
+    func testMenuBarWindowReconstructsATrailingStatusItem() {
+        let visible = CGRect(x: 0, y: 0, width: 1512, height: 944)
+        let menuBarWindow = CGRect(x: 0, y: 944, width: 1512, height: 38)
+        let reconstructed = StatusPanelLayout.resolvedButtonFrame(
+            converted: nil,
+            windowFrame: menuBarWindow,
+            visible: visible
+        )
+        XCTAssertEqual(reconstructed.width, 36, accuracy: 0.001)
+        XCTAssertEqual(reconstructed.maxX, menuBarWindow.maxX - 16, accuracy: 0.001)
+        XCTAssertEqual(reconstructed.minY, menuBarWindow.minY, accuracy: 0.001)
+
+        let frame = StatusPanelLayout.panelFrame(button: reconstructed, height: 520, visible: visible)
+        XCTAssertEqual(frame.maxY, reconstructed.minY - 8, accuracy: 0.001)
+        XCTAssertGreaterThan(frame.minX, visible.midX)
+    }
 }
