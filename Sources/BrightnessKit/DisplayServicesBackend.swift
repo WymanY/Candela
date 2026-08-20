@@ -1,3 +1,4 @@
+import CandelaPublicIO
 import CoreGraphics
 import Foundation
 
@@ -32,5 +33,28 @@ enum HardwareBrightnessBackend {
         guard let set = PrivateSymbols.displayServicesSetBrightness else { return false }
         return set(displayID, value) == 0
         #endif
+    }
+
+    /// Live keyboard-brightness reads. DisplayServices first, public IOKit second.
+    static func read(_ displayID: CGDirectDisplayID) -> Double? {
+        if let value = get(displayID) {
+            return Double(min(1, max(0, value)))
+        }
+        return publicIOKitBrightness(displayID)
+    }
+
+    private static func publicIOKitBrightness(_ displayID: CGDirectDisplayID) -> Double? {
+        var value: Float = -1
+        guard CandelaPublicDisplayGetBrightness(displayID, &value), value >= 0 else {
+            return nil
+        }
+        return Double(min(1, max(0, value)))
+    }
+}
+
+
+public enum LiveBrightnessReader {
+    public static func current(displayID: CGDirectDisplayID) -> Double? {
+        HardwareBrightnessBackend.read(displayID)
     }
 }

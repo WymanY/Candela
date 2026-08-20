@@ -38,6 +38,8 @@ final class DisplaySessionController {
     var speaker: SpeakerOutput?
     var speakerChoices: [SpeakerChoice] = []
     var powerStatus = PowerStatus(source: .unknown, isPresent: false, percent: nil)
+    var brightnessFollow = BrightnessFollowEngine()
+    private var brightnessFollowTimer: DispatchSourceTimer?
     private var powerSourceRunLoopSource: CFRunLoopSource?
     private var lowPowerModeObserver: NSObjectProtocol?
     var onChange: (() -> Void)?
@@ -48,6 +50,30 @@ final class DisplaySessionController {
 
     var settings: GlobalSettings {
         persistence.global()
+    }
+
+    var isFollowingKeyboardBrightness: Bool {
+        brightnessFollow.enabled
+    }
+
+    var canFollowKeyboardBrightness: Bool {
+        BrightnessFollowPolicy.canFollow(in: snapshots)
+    }
+
+    func setFollowKeyboardBrightness(_ enabled: Bool) {
+        if brightnessFollow.enabled == enabled { return }
+        brightnessFollow.enabled = enabled
+        if enabled {
+            brightnessFollow.recapture(snapshots: snapshots)
+        }
+        onChange?()
+    }
+
+    @discardableResult
+    func toggleFollowKeyboardBrightness() -> Bool {
+        let enabled = !brightnessFollow.enabled
+        setFollowKeyboardBrightness(enabled)
+        return enabled
     }
 
     init(catalog: DisplayCataloging, persistence: PersistenceStoring) {
@@ -96,8 +122,10 @@ final class DisplaySessionController {
             observeActiveSpeakerVolume()
             startPowerSourceObserver()
             startLowPowerModeObserver()
+            startBrightnessFollowObserver()
         } else {
             refreshPowerStatus()
+            syncBrightnessFollowFromSettings()
         }
     }
 
@@ -108,6 +136,7 @@ final class DisplaySessionController {
         audioRouteObserver = nil
         stopPowerSourceObserver()
         stopLowPowerModeObserver()
+        stopBrightnessFollowObserver()
         updatesTask?.cancel()
         updatesTask = nil
         for task in restoreTasks.values {
@@ -125,7 +154,7 @@ final class DisplaySessionController {
         }
     }
 
-    func setBrightness(key: String, value: Double) {
+    func setBrightness(key: String, value: Double, origin: BrightnessWriteOrigin = .user) {
         let clamped = min(1, max(0, value))
         boxes[key]?.setBrightness(clamped)
         if let index = snapshots.firstIndex(where: { $0.id.persistentKey == key }) {
@@ -134,7 +163,12 @@ final class DisplaySessionController {
         var record = persistence.record(for: key) ?? DisplayRecord(persistentKey: key)
         record.lastBrightness = clamped
         persistence.save(record)
-        onChange?()
+        if origin == .user {
+            noteBrightnessFollowWrite(key: key, value: clamped)
+        }
+        if origin != .follow {
+            onChange?()
+        }
     }
 
     func setVolume(key: String, value: Double) {
@@ -363,9 +397,10 @@ final class DisplaySessionController {
         for target in targets {
             guard let snapshot = snapshots.first(where: { $0.id.persistentKey == target }) else { continue }
             if snapshot.brightness.showsBrightnessSlider {
-                setBrightness(key: target, value: preset.value)
+                setBrightness(key: target, value: preset.value, origin: .explicit)
             }
         }
+        brightnessFollow.recapture(snapshots: snapshots)
         onChange?()
     }
 
@@ -436,7 +471,7 @@ final class DisplaySessionController {
         guard let source = snapshots.first(where: { $0.id.persistentKey == key }) else { return }
         for snapshot in snapshots where snapshot.id.persistentKey != key && snapshot.kind != .virtualUnsupported {
             if snapshot.brightness.showsBrightnessSlider && source.brightness.showsBrightnessSlider {
-                setBrightness(key: snapshot.id.persistentKey, value: source.brightness.current)
+                setBrightness(key: snapshot.id.persistentKey, value: source.brightness.current, origin: .explicit)
             }
             if snapshot.volume.supportsVolume && source.volume.supportsVolume {
                 setVolume(key: snapshot.id.persistentKey, value: source.volume.current)
@@ -448,6 +483,7 @@ final class DisplaySessionController {
                 setContrast(key: snapshot.id.persistentKey, value: source.contrast.current)
             }
         }
+        brightnessFollow.recapture(snapshots: snapshots)
         onChange?()
     }
 
@@ -478,6 +514,7 @@ final class DisplaySessionController {
         applySpeaker(from: scene, commands: plan.commands)
         reconcileAppliedScene(plan)
         refreshSpeaker()
+        brightnessFollow.recapture(snapshots: snapshots)
         onChange?()
         return scene
     }
@@ -578,7 +615,7 @@ final class DisplaySessionController {
 
     private func apply(_ command: DisplaySceneCommand) {
         if let brightness = command.brightness {
-            setBrightness(key: command.persistentKey, value: brightness)
+            setBrightness(key: command.persistentKey, value: brightness, origin: .explicit)
         }
         if let volume = command.volume {
             setVolume(key: command.persistentKey, value: volume)
@@ -681,6 +718,8 @@ final class DisplaySessionController {
             saveScene: { self.saveScene(named: $0) },
             renameScene: { self.renameScene($0, to: $1) },
             deleteScene: { self.deleteScene($0) },
+            followKeyboardBrightness: { self.isFollowingKeyboardBrightness },
+            setFollowKeyboardBrightness: { self.setFollowKeyboardBrightness($0) },
             dump: { self.debugDump(redact: $0) }
         ))
     }
@@ -714,6 +753,7 @@ final class DisplaySessionController {
             "fakeHardware=\(Self.shouldUseFakeHardware)",
             "displays=\(snapshots.count)",
             "scenes=\(scenes.count)",
+            "followKeyboard=\(isFollowingKeyboardBrightness)",
         ]
         for snapshot in snapshots {
             var key = snapshot.id.persistentKey
@@ -856,6 +896,7 @@ final class DisplaySessionController {
         syncPictureInPictureWindows()
         stampPictureInPictureState()
         stampMirrorState()
+        refreshBrightnessFollowOffsets()
         lastAppliedKeys = nextKeys
         probedKeys = probedKeys.intersection(nextKeys)
         pendingRotationByKey = pendingRotationByKey.filter { nextKeys.contains($0.key) }
@@ -1163,7 +1204,7 @@ final class DisplaySessionController {
                 await MainActor.run {
                     guard let self, !Task.isCancelled, let record = self.persistence.record(for: key) else { return }
                     if let last = record.lastBrightness {
-                        self.setBrightness(key: key, value: last)
+                        self.setBrightness(key: key, value: last, origin: .explicit)
                     }
                     if let last = record.lastVolume,
                        let snapshot = self.snapshots.first(where: { $0.id.persistentKey == key }),
@@ -1191,6 +1232,7 @@ final class DisplaySessionController {
                     {
                         self.setRotation(key: key, rotation: rotation)
                     }
+                    self.refreshBrightnessFollowOffsets()
                 }
             }
         }
@@ -1303,6 +1345,98 @@ final class DisplaySessionController {
         if let lowPowerModeObserver {
             NotificationCenter.default.removeObserver(lowPowerModeObserver)
             self.lowPowerModeObserver = nil
+        }
+    }
+
+    private func noteBrightnessFollowWrite(key: String, value: Double) {
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
+        if key == source.id.persistentKey {
+            brightnessFollow.noteLocalSourceWrite(value)
+            guard brightnessFollow.enabled else { return }
+            let commands = brightnessFollow.plan(snapshots: snapshots, sourceBrightness: value)
+            for command in commands {
+                setBrightness(key: command.persistentKey, value: command.brightness, origin: .follow)
+            }
+            return
+        }
+        brightnessFollow.noteFollowerWrite(
+            key: key,
+            brightness: value,
+            sourceBrightness: source.brightness.current
+        )
+    }
+
+    private func syncBrightnessFollowFromSettings() {
+        if brightnessFollow.enabled {
+            brightnessFollow.recapture(snapshots: snapshots)
+        }
+    }
+
+    private func refreshBrightnessFollowOffsets() {
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else {
+            brightnessFollow.offsets = [:]
+            return
+        }
+        brightnessFollow.offsets = BrightnessFollowPolicy.mergingOffsets(
+            existing: brightnessFollow.offsets,
+            snapshots: snapshots,
+            sourceKey: source.id.persistentKey,
+            sourceBrightness: source.brightness.current
+        )
+    }
+
+    private func startBrightnessFollowObserver() {
+        syncBrightnessFollowFromSettings()
+        guard brightnessFollowTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(
+            deadline: .now() + BrightnessFollowTiming.pollInterval,
+            repeating: BrightnessFollowTiming.pollInterval
+        )
+        timer.setEventHandler { [weak self] in
+            self?.pollKeyboardBrightness()
+        }
+        timer.resume()
+        brightnessFollowTimer = timer
+    }
+
+    private func stopBrightnessFollowObserver() {
+        brightnessFollowTimer?.cancel()
+        brightnessFollowTimer = nil
+    }
+
+    private func pollKeyboardBrightness() {
+        guard brightnessFollow.enabled else { return }
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
+        let live: Double?
+        if Self.shouldUseFakeHardware {
+            live = source.brightness.current
+        } else {
+            live = LiveBrightnessReader.current(displayID: source.sessionDisplayID)
+        }
+        guard let live else { return }
+        applyLiveBuiltinBrightness(live)
+    }
+
+    func applyLiveBuiltinBrightness(_ live: Double) {
+        let commands = brightnessFollow.ingestLiveSource(snapshots: snapshots, live: live)
+        guard let source = BrightnessFollowPolicy.source(in: snapshots) else { return }
+        var changed = false
+        if let index = snapshots.firstIndex(where: { $0.id.persistentKey == source.id.persistentKey }),
+           abs(snapshots[index].brightness.current - live) > BrightnessFollowTiming.changeEpsilon
+        {
+            snapshots[index].brightness.current = min(1, max(0, live))
+            var record = persistence.record(for: source.id.persistentKey) ?? DisplayRecord(persistentKey: source.id.persistentKey)
+            record.lastBrightness = snapshots[index].brightness.current
+            persistence.save(record)
+            changed = true
+        }
+        for command in commands {
+            setBrightness(key: command.persistentKey, value: command.brightness, origin: .follow)
+            changed = true
+        }
+        if changed {
+            onChange?()
         }
     }
 }

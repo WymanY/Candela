@@ -22,6 +22,7 @@ public enum ControlAction: String, Codable, Sendable {
     case saveScene
     case renameScene
     case deleteScene
+    case setFollowKeyboardBrightness
     case dump
 }
 
@@ -41,6 +42,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
     public var name: String?
     public var preset: String?
     public var scene: String?
+    public var followKeyboardBrightness: Bool?
     public var redact: Bool?
 
     public init(
@@ -59,6 +61,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         name: String? = nil,
         preset: String? = nil,
         scene: String? = nil,
+        followKeyboardBrightness: Bool? = nil,
         redact: Bool? = nil
     ) {
         self.action = action
@@ -76,6 +79,7 @@ public struct ControlRequest: Codable, Equatable, Sendable {
         self.name = name
         self.preset = preset
         self.scene = scene
+        self.followKeyboardBrightness = followKeyboardBrightness
         self.redact = redact
     }
 }
@@ -176,6 +180,7 @@ public struct ControlResponse: Codable, Equatable, Sendable {
     public var dump: String?
     public var pictureInPictureWall: Bool?
     public var isMirroringBuiltIn: Bool?
+    public var followKeyboardBrightness: Bool?
 
     public init(
         ok: Bool,
@@ -184,7 +189,8 @@ public struct ControlResponse: Codable, Equatable, Sendable {
         scenes: [ControlSceneDTO]? = nil,
         dump: String? = nil,
         pictureInPictureWall: Bool? = nil,
-        isMirroringBuiltIn: Bool? = nil
+        isMirroringBuiltIn: Bool? = nil,
+        followKeyboardBrightness: Bool? = nil
     ) {
         self.ok = ok
         self.error = error
@@ -193,6 +199,7 @@ public struct ControlResponse: Codable, Equatable, Sendable {
         self.dump = dump
         self.pictureInPictureWall = pictureInPictureWall
         self.isMirroringBuiltIn = isMirroringBuiltIn
+        self.followKeyboardBrightness = followKeyboardBrightness
     }
 
     public static func failure(_ message: String) -> ControlResponse {

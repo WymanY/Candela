@@ -23,6 +23,8 @@ public struct ControlBackend {
     public var saveScene: (String) -> DisplayScene?
     public var renameScene: (String, String) -> DisplayScene?
     public var deleteScene: (String) -> Bool
+    public var followKeyboardBrightness: () -> Bool
+    public var setFollowKeyboardBrightness: (Bool) -> Void
     public var dump: (Bool) -> String
 
     public init(
@@ -47,6 +49,8 @@ public struct ControlBackend {
         saveScene: @escaping (String) -> DisplayScene? = { _ in nil },
         renameScene: @escaping (String, String) -> DisplayScene? = { _, _ in nil },
         deleteScene: @escaping (String) -> Bool = { _ in false },
+        followKeyboardBrightness: @escaping () -> Bool = { false },
+        setFollowKeyboardBrightness: @escaping (Bool) -> Void = { _ in },
         dump: @escaping (Bool) -> String
     ) {
         self.snapshots = snapshots
@@ -70,6 +74,8 @@ public struct ControlBackend {
         self.saveScene = saveScene
         self.renameScene = renameScene
         self.deleteScene = deleteScene
+        self.followKeyboardBrightness = followKeyboardBrightness
+        self.setFollowKeyboardBrightness = setFollowKeyboardBrightness
         self.dump = dump
     }
 }
@@ -84,7 +90,7 @@ public enum ControlRouter {
             return ControlResponse(ok: true, dump: backend.dump(request.redact ?? true))
         case .listScenes:
             return .success(scenes: backend.scenes().map { ControlSceneDTO(scene: $0, snapshots: all) })
-        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .configurePictureInPicture, .setPictureInPictureWall, .rename, .preset, .matchAll, .setBuiltInMirror, .applyScene, .saveScene, .renameScene, .deleteScene:
+        case .get, .setBrightness, .setVolume, .setMuted, .setContrast, .setInput, .setRotation, .setPictureInPicture, .configurePictureInPicture, .setPictureInPictureWall, .rename, .preset, .matchAll, .setBuiltInMirror, .applyScene, .saveScene, .renameScene, .deleteScene, .setFollowKeyboardBrightness:
             break
         }
 
@@ -92,7 +98,7 @@ public enum ControlRouter {
         let resolved: DisplaySnapshot?
         if request.action == .preset, query.isEmpty || query.lowercased() == "all" {
             resolved = nil
-        } else if [.applyScene, .saveScene, .renameScene, .deleteScene, .setPictureInPictureWall, .setBuiltInMirror].contains(request.action) {
+        } else if [.applyScene, .saveScene, .renameScene, .deleteScene, .setPictureInPictureWall, .setBuiltInMirror, .setFollowKeyboardBrightness].contains(request.action) {
             resolved = nil
         } else {
             guard !query.isEmpty else {
@@ -258,6 +264,17 @@ public enum ControlRouter {
                 return .failure("No scene matched '\(query)'.")
             }
             return sceneResponse(scene, backend: backend)
+        case .setFollowKeyboardBrightness:
+            let enabled = request.followKeyboardBrightness ?? request.muted
+            guard let enabled else {
+                return .failure("followKeyboardBrightness true/false is required.")
+            }
+            backend.setFollowKeyboardBrightness(enabled)
+            return ControlResponse(
+                ok: true,
+                displays: backend.snapshots().map(ControlDisplayDTO.init(snapshot:)),
+                followKeyboardBrightness: backend.followKeyboardBrightness()
+            )
         case .deleteScene:
             guard let query = sceneQuery(request) else {
                 return .failure("Scene name or id is required.")

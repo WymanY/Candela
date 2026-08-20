@@ -48,7 +48,7 @@ let package = Package(
         ),
         .target(
             name: "BrightnessKit",
-            dependencies: ["DisplayCore", "CandelaPrivateIO"],
+            dependencies: ["DisplayCore", "CandelaPrivateIO", "CandelaPublicIO"],
             swiftSettings: [.swiftLanguageMode(.v5)],
             linkerSettings: [
                 .linkedFramework("IOKit"),

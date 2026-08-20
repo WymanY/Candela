@@ -2,6 +2,8 @@
 
 Candela is a native macOS menu-bar app for controlling every attached display. It can dim Apple panels and third-party monitors, adjust HDMI/DP speaker volume when the hardware exposes it, rotate external screens, switch DDC inputs, and mirror a chosen display in a floating Picture in Picture window. 1.1 adds opacity, click-through, pinned corners, and remembered placement for that window. 1.2 can follow a window, flip the preview, magnify around the cursor, and tile every real display into a monitor wall.
 
+1.3 can keep every other display at a relative offset when the keyboard brightness keys move the built-in panel, without taking over media keys.
+
 It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 
 中文说明见 [README.md](README.md)。
@@ -21,6 +23,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - Third-party HDMI / DisplayPort / USB-C monitors use DDC/CI VCP `0x10` on Apple Silicon.
 - If hardware control is missing or fails, Candela falls back to software gamma dimming and keeps the LUT alive so WindowServer does not revert it.
 - Night / Desk / Max presets: 20%, 50%, and 100%.
+- Keyboard brightness follow is off by default and lasts only for the current launch: F1/F2 still move the built-in panel, and other displays keep a relative offset. Dragging one slider only changes that display's offset.
 - Scenes remember each display's brightness, volume, mute, contrast, input, rotation, and Picture in Picture, plus the current speaker output, volume, and mute, then restore that mix later.
 - Match All copies one display's brightness (and volume/contrast when available) onto the others.
 - Last brightness can be restored when a display reconnects.
@@ -75,6 +78,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 
 - Launch at Login
 - Restore last brightness on reconnect
+- Follow keyboard brightness
 - Software dimming on/off
 - Allow dim to black
 - Show percent labels next to sliders
@@ -102,6 +106,7 @@ swift run --package-path . candela-cli rename --display DELL --name Desk
 swift run --package-path . candela-cli preset night
 swift run --package-path . candela-cli match-all --display main
 swift run --package-path . candela-cli set-mirror
+swift run --package-path . candela-cli set-follow-keyboard --enabled true
 swift run --package-path . candela-cli scenes
 swift run --package-path . candela-cli save-scene --name Night
 swift run --package-path . candela-cli apply-scene Night
@@ -209,6 +214,11 @@ swift test --package-path .
 ```
 
 CI also builds **Candela** and **CandelaMAS** on macOS 14.
+
+## 1.3
+
+- Keyboard brightness keys now move every controllable display. External panels keep a relative offset from the built-in panel.
+- Follow can be turned on from the menu-bar panel or Settings for this launch only. Each display can still be dimmed on its own.
 
 ## 1.2
 

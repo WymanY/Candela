@@ -3044,23 +3044,6 @@
         }
       }
     },
-    "App": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "App"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "应用"
-          }
-        }
-      }
-    },
     "About Candela": {
       "extractionState": "manual",
       "localizations": {
@@ -3108,6 +3091,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "全部显示"
+          }
+        }
+      }
+    },
+    "Follow keyboard brightness": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow keyboard brightness"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随键盘亮度"
+          }
+        }
+      }
+    },
+    "Follow Keyboard Brightness": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow Keyboard Brightness"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随键盘亮度"
+          }
+        }
+      }
+    },
+    "Stop following keyboard brightness": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop following keyboard brightness"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止跟随键盘亮度"
+          }
+        }
+      }
+    },
+    "This launch only. Other displays keep a relative offset while keyboard brightness keys move the built-in panel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This launch only. Other displays keep a relative offset while keyboard brightness keys move the built-in panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅本次启动有效。键盘亮度键调节内建屏时，其他显示器按相对偏移一起变化。"
           }
         }
       }
