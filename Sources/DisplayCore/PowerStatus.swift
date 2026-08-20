@@ -171,16 +171,16 @@ public enum PowerStatusPresentation {
         if status.showsOnPower {
             parts.append(
                 status.isCharging
-                    ? String(localized: "Charging", bundle: .module)
-                    : String(localized: "Plugged In", bundle: .module)
+                    ? localized("Charging")
+                    : localized("Plugged In")
             )
         }
-        parts.append(String(localized: "Battery \(percent) percent", bundle: .module))
+        parts.append(localized("Battery \(percent) percent"))
         if let remaining = remainingTitle(for: status) {
             parts.append(remaining)
         }
         if status.isLowPowerModeEnabled {
-            parts.append(String(localized: "Low Power Mode", bundle: .module))
+            parts.append(localized("Low Power Mode"))
         }
         return parts.joined(separator: ", ")
     }
@@ -193,11 +193,11 @@ public enum PowerStatusPresentation {
             let hours = minutes / 60
             let leftover = minutes % 60
             if leftover == 0 {
-                return String(localized: "\(hours)h left", bundle: .module)
+                return localized("\(hours)h left")
             }
-            return String(localized: "\(hours)h \(leftover)m left", bundle: .module)
+            return localized("\(hours)h \(leftover)m left")
         }
-        return String(localized: "\(minutes)m left", bundle: .module)
+        return localized("\(minutes)m left")
     }
 
     public static func symbolName(for status: PowerStatus) -> String {

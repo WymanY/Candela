@@ -16,9 +16,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private let opacitySlider = CandelaChrome.makeSlider()
     private let clickThroughButton: NSButton
     private let pinControl = PictureInPicturePinControl()
-    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: String(localized: "Close Picture in Picture"))
+    private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: localizedText("Close Picture in Picture"))
     private let preview = PictureInPicturePreviewView()
-    private let placeholder = CandelaChrome.makeCaption(String(localized: "Waiting for display…"))
+    private let placeholder = CandelaChrome.makeCaption(localizedText("Waiting for display…"))
     private let chrome = NSStackView()
     private let sourceRow = NSStackView()
     private var stream: SCStream?
@@ -84,11 +84,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         )
         clickThroughButton = CandelaChrome.makeIconButton(
             symbolName: "cursorarrow.slash",
-            help: String(localized: "Click Through")
+            help: localizedText("Click Through")
         )
         mirrorButton = CandelaChrome.makeIconButton(
             symbolName: "arrow.left.and.right.righttriangle.left.righttriangle.right",
-            help: String(localized: "Mirror")
+            help: localizedText("Mirror")
         )
         let preferredWidth = CGFloat(placement.frame?.width ?? PictureInPictureLayout.defaultWidth)
         let content = PictureInPictureLayout.contentSize(
@@ -157,7 +157,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             object: nil
         )
         if usePlaceholder {
-            showPlaceholder(String(localized: "Preview only in fake-hardware mode."))
+            showPlaceholder(localizedText("Preview only in fake-hardware mode."))
             windowCandidates = PictureInPictureCapture.fakeCandidates(displayID: displayID)
             reloadWindowMenu()
             applyMirror()
@@ -194,6 +194,32 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         applyCurrentTitle()
     }
 
+    func reloadLocalizedChrome() {
+        closeButton.toolTip = localizedText("Close Picture in Picture")
+        closeButton.setAccessibilityLabel(localizedText("Close Picture in Picture"))
+        configurePopup(modePopup, label: localizedText("Source"))
+        let selectedMode = modePopup.selectedItem?.representedObject as? String
+        modePopup.removeAllItems()
+        for mode in PictureInPictureMode.allCases {
+            modePopup.addItem(withTitle: localizedModeTitle(mode))
+            modePopup.lastItem?.representedObject = mode.rawValue
+        }
+        if let selectedMode,
+           let index = modePopup.itemArray.firstIndex(where: { ($0.representedObject as? String) == selectedMode })
+        {
+            modePopup.selectItem(at: index)
+        }
+        configurePopup(windowPopup, label: localizedText("Window"))
+        configurePopup(zoomPopup, label: localizedText("Magnifier Zoom"))
+        opacitySlider.setAccessibilityLabel(localizedText("Opacity"))
+        pinControl.reloadLocalizedChrome()
+        applyOpacity()
+        applyClickThrough()
+        applyMirror()
+        applyCurrentTitle()
+        reloadWindowMenu()
+    }
+
     private func applyCurrentTitle() {
         let title = currentChromeTitle()
         titleLabel.stringValue = title
@@ -202,12 +228,12 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     private func currentChromeTitle(windowSource: PictureInPictureWindowIdentity? = nil) -> String {
         if placement.mode == .window, let source = windowSource ?? placement.window {
-            return composedTitle(composedWindowName(source), hint: String(localized: "Scroll to zoom"))
+            return composedTitle(composedWindowName(source), hint: localizedText("Scroll to zoom"))
         }
         if placement.mode == .magnifier {
-            return composedTitle(displayTitle, hint: String(localized: "Space-drag to pan"))
+            return composedTitle(displayTitle, hint: localizedText("Space-drag to pan"))
         }
-        return composedTitle(displayTitle, hint: String(localized: "Scroll to zoom"))
+        return composedTitle(displayTitle, hint: localizedText("Scroll to zoom"))
     }
 
     private func composedWindowName(_ source: PictureInPictureWindowIdentity) -> String {
@@ -463,8 +489,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         opacitySlider.controlSize = .small
         opacitySlider.target = self
         opacitySlider.action = #selector(opacityChanged(_:))
-        opacitySlider.setAccessibilityLabel(String(localized: "Opacity"))
-        opacitySlider.toolTip = String(localized: "Opacity")
+        opacitySlider.setAccessibilityLabel(localizedText("Opacity"))
+        opacitySlider.toolTip = localizedText("Opacity")
         opacitySlider.translatesAutoresizingMaskIntoConstraints = false
         opacitySlider.widthAnchor.constraint(equalToConstant: 72).isActive = true
 
@@ -476,7 +502,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         mirrorButton.target = self
         mirrorButton.action = #selector(toggleMirror)
 
-        configurePopup(modePopup, label: String(localized: "Source"))
+        configurePopup(modePopup, label: localizedText("Source"))
         modePopup.removeAllItems()
         for mode in PictureInPictureMode.allCases {
             modePopup.addItem(withTitle: localizedModeTitle(mode))
@@ -485,11 +511,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         modePopup.target = self
         modePopup.action = #selector(modeChanged(_:))
 
-        configurePopup(windowPopup, label: String(localized: "Window"))
+        configurePopup(windowPopup, label: localizedText("Window"))
         windowPopup.target = self
         windowPopup.action = #selector(windowChanged(_:))
 
-        configurePopup(zoomPopup, label: String(localized: "Magnifier Zoom"))
+        configurePopup(zoomPopup, label: localizedText("Magnifier Zoom"))
         zoomPopup.removeAllItems()
         for stop in PictureInPictureMagnifier.zoomStops {
             let title = stop == stop.rounded() ? String(format: "%.0fx", stop) : String(format: "%.1fx", stop)
@@ -585,7 +611,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     private func applyOpacity() {
         window?.alphaValue = CGFloat(placement.opacity)
-        opacitySlider.toolTip = "\(String(localized: "Opacity")) \(Int((placement.opacity * 100).rounded()))%"
+        opacitySlider.toolTip = "\(localizedText("Opacity")) \(Int((placement.opacity * 100).rounded()))%"
         opacitySlider.setAccessibilityValueDescription("\(Int((placement.opacity * 100).rounded()))%")
     }
 
@@ -593,8 +619,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         mirrorButton.state = placement.mirrored ? .on : .off
         mirrorButton.contentTintColor = placement.mirrored ? CandelaChrome.accent : .secondaryLabelColor
         mirrorButton.toolTip = placement.mirrored
-            ? String(localized: "Mirrored. Flip back to the original view.")
-            : String(localized: "Mirror")
+            ? localizedText("Mirrored. Flip back to the original view.")
+            : localizedText("Mirror")
         mirrorButton.setAccessibilityLabel(mirrorButton.toolTip)
         preview.setMirrored(placement.mirrored)
     }
@@ -617,8 +643,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         clickThroughButton.state = placement.clickThrough ? .on : .off
         clickThroughButton.contentTintColor = placement.clickThrough ? CandelaChrome.accent : .secondaryLabelColor
         clickThroughButton.toolTip = placement.clickThrough
-            ? String(localized: "Click through is on. Hover the title bar to adjust. Scroll still zooms.")
-            : String(localized: "Click Through")
+            ? localizedText("Click through is on. Hover the title bar to adjust. Scroll still zooms.")
+            : localizedText("Click Through")
         clickThroughButton.setAccessibilityLabel(clickThroughButton.toolTip)
         updateClickThroughIgnoring()
         if placement.clickThrough {
@@ -703,7 +729,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private func reloadWindowMenu() {
         let previous = windowPopup.selectedItem?.representedObject as? String
         windowPopup.removeAllItems()
-        windowPopup.addItem(withTitle: String(localized: "Choose Window"))
+        windowPopup.addItem(withTitle: localizedText("Choose Window"))
         windowPopup.lastItem?.representedObject = ""
         for candidate in windowCandidates {
             windowPopup.addItem(withTitle: candidate.identity.displayTitle)
@@ -788,9 +814,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
 
     private func localizedModeTitle(_ mode: PictureInPictureMode) -> String {
         switch mode {
-        case .display: return String(localized: "Display")
-        case .window: return String(localized: "Window")
-        case .magnifier: return String(localized: "Magnifier")
+        case .display: return localizedText("Display")
+        case .window: return localizedText("Window")
+        case .magnifier: return localizedText("Magnifier")
         }
     }
 
@@ -829,7 +855,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             return
         }
         guard sourceDisplayID != 0 else {
-            showPlaceholder(String(localized: "This display is not available."))
+            showPlaceholder(localizedText("This display is not available."))
             return
         }
         if !CGPreflightScreenCaptureAccess() {
@@ -866,7 +892,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                 self.window?.title = titleLabel.stringValue
             } else if placement.mode == .magnifier {
                 guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
-                    showPlaceholder(String(localized: "Could not find this display for capture."))
+                    showPlaceholder(localizedText("Could not find this display for capture."))
                     return
                 }
                 filter = SCContentFilter(display: display, excludingWindows: ownWindows)
@@ -890,7 +916,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
                     applyCurrentTitle()
                 }
                 guard let display = PictureInPictureCapture.display(id: sourceDisplayID, in: contentList) else {
-                    showPlaceholder(String(localized: "Could not find this display for capture."))
+                    showPlaceholder(localizedText("Could not find this display for capture."))
                     return
                 }
                 filter = SCContentFilter(display: display, excludingWindows: ownWindows)
@@ -917,7 +943,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             applySourceChrome()
             applyCurrentTitle()
         } catch {
-            showPlaceholder(String(localized: "Screen Recording permission is required for Picture in Picture."))
+            showPlaceholder(localizedText("Screen Recording permission is required for Picture in Picture."))
         }
     }
 

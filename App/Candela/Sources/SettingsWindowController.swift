@@ -25,7 +25,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
             backing: .buffered,
             defer: false
         )
-        window.title = String(localized: "Candela")
+        window.title = localizedText("Candela")
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         window.titlebarAppearsTransparent = false
@@ -43,27 +43,27 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         let generalView = SettingsGeneralView(session: session)
         self.generalView = generalView
         let general = NSTabViewItem(identifier: Tab.general.rawValue)
-        general.label = String(localized: "General")
+        general.label = localizedText("General")
         general.view = generalView
 
         let displaysView = SettingsDisplaysView(session: session)
         self.displaysView = displaysView
         let displays = NSTabViewItem(identifier: Tab.displays.rawValue)
-        displays.label = String(localized: "Displays")
+        displays.label = localizedText("Displays")
         displays.view = displaysView
 
         let scenesView = SettingsScenesView(session: session)
         self.scenesView = scenesView
         let scenes = NSTabViewItem(identifier: Tab.scenes.rawValue)
-        scenes.label = String(localized: "Scenes")
+        scenes.label = localizedText("Scenes")
         scenes.view = scenesView
 
         let shortcuts = NSTabViewItem(identifier: Tab.shortcuts.rawValue)
-        shortcuts.label = String(localized: "Shortcuts")
+        shortcuts.label = localizedText("Shortcuts")
         shortcuts.view = SettingsShortcutsView()
 
         let about = NSTabViewItem(identifier: Tab.about.rawValue)
-        about.label = String(localized: "About")
+        about.label = localizedText("About")
         about.view = SettingsAboutView(session: session)
 
         tabView.addTabViewItem(general)
@@ -133,19 +133,19 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         item.action = #selector(selectTab(_:))
         switch itemIdentifier.rawValue {
         case Tab.general.rawValue:
-            item.label = String(localized: "General")
+            item.label = localizedText("General")
             item.image = CandelaChrome.symbol("slider.horizontal.3", size: 16)
         case Tab.displays.rawValue:
-            item.label = String(localized: "Displays")
+            item.label = localizedText("Displays")
             item.image = CandelaChrome.symbol("display", size: 16)
         case Tab.scenes.rawValue:
-            item.label = String(localized: "Scenes")
+            item.label = localizedText("Scenes")
             item.image = CandelaChrome.symbol("square.stack.3d.up", size: 16)
         case Tab.shortcuts.rawValue:
-            item.label = String(localized: "Shortcuts")
+            item.label = localizedText("Shortcuts")
             item.image = CandelaChrome.symbol("keyboard", size: 16)
         case Tab.about.rawValue:
-            item.label = String(localized: "About")
+            item.label = localizedText("About")
             item.image = CandelaChrome.symbol("info.circle", size: 16)
         default:
             return nil

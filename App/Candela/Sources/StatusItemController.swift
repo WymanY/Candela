@@ -138,7 +138,7 @@ final class StatusItemController: NSObject {
     private func showContextMenu() {
         let menu = NSMenu()
         let settingsItem = NSMenuItem(
-            title: String(localized: "Settings"),
+            title: localizedText("Settings"),
             action: #selector(openSettings),
             keyEquivalent: ","
         )
@@ -146,7 +146,7 @@ final class StatusItemController: NSObject {
         menu.addItem(settingsItem)
         menu.addItem(.separator())
         let quitItem = NSMenuItem(
-            title: String(localized: "Quit"),
+            title: localizedText("Quit"),
             action: #selector(quit),
             keyEquivalent: "q"
         )
@@ -168,9 +168,9 @@ final class StatusItemController: NSObject {
         if language != appliedLanguage {
             appliedLanguage = language
             panelController.rebuild()
-            if settingsController.window?.isVisible == true {
-                rebuildSettingsWindow()
-            }
+            rebuildSettingsWindow()
+            session.reloadLocalizedChrome()
+            (NSApp.delegate as? AppDelegate)?.reloadApplicationMenu()
         } else {
             panelController.reload()
             settingsController.reload()
@@ -178,24 +178,27 @@ final class StatusItemController: NSObject {
     }
 
     private func rebuildSettingsWindow() {
-        guard let window = settingsController.window, window.isVisible else { return }
-        let selected = window.toolbar?.selectedItemIdentifier
-        let frame = window.frame
+        let wasVisible = settingsController.window?.isVisible == true
+        let selected = settingsController.window?.toolbar?.selectedItemIdentifier
+        let frame = settingsController.window?.frame
         settingsController.onClose = nil
+        let previous = settingsController
         let replacement = SettingsWindowController(session: session)
         settingsController = replacement
         bindSettingsController()
-        replacement.showWindow(nil)
-        if let next = replacement.window {
-            next.setFrame(frame, display: true)
-            if let selected {
-                replacement.selectTab(identifier: selected)
+        if wasVisible, let frame {
+            replacement.showWindow(nil)
+            if let next = replacement.window {
+                next.setFrame(frame, display: true)
+                if let selected {
+                    replacement.selectTab(identifier: selected)
+                }
+                next.level = .floating
+                next.makeKeyAndOrderFront(nil)
+                next.orderFrontRegardless()
             }
-            next.level = .floating
-            next.makeKeyAndOrderFront(nil)
-            next.orderFrontRegardless()
         }
-        window.close()
+        previous.window?.close()
     }
 
     @objc func openSettings() {
@@ -301,7 +304,7 @@ final class StatusItemController: NSObject {
         let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         guard let image = NSImage(
             systemSymbolName: name,
-            accessibilityDescription: String(localized: "Candela")
+            accessibilityDescription: localizedText("Candela")
         )?.withSymbolConfiguration(config) else {
             return nil
         }

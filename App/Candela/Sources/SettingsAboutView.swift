@@ -20,15 +20,15 @@ final class SettingsAboutView: NSView {
         icon.widthAnchor.constraint(equalToConstant: 72).isActive = true
         icon.heightAnchor.constraint(equalToConstant: 72).isActive = true
 
-        let name = CandelaChrome.makeTitle(String(localized: "Candela"), size: 26, weight: .semibold)
+        let name = CandelaChrome.makeTitle(localizedText("Candela"), size: 26, weight: .semibold)
         name.alignment = .center
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         versionLabel.stringValue = "\(short) (\(build))"
         versionLabel.alignment = .center
-        versionLabel.toolTip = String(localized: "Option-click to copy a debug dump")
+        versionLabel.toolTip = localizedText("Option-click to copy a debug dump")
 
-        let blurb = CandelaChrome.makeCaption(String(localized: "Menu-bar brightness for every display."))
+        let blurb = CandelaChrome.makeCaption(localizedText("Menu-bar brightness for every display."))
         blurb.alignment = .center
         blurb.font = .systemFont(ofSize: 13, weight: .medium)
 

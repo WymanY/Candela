@@ -61,13 +61,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         let settings = NSMenuItem(
-            title: String(localized: "Settings"),
+            title: localizedText("Settings"),
             action: #selector(StatusItemController.openSettings),
             keyEquivalent: ""
         )
         settings.target = statusItem
         menu.addItem(settings)
         return menu
+    }
+
+    func reloadApplicationMenu() {
+        installApplicationMenu()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -83,14 +87,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let appMenu = NSMenu()
         let about = NSMenuItem(
-            title: String(localized: "About Candela"),
+            title: localizedText("About Candela"),
             action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
             keyEquivalent: ""
         )
         appMenu.addItem(about)
         appMenu.addItem(.separator())
         let settings = NSMenuItem(
-            title: String(localized: "Settings"),
+            title: localizedText("Settings"),
             action: #selector(StatusItemController.openSettings),
             keyEquivalent: ","
         )
@@ -98,27 +102,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(settings)
         appMenu.addItem(.separator())
         let hide = NSMenuItem(
-            title: String(localized: "Hide Candela"),
+            title: localizedText("Hide Candela"),
             action: #selector(NSApplication.hide(_:)),
             keyEquivalent: "h"
         )
         appMenu.addItem(hide)
         let hideOthers = NSMenuItem(
-            title: String(localized: "Hide Others"),
+            title: localizedText("Hide Others"),
             action: #selector(NSApplication.hideOtherApplications(_:)),
             keyEquivalent: "h"
         )
         hideOthers.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(hideOthers)
         let showAll = NSMenuItem(
-            title: String(localized: "Show All"),
+            title: localizedText("Show All"),
             action: #selector(NSApplication.unhideAllApplications(_:)),
             keyEquivalent: ""
         )
         appMenu.addItem(showAll)
         appMenu.addItem(.separator())
         let quit = NSMenuItem(
-            title: String(localized: "Quit Candela"),
+            title: localizedText("Quit Candela"),
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )

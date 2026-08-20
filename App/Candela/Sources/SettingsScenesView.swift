@@ -5,7 +5,7 @@ import DisplayCore
 final class SettingsScenesView: NSView, NSTextFieldDelegate {
     private let session: DisplaySessionController
     private let stack = NSStackView()
-    private let empty = CandelaChrome.makeCaption(String(localized: "No saved scenes yet."))
+    private let empty = CandelaChrome.makeCaption(localizedText("No saved scenes yet."))
 
     init(session: DisplaySessionController) {
         self.session = session
@@ -21,15 +21,15 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scroll)
 
-        let heading = CandelaChrome.makeTitle(String(localized: "Scenes"), size: 22, weight: .semibold)
-        let subtitle = CandelaChrome.makeCaption(String(localized: "Save the current displays as a named scene, then apply it later."))
+        let heading = CandelaChrome.makeTitle(localizedText("Scenes"), size: 22, weight: .semibold)
+        let subtitle = CandelaChrome.makeCaption(localizedText("Save the current displays as a named scene, then apply it later."))
         let header = NSStackView(views: [heading, subtitle])
         header.orientation = .vertical
         header.alignment = .leading
         header.spacing = 2
         header.translatesAutoresizingMaskIntoConstraints = false
 
-        let saveButton = CandelaChrome.makeQuietButton(title: String(localized: "Save Current…"), symbolName: "plus")
+        let saveButton = CandelaChrome.makeQuietButton(title: localizedText("Save Current…"), symbolName: "plus")
         saveButton.target = self
         saveButton.action = #selector(saveCurrent)
         saveButton.translatesAutoresizingMaskIntoConstraints = false
@@ -108,18 +108,18 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
         field.action = #selector(nameEdited(_:))
 
         let summary = CandelaChrome.makeCaption(summaryText(for: scene))
-        let apply = CandelaChrome.makeQuietButton(title: String(localized: "Apply"), symbolName: "play.fill")
+        let apply = CandelaChrome.makeQuietButton(title: localizedText("Apply"), symbolName: "play.fill")
         apply.identifier = NSUserInterfaceItemIdentifier(scene.id)
         apply.target = self
         apply.action = #selector(applyClicked(_:))
         if DisplayScenePlanner.matches(scene, snapshots: session.snapshots, aliases: [:], speaker: session.speaker) {
             apply.contentTintColor = CandelaChrome.accent
         }
-        let update = CandelaChrome.makeQuietButton(title: String(localized: "Update"), symbolName: "arrow.triangle.2.circlepath")
+        let update = CandelaChrome.makeQuietButton(title: localizedText("Update"), symbolName: "arrow.triangle.2.circlepath")
         update.identifier = NSUserInterfaceItemIdentifier(scene.id)
         update.target = self
         update.action = #selector(updateClicked(_:))
-        let delete = CandelaChrome.makeQuietButton(title: String(localized: "Delete"), symbolName: "trash")
+        let delete = CandelaChrome.makeQuietButton(title: localizedText("Delete"), symbolName: "trash")
         delete.identifier = NSUserInterfaceItemIdentifier(scene.id)
         delete.target = self
         delete.action = #selector(deleteClicked(_:))
@@ -141,12 +141,12 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
 
     private func summaryText(for scene: DisplayScene) -> String {
         let plan = DisplayScenePlanner.plan(scene: scene, snapshots: session.snapshots)
-        var parts = ["\(scene.targets.count) " + String(localized: "displays")]
+        var parts = ["\(scene.targets.count) " + localizedText("displays")]
         if plan.missingKeys.isEmpty == false {
-            parts.append("\(plan.missingKeys.count) " + String(localized: "missing"))
+            parts.append("\(plan.missingKeys.count) " + localizedText("missing"))
         }
         if DisplayScenePlanner.matches(scene, snapshots: session.snapshots, aliases: [:], speaker: session.speaker) {
-            parts.append(String(localized: "Active"))
+            parts.append(localizedText("Active"))
         }
         return parts.joined(separator: " · ")
     }
@@ -173,10 +173,10 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
     @objc private func deleteClicked(_ sender: NSButton) {
         guard let id = sender.identifier?.rawValue, let scene = session.scene(matching: id) else { return }
         let alert = NSAlert()
-        alert.messageText = String(localized: "Delete Scene")
-        alert.informativeText = String(format: String(localized: "Remove “%@”? This cannot be undone."), scene.displayName)
-        alert.addButton(withTitle: String(localized: "Delete"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
+        alert.messageText = localizedText("Delete Scene")
+        alert.informativeText = String(format: localizedText("Remove “%@”? This cannot be undone."), scene.displayName)
+        alert.addButton(withTitle: localizedText("Delete"))
+        alert.addButton(withTitle: localizedText("Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         _ = session.deleteScene(id)
         reload()
@@ -199,21 +199,21 @@ final class SettingsScenesView: NSView, NSTextFieldDelegate {
 
     private func suggestedName() -> String {
         let existing = Set(session.scenes.map { DisplaySceneName.slug($0.name) })
-        if !existing.contains("desk") { return String(localized: "Desk") }
-        if !existing.contains("night") { return String(localized: "Night") }
+        if !existing.contains("desk") { return localizedText("Desk") }
+        if !existing.contains("night") { return localizedText("Night") }
         var index = session.scenes.count + 1
         while existing.contains(DisplaySceneName.slug("Scene \(index)")) {
             index += 1
         }
-        return String(localized: "Scene \(index)")
+        return localizedText("Scene \(index)")
     }
 
     private func promptForName(defaultName: String, completion: @escaping (String) -> Void) {
         let alert = NSAlert()
-        alert.messageText = String(localized: "Save Scene")
-        alert.informativeText = String(localized: "Capture brightness, volume, input, rotation, and Picture in Picture for the current displays.")
-        alert.addButton(withTitle: String(localized: "Save"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
+        alert.messageText = localizedText("Save Scene")
+        alert.informativeText = localizedText("Capture brightness, volume, input, rotation, and Picture in Picture for the current displays.")
+        alert.addButton(withTitle: localizedText("Save"))
+        alert.addButton(withTitle: localizedText("Cancel"))
         let field = NSTextField(string: defaultName)
         field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
         alert.accessoryView = field

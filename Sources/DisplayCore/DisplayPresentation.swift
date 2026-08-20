@@ -5,23 +5,23 @@ public enum DisplayPresentation {
     public static func connectionTitle(for snapshot: DisplaySnapshot) -> String {
         switch snapshot.kind {
         case .builtIn:
-            return String(localized: "Built-in", bundle: .module)
+            return localized("Built-in")
         case .appleExternal:
-            return connectionKindTitle(snapshot.connection, fallback: String(localized: "Apple", bundle: .module))
+            return connectionKindTitle(snapshot.connection, fallback: localized("Apple"))
         case .virtualUnsupported:
-            return String(localized: "Unsupported", bundle: .module)
+            return localized("Unsupported")
         case .genericExternal:
-            return connectionKindTitle(snapshot.connection, fallback: String(localized: "External", bundle: .module))
+            return connectionKindTitle(snapshot.connection, fallback: localized("External"))
         }
     }
 
     public static func connectionKindTitle(_ connection: ConnectionKind, fallback: String) -> String {
         switch connection {
-        case .builtIn: return String(localized: "Built-in", bundle: .module)
-        case .hdmi: return String(localized: "HDMI", bundle: .module)
-        case .displayPort: return String(localized: "DisplayPort", bundle: .module)
-        case .thunderbolt: return String(localized: "Thunderbolt", bundle: .module)
-        case .usb: return String(localized: "USB-C", bundle: .module)
+        case .builtIn: return localized("Built-in")
+        case .hdmi: return localized("HDMI")
+        case .displayPort: return localized("DisplayPort")
+        case .thunderbolt: return localized("Thunderbolt")
+        case .usb: return localized("USB-C")
         case .unknown: return fallback
         }
     }
@@ -55,21 +55,21 @@ public enum DisplayPresentation {
 
     public static func brightnessBackendTitle(for snapshot: DisplaySnapshot) -> String {
         switch snapshot.brightness.backend {
-        case .displayServices: return String(localized: "DisplayServices", bundle: .module)
-        case .ddc: return String(localized: "DDC", bundle: .module)
-        case .softwareGamma: return String(localized: "Software", bundle: .module)
+        case .displayServices: return localized("DisplayServices")
+        case .ddc: return localized("DDC")
+        case .softwareGamma: return localized("Software")
         case .none:
-            return snapshot.brightness.showsBrightnessSlider ? String(localized: "Pending", bundle: .module) : String(localized: "None", bundle: .module)
+            return snapshot.brightness.showsBrightnessSlider ? localized("Pending") : localized("None")
         }
     }
 
     public static func volumeBackendTitle(for snapshot: DisplaySnapshot) -> String {
         switch snapshot.volume.backend {
-        case .coreAudio: return String(localized: "Core Audio", bundle: .module)
-        case .ddc: return String(localized: "DDC", bundle: .module)
-        case .software: return String(localized: "Software", bundle: .module)
+        case .coreAudio: return localized("Core Audio")
+        case .ddc: return localized("DDC")
+        case .software: return localized("Software")
         case .none:
-            return snapshot.volume.supportsVolume ? String(localized: "Pending", bundle: .module) : String(localized: "None", bundle: .module)
+            return snapshot.volume.supportsVolume ? localized("Pending") : localized("None")
         }
     }
 

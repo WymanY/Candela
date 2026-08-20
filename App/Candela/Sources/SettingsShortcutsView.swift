@@ -13,8 +13,8 @@ final class SettingsShortcutsView: NSView {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scroll)
 
-        let heading = CandelaChrome.makeTitle(String(localized: "Shortcuts"), size: 22, weight: .semibold)
-        let subtitle = CandelaChrome.makeCaption(String(localized: "Keyboard shortcuts already available in Candela."))
+        let heading = CandelaChrome.makeTitle(localizedText("Shortcuts"), size: 22, weight: .semibold)
+        let subtitle = CandelaChrome.makeCaption(localizedText("Keyboard shortcuts already available in Candela."))
         let header = NSStackView(views: [heading, subtitle])
         header.orientation = .vertical
         header.alignment = .leading
@@ -29,43 +29,43 @@ final class SettingsShortcutsView: NSView {
 
         stack.addArrangedSubview(header)
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "App"),
+            title: localizedText("App"),
             rows: [
-                (String(localized: "Open Settings"), "⌘,"),
-                (String(localized: "Quit"), "⌘Q"),
+                (localizedText("Open Settings"), "⌘,"),
+                (localizedText("Quit"), "⌘Q"),
             ]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Menu Bar"),
+            title: localizedText("Menu Bar"),
             rows: [
-                (String(localized: "Close Panel"), "Esc"),
+                (localizedText("Close Panel"), "Esc"),
             ]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Settings"),
+            title: localizedText("Settings"),
             rows: [
-                (String(localized: "Close Settings"), "Esc"),
+                (localizedText("Close Settings"), "Esc"),
             ]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Picture in Picture"),
+            title: localizedText("Picture in Picture"),
             rows: [
-                (String(localized: "Close Picture in Picture"), "⌘W"),
-                (String(localized: "Scroll to zoom"), String(localized: "Scroll")),
-                (String(localized: "Space-drag to pan"), String(localized: "Space-drag")),
+                (localizedText("Close Picture in Picture"), "⌘W"),
+                (localizedText("Scroll to zoom"), localizedText("Scroll")),
+                (localizedText("Space-drag to pan"), localizedText("Space-drag")),
             ]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "Display Overview"),
+            title: localizedText("Display Overview"),
             rows: [
-                (String(localized: "Close Display Overview"), "⌘W"),
-                (String(localized: "Scroll to zoom"), String(localized: "Scroll")),
+                (localizedText("Close Display Overview"), "⌘W"),
+                (localizedText("Scroll to zoom"), localizedText("Scroll")),
             ]
         ))
         stack.addArrangedSubview(makeGroup(
-            title: String(localized: "About"),
+            title: localizedText("About"),
             rows: [
-                (String(localized: "Copy debug dump"), String(localized: "Option-click")),
+                (localizedText("Copy debug dump"), localizedText("Option-click")),
             ]
         ))
 
