@@ -52,14 +52,27 @@ final class StatusItemController: NSObject {
 
     func revealOnLaunch() {
         showMainUI()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.showPanelIfReady()
-        }
+        presentFirstLaunchPanelIfNeeded(attempt: 0)
     }
 
-    private func showPanelIfReady() {
-        guard statusItem.button?.window != nil else { return }
-        showPanel()
+    private func presentFirstLaunchPanelIfNeeded(attempt: Int) {
+        guard !session.settings.hasOpenedPanelOnce else {
+            BootLog.write("skip first-launch panel; already opened")
+            return
+        }
+        if let button = statusItem.button, button.window != nil {
+            BootLog.write("show first-launch panel buttonWindow=true attempt=\(attempt)")
+            showPanel(relativeTo: button)
+            return
+        }
+        if attempt >= 16 {
+            BootLog.write("show first-launch panel fallback attempt=\(attempt)")
+            showPanel(relativeTo: statusItem.button)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.presentFirstLaunchPanelIfNeeded(attempt: attempt + 1)
+        }
     }
 
     /// Dock click, first launch, and reopen all go through here.
@@ -67,9 +80,6 @@ final class StatusItemController: NSObject {
         configureButton()
         statusItem.isVisible = true
         suppressDismissUntil = Date().addingTimeInterval(2)
-        if !session.settings.hasOpenedPanelOnce {
-            session.markPanelOpenedOnce()
-        }
         let button = statusItem.button
         let frame = button.map { NSStringFromRect($0.frame) } ?? "nil"
         let hasWindow = button?.window != nil
@@ -125,9 +135,18 @@ final class StatusItemController: NSObject {
     }
 
     private func showPanel() {
-        guard let button = statusItem.button else { return }
+        showPanel(relativeTo: statusItem.button)
+    }
+
+    private func showPanel(relativeTo button: NSView?) {
         panelController.show(relativeTo: button)
         statusItem.button?.image = statusImage(filled: true)
+        if panelController.isVisible {
+            session.markPanelOpenedOnce()
+            BootLog.write("first-launch panel visible frame=\(NSStringFromRect(panelController.panel.frame))")
+        } else {
+            BootLog.write("first-launch panel failed to become visible")
+        }
     }
 
     private func hidePanel() {
