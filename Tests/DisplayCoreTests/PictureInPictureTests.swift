@@ -385,6 +385,76 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(query?.bundleIdentifier, "com.apple.Safari")
     }
 
+    func testWindowMatchingStaysOnTheChosenDisplay() {
+        let chromeOnDell = PictureInPictureWindowCandidate(
+            windowID: 11,
+            bundleIdentifier: "com.google.Chrome",
+            title: "CNY to TRY Weekly Exchange Trends - Grok",
+            ownerName: "Google Chrome",
+            displayID: 2
+        )
+        let notesOnLaptop = PictureInPictureWindowCandidate(
+            windowID: 12,
+            bundleIdentifier: "com.apple.Notes",
+            title: "Inbox",
+            ownerName: "Notes",
+            displayID: 1
+        )
+        let identity = PictureInPictureWindowIdentity(
+            bundleIdentifier: "com.google.Chrome",
+            title: "CNY to TRY Weekly Exchange Trends - Grok",
+            ownerName: "Google Chrome"
+        )
+
+        XCTAssertNil(
+            PictureInPictureWindowMatching.match(
+                identity: identity,
+                candidates: [chromeOnDell, notesOnLaptop],
+                preferringDisplay: 1
+            )
+        )
+        XCTAssertEqual(
+            PictureInPictureWindowMatching.match(
+                identity: identity,
+                candidates: [chromeOnDell, notesOnLaptop],
+                preferringDisplay: 2
+            )?.windowID,
+            11
+        )
+        XCTAssertEqual(
+            PictureInPictureWindowMatching.query(
+                "Grok",
+                bundleIdentifier: "com.google.Chrome",
+                preferringDisplay: 1,
+                in: [chromeOnDell, notesOnLaptop]
+            )?.windowID,
+            nil
+        )
+        XCTAssertEqual(
+            PictureInPictureWindowMatching.scopedToDisplay(
+                [chromeOnDell, notesOnLaptop],
+                displayID: 1
+            ).map(\.windowID),
+            [12]
+        )
+    }
+
+    func testWindowDisplayUsesLargestOverlap() {
+        let laptop = (id: UInt32(1), bounds: CGRect(x: 0, y: 0, width: 1440, height: 900))
+        let dell = (id: UInt32(2), bounds: CGRect(x: -1920, y: 0, width: 1920, height: 1080))
+        let chromeOnDell = CGRect(x: -1600, y: 80, width: 1280, height: 800)
+        let notesOnLaptop = CGRect(x: 120, y: 80, width: 900, height: 640)
+
+        XCTAssertEqual(
+            PictureInPictureWindowMatching.displayIDContaining(chromeOnDell, displays: [laptop, dell]),
+            2
+        )
+        XCTAssertEqual(
+            PictureInPictureWindowMatching.displayIDContaining(notesOnLaptop, displays: [laptop, dell]),
+            1
+        )
+    }
+
     func testWindowMenuHidesDesktopBackstopLayers() {
         let slack = PictureInPictureWindowCandidate(
             windowID: 11,

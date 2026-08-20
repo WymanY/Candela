@@ -32,14 +32,15 @@ enum PictureInPictureCapture {
                 bundleIdentifier: bundle,
                 title: title,
                 ownerName: owner,
-                displayID: displayIDContaining(window.frame),
+                displayID: displayIDContaining(window.frame, displays: content.displays),
                 pixelWidth: UInt32(max(window.frame.width, 0).rounded()),
                 pixelHeight: UInt32(max(window.frame.height, 0).rounded()),
                 windowLayer: window.windowLayer
             )
             return PictureInPictureWindowMatching.shouldOffer(candidate) ? candidate : nil
         }
-        return PictureInPictureWindowMatching.sorted(mapped, preferringDisplay: displayID)
+        let scoped = PictureInPictureWindowMatching.scopedToDisplay(mapped, displayID: displayID)
+        return PictureInPictureWindowMatching.sorted(scoped, preferringDisplay: displayID)
     }
 
     static func window(id: UInt32, in content: SCShareableContent) -> SCWindow? {
@@ -47,7 +48,15 @@ enum PictureInPictureCapture {
     }
 
     static func display(id: CGDirectDisplayID, in content: SCShareableContent) -> SCDisplay? {
-        content.displays.first { $0.displayID == id }
+        if let match = content.displays.first(where: { $0.displayID == id }) {
+            return match
+        }
+        let bounds = CGDisplayBounds(id)
+        let matches = content.displays.filter { $0.frame.equalTo(bounds) }
+        if matches.count == 1 {
+            return matches[0]
+        }
+        return nil
     }
 
     static func fakeCandidates(displayID: CGDirectDisplayID) -> [PictureInPictureWindowCandidate] {
@@ -122,8 +131,22 @@ enum PictureInPictureCapture {
         )
     }
 
-    static func displayIDContaining(_ frame: CGRect) -> UInt32? {
-        let point = CGPoint(x: frame.midX, y: frame.midY)
-        return NSScreen.screens.first(where: { $0.frame.insetBy(dx: -2, dy: -2).contains(point) })?.candelaDisplayID
+    static func displayIDContaining(_ frame: CGRect, displays: [SCDisplay] = []) -> UInt32? {
+        if let match = PictureInPictureWindowMatching.displayIDContaining(
+            frame,
+            displays: displays.map { (id: $0.displayID, bounds: $0.frame) }
+        ) {
+            return match
+        }
+        return PictureInPictureWindowMatching.displayIDContaining(frame, displays: onlineDisplayBounds())
+    }
+
+    private static func onlineDisplayBounds() -> [(id: CGDirectDisplayID, bounds: CGRect)] {
+        var allocated: UInt32 = 16
+        var ids = [CGDirectDisplayID](repeating: 0, count: Int(allocated))
+        var count: UInt32 = 0
+        let error = CGGetOnlineDisplayList(allocated, &ids, &count)
+        guard error == .success else { return [] }
+        return ids.prefix(Int(count)).map { ($0, CGDisplayBounds($0)) }
     }
 }
