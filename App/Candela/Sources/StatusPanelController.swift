@@ -120,7 +120,7 @@ final class StatusPanelController {
         let height = StatusPanelLayout.clampedHeight(panelView.fittingSize.height)
         panel.setContentSize(NSSize(width: CandelaChrome.panelWidth, height: height))
         position(relativeTo: button, height: height)
-        panel.orderFront(nil)
+        panel.orderFrontRegardless()
         panel.makeKey()
     }
 

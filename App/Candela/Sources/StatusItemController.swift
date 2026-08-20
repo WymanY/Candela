@@ -52,21 +52,26 @@ final class StatusItemController: NSObject {
 
     func revealOnLaunch() {
         showMainUI()
-        presentFirstLaunchPanelIfPossible(attempt: 0)
+        presentFirstLaunchPanelIfNeeded(attempt: 0)
     }
 
-    private func presentFirstLaunchPanelIfPossible(attempt: Int) {
-        guard !session.settings.hasOpenedPanelOnce else { return }
+    private func presentFirstLaunchPanelIfNeeded(attempt: Int) {
+        guard !session.settings.hasOpenedPanelOnce else {
+            BootLog.write("skip first-launch panel; already opened")
+            return
+        }
         if let button = statusItem.button, button.window != nil {
+            BootLog.write("show first-launch panel buttonWindow=true attempt=\(attempt)")
             showPanel(relativeTo: button)
             return
         }
-        guard attempt < 16 else {
+        if attempt >= 16 {
+            BootLog.write("show first-launch panel fallback attempt=\(attempt)")
             showPanel(relativeTo: statusItem.button)
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.presentFirstLaunchPanelIfPossible(attempt: attempt + 1)
+            self?.presentFirstLaunchPanelIfNeeded(attempt: attempt + 1)
         }
     }
 
@@ -136,8 +141,11 @@ final class StatusItemController: NSObject {
     private func showPanel(relativeTo button: NSView?) {
         panelController.show(relativeTo: button)
         statusItem.button?.image = statusImage(filled: true)
-        if !session.settings.hasOpenedPanelOnce {
+        if panelController.isVisible {
             session.markPanelOpenedOnce()
+            BootLog.write("first-launch panel visible frame=\(NSStringFromRect(panelController.panel.frame))")
+        } else {
+            BootLog.write("first-launch panel failed to become visible")
         }
     }
 
