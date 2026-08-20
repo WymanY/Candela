@@ -208,6 +208,21 @@ The fake catalog is:
 - HDMI Television — software gamma; software volume if HDMI speakers match
 - Sidecar — unsupported, grey, no sliders
 
+### Release
+
+Push a version tag and the `release` workflow builds an Apple Silicon (`arm64`) DMG and attaches it to a GitHub Release:
+
+```sh
+git tag 1.4
+git push origin 1.4
+```
+
+The asset is `Candela-<version>-arm64.dmg` (direct / Developer ID scheme, not Mac App Store). Drag `Candela.app` into Applications.
+
+You can also run `release` from the Actions tab. That always uploads an artifact; a GitHub Release is created only for tags.
+
+Without a Developer ID certificate the image is not notarized. After a browser download, macOS may block it: Control-click → Open. To notarize automatically, set `APPLE_CERTIFICATE_P12_BASE64`, `APPLE_CERTIFICATE_PASSWORD`, and the App Store Connect Notary secrets `APPLE_NOTARY_KEY` / `APPLE_NOTARY_KEY_ID` / `APPLE_NOTARY_ISSUER_ID`.
+
 ## Tests
 
 ```sh

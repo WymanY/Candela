@@ -1,0 +1,249 @@
+# Apple Silicon (arm64) DMG → GitHub Release.
+#
+# Trigger: push a version tag (`1.4`, `v1.4`, `1.4.0`, …) or run manually.
+# Manual runs on a branch only upload the Actions artifact.
+#
+# Optional notarization secrets (repo Settings → Secrets and variables → Actions):
+#   APPLE_CERTIFICATE_P12_BASE64  Developer ID Application .p12, base64
+#   APPLE_CERTIFICATE_PASSWORD    password for that .p12
+#   APPLE_NOTARY_KEY              App Store Connect API .p8 (full PEM)
+#   APPLE_NOTARY_KEY_ID           key id (e.g. ABC123DEFG)
+#   APPLE_NOTARY_ISSUER_ID        issuer UUID
+name: release
+on:
+  push:
+    tags:
+      - "[0-9]*"
+      - "v[0-9]*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  arm64-dmg:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "missing $DEVELOPER_DIR" >&2
+            ls /Applications | grep Xcode || true >&2
+            exit 1
+          fi
+          xcodebuild -version
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="dev-${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "file=Candela-${VERSION}-arm64.dmg" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION"
+
+      - run: brew list xcodegen || brew install xcodegen
+      - run: xcodegen generate --spec project.yml
+
+      - name: Stamp version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            SHORT="${{ steps.ver.outputs.version }}"
+          else
+            SHORT="0.0.${GITHUB_RUN_NUMBER}"
+          fi
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $SHORT" App/Candela/Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${GITHUB_RUN_NUMBER}" App/Candela/Resources/Info.plist
+
+      - name: Archive arm64 Release
+        run: |
+          xcodebuild \
+            -project Candela.xcodeproj \
+            -scheme Candela \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build \
+            -archivePath build/Candela.xcarchive \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            EXCLUDED_ARCHS=x86_64 \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Stage app
+        run: |
+          mkdir -p dist
+          ditto build/Candela.xcarchive/Products/Applications/Candela.app dist/Candela.app
+          xattr -cr dist/Candela.app 2>/dev/null || true
+
+      - name: Verify arm64-only
+        run: |
+          BIN=dist/Candela.app/Contents/MacOS/Candela
+          file "$BIN"
+          ARCHS=$(lipo -archs "$BIN")
+          echo "lipo: $ARCHS"
+          if [ "$ARCHS" != "arm64" ]; then
+            echo "expected a thin arm64 binary, got: $ARCHS" >&2
+            exit 1
+          fi
+          uname -m
+
+      - name: Import Developer ID
+        id: cert
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE_P12_BASE64" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "APPLE_CERTIFICATE_P12_BASE64 is empty; will ad-hoc sign."
+            exit 0
+          fi
+          CERT_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          echo -n "$APPLE_CERTIFICATE_P12_BASE64" | tr -d ' \n\r\t' | base64 --decode -o "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+          rm -f "$CERT_PATH"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Codesign
+        id: sign
+        env:
+          SIGNED: ${{ steps.cert.outputs.signed }}
+        run: |
+          APP=dist/Candela.app
+          ENTITLEMENTS=App/Candela/Supporting/Candela.entitlements
+          if [ "$SIGNED" = "true" ]; then
+            IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)
+            if [ -z "$IDENTITY" ]; then
+              echo "no Developer ID Application identity in the keychain" >&2
+              security find-identity -v -p codesigning >&2
+              exit 1
+            fi
+            echo "signing with $IDENTITY"
+            codesign --force --options runtime --timestamp --entitlements "$ENTITLEMENTS" --sign "$IDENTITY" "$APP"
+            codesign --verify --strict --verbose=2 "$APP"
+            echo "notarize=true" >> "$GITHUB_OUTPUT"
+          else
+            codesign --force --sign - "$APP"
+            echo "notarize=false" >> "$GITHUB_OUTPUT"
+          fi
+          codesign -dv --verbose=2 "$APP" 2>&1 | tail -20
+
+      - name: Package DMG
+        run: |
+          chmod +x Scripts/package_dmg.sh
+          Scripts/package_dmg.sh dist/Candela.app "dist/${{ steps.ver.outputs.file }}" Candela
+
+      - name: Sign DMG
+        if: steps.cert.outputs.signed == 'true'
+        run: |
+          IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)
+          codesign --force --timestamp --sign "$IDENTITY" "dist/${{ steps.ver.outputs.file }}"
+          codesign --verify --verbose=2 "dist/${{ steps.ver.outputs.file }}"
+
+      - name: Notarize
+        id: notary
+        if: steps.sign.outputs.notarize == 'true'
+        env:
+          APPLE_NOTARY_KEY: ${{ secrets.APPLE_NOTARY_KEY }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+        run: |
+          if [ -z "$APPLE_NOTARY_KEY" ] || [ -z "$APPLE_NOTARY_KEY_ID" ] || [ -z "$APPLE_NOTARY_ISSUER_ID" ]; then
+            echo "notarized=false" >> "$GITHUB_OUTPUT"
+            echo "Notary API key secrets missing; skipping notarization."
+            exit 0
+          fi
+          KEY="$RUNNER_TEMP/AuthKey.p8"
+          printf '%s\n' "$APPLE_NOTARY_KEY" > "$KEY"
+          xcrun notarytool submit "dist/${{ steps.ver.outputs.file }}" \
+            --key "$KEY" \
+            --key-id "$APPLE_NOTARY_KEY_ID" \
+            --issuer "$APPLE_NOTARY_ISSUER_ID" \
+            --wait
+          rm -f "$KEY"
+          xcrun stapler staple "dist/${{ steps.ver.outputs.file }}"
+          xcrun stapler validate "dist/${{ steps.ver.outputs.file }}"
+          echo "notarized=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checksum
+        run: |
+          cd dist
+          shasum -a 256 "${{ steps.ver.outputs.file }}" | tee SHA256SUMS
+          ls -lh "${{ steps.ver.outputs.file }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.ver.outputs.file }}
+          path: |
+            dist/${{ steps.ver.outputs.file }}
+            dist/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          DMG: ${{ steps.ver.outputs.file }}
+          SIGNED: ${{ steps.cert.outputs.signed }}
+          NOTARIZED: ${{ steps.notary.outputs.notarized }}
+        run: |
+          {
+            echo "Apple Silicon (\`arm64\`) 直装包，macOS 14+。把 Candela.app 拖进「应用程序」。"
+            echo
+            echo "Apple Silicon (\`arm64\`) disk image for macOS 14+. Drag Candela.app into Applications."
+            echo
+            echo "- Signed (Developer ID): \`${SIGNED:-false}\`"
+            echo "- Notarized: \`${NOTARIZED:-false}\`"
+            if [ "${SIGNED:-false}" != "true" ] || [ "${NOTARIZED:-false}" != "true" ]; then
+              echo
+              echo "If macOS blocks the app: Control-click → Open. Intel Macs are not supported in this build."
+            fi
+          } > "$RUNNER_TEMP/release-notes.md"
+          PRERELEASE=()
+          case "$VERSION" in
+            *alpha*|*beta*|*rc*|*dev*) PRERELEASE=(--prerelease) ;;
+          esac
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "dist/$DMG" dist/SHA256SUMS --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "dist/$DMG" dist/SHA256SUMS \
+              --title "Candela $VERSION" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              --generate-notes \
+              "${PRERELEASE[@]}"
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Candela ${{ steps.ver.outputs.version }} arm64"
+            echo
+            echo "- DMG: \`${{ steps.ver.outputs.file }}\`"
+            echo "- Signed: \`${{ steps.cert.outputs.signed }}\`"
+            echo "- Notarized: \`${{ steps.notary.outputs.notarized || 'false' }}\`"
+            echo "- Tag release: \`${{ github.ref_type == 'tag' }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
