@@ -34,6 +34,8 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private var localSpaceKeyMonitor: Any?
     private var commandWMonitor: Any?
     private var controlKeyMonitor: Any?
+    private var controlExitTap: PictureInPictureControlExitTap?
+    private var controlExitGlobalMonitor: Any?
     private var sourceDisplayID: CGDirectDisplayID
     private var sourceQuartzBounds: CGRect = .null
     private var windowCandidates: [PictureInPictureWindowCandidate] = []
@@ -202,6 +204,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         }
         if let controlKeyMonitor {
             NSEvent.removeMonitor(controlKeyMonitor)
+        }
+        controlExitTap?.stop()
+        if let controlExitGlobalMonitor {
+            NSEvent.removeMonitor(controlExitGlobalMonitor)
         }
         NotificationCenter.default.removeObserver(self)
     }
@@ -462,9 +468,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     @objc private func toggleControlSource() {
         guard !isApplying else { return }
         if placement.controlSource {
-            placement.controlSource = false
-            applyControlSource()
-            persistCurrentPlacement()
+            exitControlSource()
             return
         }
         guard canControlSourceNow else {
@@ -765,7 +769,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             return localizedText("Accessibility permission is required to control the source display.")
         }
         if active {
-            return localizedText("Control is on. Clicks and scrolls go to the other display. Hover the title bar to move this window.")
+            return localizedText("Control is on. Clicks and scrolls go to the other display. Press Control-Esc to exit. Hover the title bar to move this window.")
         }
         return localizedText("Control Source")
     }
@@ -777,11 +781,45 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         applyControlSource()
     }
 
+    private func exitControlSource() {
+        guard placement.controlSource else { return }
+        placement.controlSource = false
+        applyControlSource()
+        persistCurrentPlacement()
+    }
+
     private func installControlKeyMonitor() {
-        guard controlKeyMonitor == nil else { return }
-        controlKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
-            guard let self else { return event }
-            return self.handleControlKey(event)
+        if controlKeyMonitor == nil {
+            controlKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+                guard let self else { return event }
+                return self.handleControlKey(event)
+            }
+        }
+        if controlExitTap == nil {
+            let tap = PictureInPictureControlExitTap()
+            tap.onExit = { [weak self] in
+                self?.exitControlSource()
+            }
+            if tap.start() {
+                controlExitTap = tap
+            } else {
+                installControlExitGlobalMonitor()
+            }
+        }
+    }
+
+    private func installControlExitGlobalMonitor() {
+        guard controlExitGlobalMonitor == nil else { return }
+        controlExitGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+            guard let self else { return }
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            guard PictureInPictureInteraction.isExitControlShortcut(
+                keyCode: event.keyCode,
+                controlPressed: flags.contains(.control)
+            ) else { return }
+            Task { @MainActor in
+                self.exitControlSource()
+            }
         }
     }
 
@@ -790,10 +828,26 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             NSEvent.removeMonitor(controlKeyMonitor)
             self.controlKeyMonitor = nil
         }
+        controlExitTap?.stop()
+        controlExitTap = nil
+        if let controlExitGlobalMonitor {
+            NSEvent.removeMonitor(controlExitGlobalMonitor)
+            self.controlExitGlobalMonitor = nil
+        }
     }
 
     private func handleControlKey(_ event: NSEvent) -> NSEvent? {
         guard placement.controlSource else { return event }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if PictureInPictureInteraction.isExitControlShortcut(
+            keyCode: event.keyCode,
+            controlPressed: flags.contains(.control)
+        ) {
+            if event.type == .keyDown {
+                exitControlSource()
+            }
+            return nil
+        }
         guard isPointerOverPreview else { return event }
         if event.keyCode == 49 && shouldPanMagnifierCanvas { return event }
         guard PictureInPictureEventInjector.shouldForwardKey(event) else { return event }

@@ -740,6 +740,13 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(PictureInPictureInteraction.quartzBounds(displayBounds: display, cropInDisplayPoints: nil), display)
     }
 
+    func testControlEscExitsSourceControl() {
+        XCTAssertTrue(PictureInPictureInteraction.isExitControlShortcut(keyCode: 53, controlPressed: true))
+        XCTAssertFalse(PictureInPictureInteraction.isExitControlShortcut(keyCode: 53, controlPressed: false))
+        XCTAssertFalse(PictureInPictureInteraction.isExitControlShortcut(keyCode: 49, controlPressed: true))
+        XCTAssertEqual(PictureInPictureInteraction.escapeKeyCode, 53)
+    }
+
     func testControlRequiresADifferentHostDisplay() {
         XCTAssertTrue(PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 2))
         XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 2, sourceDisplayID: 2))

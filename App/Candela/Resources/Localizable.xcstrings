@@ -1633,19 +1633,36 @@
         }
       }
     },
-    "Control is on. Clicks and scrolls go to the other display. Hover the title bar to move this window.": {
+    "Control is on. Clicks and scrolls go to the other display. Press Control-Esc to exit. Hover the title bar to move this window.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Control is on. Clicks and scrolls go to the other display. Hover the title bar to move this window."
+            "value": "Control is on. Clicks and scrolls go to the other display. Press Control-Esc to exit. Hover the title bar to move this window."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "控制已开启。点击和滚动会送到另一块显示器。要移动此窗口，请拖标题栏。"
+            "value": "控制已开启。点击和滚动会送到另一块显示器。按 Control-Esc 退出。要移动此窗口，请拖标题栏。"
+          }
+        }
+      }
+    },
+    "Exit source control": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exit source control"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出源控制"
           }
         }
       }

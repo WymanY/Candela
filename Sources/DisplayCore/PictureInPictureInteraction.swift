@@ -88,4 +88,12 @@ public enum PictureInPictureInteraction {
     public static func resolvedClickThrough(clickThrough: Bool, controlSource: Bool) -> Bool {
         clickThrough && !controlSource
     }
+
+    /// Hardware Escape. Matches `kVK_Escape`.
+    public static let escapeKeyCode: UInt16 = 53
+
+    /// Control-Esc leaves source-control mode. Works even when the source app has focus.
+    public static func isExitControlShortcut(keyCode: UInt16, controlPressed: Bool) -> Bool {
+        controlPressed && keyCode == escapeKeyCode
+    }
 }
