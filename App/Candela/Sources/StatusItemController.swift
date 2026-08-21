@@ -37,6 +37,7 @@ final class StatusItemController: NSObject {
 
     private static func makeStatusItem() -> NSStatusItem {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.autosaveName = "CandelaStatusItem"
         item.isVisible = false
         return item
     }
@@ -54,6 +55,9 @@ final class StatusItemController: NSObject {
         showMainUI()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             self?.showPanelIfReady()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            self?.presentGuideIfMissing()
         }
     }
 
@@ -80,9 +84,11 @@ final class StatusItemController: NSObject {
     }
 
     private func presentGuideIfMissing() {
-        let hasWindow = statusItem.button?.window != nil
-        MenuBarGuideController.writeDiagnostic("post-launch window=\(hasWindow)")
-        if !hasWindow {
+        let window = statusItem.button?.window
+        let hasWindow = window != nil
+        let onScreen = window?.screen != nil
+        MenuBarGuideController.writeDiagnostic("post-launch window=\(hasWindow) onScreen=\(onScreen)")
+        if !hasWindow || !onScreen {
             guideController.present()
         }
     }
