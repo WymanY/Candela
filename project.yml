@@ -47,7 +47,7 @@ targets:
     info:
       path: App/Candela/Resources/Info.plist
       properties:
-        LSUIElement: true
+        LSUIElement: false
         LSRequiresNativeExecution: true
         LSApplicationCategoryType: public.app-category.utilities
         NSHighResolutionCapable: true

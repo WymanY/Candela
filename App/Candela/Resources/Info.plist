@@ -34,7 +34,7 @@
 	<key>LSRequiresNativeExecution</key>
 	<true/>
 	<key>LSUIElement</key>
-	<true/>
+	<false/>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.</string>
 	<key>NSHighResolutionCapable</key>
