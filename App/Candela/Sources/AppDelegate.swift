@@ -19,11 +19,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
-        NSApp.setActivationPolicy(.accessory)
+        // Stay a regular app until the status item is actually on the menu bar.
+        // Going accessory first makes macOS 26 StatusKit treat this as a background
+        // process and hide the extra without listing it under Allow in the Menu Bar.
+        NSApp.setActivationPolicy(.regular)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         BootLog.write("didFinish")
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         let session = DisplaySessionController.makeDefault()
         self.session = session
         statusItem = StatusItemController(session: session)
