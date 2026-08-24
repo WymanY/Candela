@@ -342,10 +342,6 @@ jobs:
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" "dist/${DMG}" dist/SHA256SUMS --clobber
           else
-            PRERELEASE=()
-            if [ "${IS_PRERELEASE}" = true ]; then
-              PRERELEASE=(--prerelease)
-            fi
             release_args=(
               "${RELEASE_TAG}"
               "dist/${DMG}"
@@ -354,8 +350,10 @@ jobs:
               --title "Candela ${VERSION}"
               --notes-file "${NOTES}"
               --generate-notes
-              "${PRERELEASE[@]}"
             )
+            if [ "${IS_PRERELEASE}" = true ]; then
+              release_args+=(--prerelease)
+            fi
             gh release create "${release_args[@]}"
           fi
 
