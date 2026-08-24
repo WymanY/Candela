@@ -219,9 +219,9 @@ git push origin 1.4
 
 The asset is `Candela-<version>-arm64.dmg` (direct / Developer ID scheme, not Mac App Store). Drag `Candela.app` into Applications.
 
-You can also run `release` from the Actions tab. That always uploads an artifact; a GitHub Release is created only for tags.
+You can also run `release` from the Actions tab. Leave `tag` empty to upload an Actions artifact only, or enter an existing tag (for example `1.3.3`) to create or update that tag's GitHub Release.
 
-Without a Developer ID certificate the image is not notarized. After a browser download, macOS may block it: Control-click → Open. To notarize automatically, set `APPLE_CERTIFICATE_P12_BASE64`, `APPLE_CERTIFICATE_PASSWORD`, and the App Store Connect Notary secrets `APPLE_NOTARY_KEY` / `APPLE_NOTARY_KEY_ID` / `APPLE_NOTARY_ISSUER_ID`.
+Publishing requires Developer ID signing and Apple notarization. The workflow stops before uploading a Release if either fails. Configure `APPLE_CERTIFICATE_P12_BASE64`, `APPLE_CERTIFICATE_PASSWORD`, and the App Store Connect Notary secrets `APPLE_NOTARY_KEY` / `APPLE_NOTARY_KEY_ID` / `APPLE_NOTARY_ISSUER_ID`.
 
 ## Tests
 

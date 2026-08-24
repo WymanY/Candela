@@ -61,12 +61,18 @@ ln -s /Applications "$MOUNT/Applications"
 chmod -R a+rX "$MOUNT/$APP_NAME"
 sync
 
+DETACHED=false
 for _ in 1 2 3 4 5 6 7 8; do
   if hdiutil detach "$MOUNT" -quiet; then
+    DETACHED=true
     break
   fi
   sleep 1
 done
+if [ "$DETACHED" != true ]; then
+  echo "could not detach temporary disk image: $MOUNT" >&2
+  exit 1
+fi
 
 rm -f "$DMG_PATH"
 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH"
