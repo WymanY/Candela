@@ -37,6 +37,14 @@ final class StatusItemController: NSObject {
 
     private static func makeStatusItem() -> NSStatusItem {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        // Give StatusKit one stable identity so it can restore the same item
+        // position across Developer ID installs and local builds.
+        item.autosaveName = "CandelaStatusItem"
+
+        // Candela's status item is its primary UI. Do not opt into interactive
+        // removal; visibility remains controlled by the macOS 26 Menu Bar
+        // setting and by showMainUI().
+        item.behavior.remove(.removalAllowed)
         item.isVisible = false
         return item
     }
@@ -52,9 +60,45 @@ final class StatusItemController: NSObject {
 
     func revealOnLaunch() {
         showMainUI()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.showPanelIfReady()
+        scheduleMenuBarReveal(attempt: 0)
+    }
+
+    private func scheduleMenuBarReveal(attempt: Int) {
+        let delays: [TimeInterval] = [0.2, 0.8, 2.0, 5.0]
+        guard attempt < delays.count else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delays[attempt]) { [weak self] in
+            guard let self else { return }
+            self.showMainUI()
+            if self.isStatusItemOnScreen() {
+                self.showPanelIfReady()
+                self.hideDockIfMenuBarReady()
+                return
+            }
+            if attempt == 0 {
+                self.showPanelIfReady()
+            }
+            if attempt >= 1 {
+                self.presentGuideIfMissing()
+            }
+            self.scheduleMenuBarReveal(attempt: attempt + 1)
         }
+    }
+
+    private func isStatusItemOnScreen() -> Bool {
+        guard let button = statusItem.button, let window = button.window else { return false }
+        let frame = window.convertToScreen(button.convert(button.bounds, to: nil))
+        guard frame.width >= 8, frame.height >= 8 else { return false }
+        return NSScreen.screens.contains { screen in
+            frame.minY >= screen.frame.maxY - 48 && frame.maxY <= screen.frame.maxY + 8
+        }
+    }
+
+    private func hideDockIfMenuBarReady() {
+        #if !DEBUG
+        if isStatusItemOnScreen(), !panelController.panel.isKeyWindow {
+            NSApp.setActivationPolicy(.accessory)
+        }
+        #endif
     }
 
     private func showPanelIfReady() {
@@ -72,17 +116,24 @@ final class StatusItemController: NSObject {
         }
         let button = statusItem.button
         let frame = button.map { NSStringFromRect($0.frame) } ?? "nil"
-        let hasWindow = button?.window != nil
+        let screenFrame: String
+        if let button, let window = button.window {
+            screenFrame = NSStringFromRect(window.convertToScreen(button.convert(button.bounds, to: nil)))
+        } else {
+            screenFrame = "nil"
+        }
         MenuBarGuideController.writeDiagnostic(
-            "visible=\(statusItem.isVisible) button=\(button != nil) frame=\(frame) window=\(hasWindow)"
+            "visible=\(statusItem.isVisible) button=\(button != nil) frame=\(frame) screen=\(screenFrame) onBar=\(isStatusItemOnScreen())"
         )
-        log.info("status visible=\(self.statusItem.isVisible, privacy: .public) buttonWindow=\(hasWindow, privacy: .public)")
+        log.info("status visible=\(self.statusItem.isVisible, privacy: .public) onBar=\(self.isStatusItemOnScreen(), privacy: .public)")
     }
 
     private func presentGuideIfMissing() {
-        let hasWindow = statusItem.button?.window != nil
-        MenuBarGuideController.writeDiagnostic("post-launch window=\(hasWindow)")
-        if !hasWindow {
+        let window = statusItem.button?.window
+        let hasWindow = window != nil
+        let onScreen = isStatusItemOnScreen()
+        MenuBarGuideController.writeDiagnostic("post-launch window=\(hasWindow) onScreen=\(onScreen)")
+        if !onScreen {
             guideController.present()
         }
     }

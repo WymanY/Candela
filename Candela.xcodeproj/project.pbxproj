@@ -111,6 +111,7 @@
 		2E916555AC134A6FD1608068 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		416F0D17CCE7F056BC5E3614 /* DisplayRotationControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRotationControl.swift; sourceTree = "<group>"; };
 		4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelController.swift; sourceTree = "<group>"; };
+		4E631045A89FE55208B3A3E1 /* CandelaMAS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "CandelaMAS-Info.plist"; sourceTree = "<group>"; };
 		55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPicturePinControl.swift; sourceTree = "<group>"; };
 		6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayIOBox.swift; sourceTree = "<group>"; };
 		7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitDisplaySource.swift; sourceTree = "<group>"; };
@@ -254,6 +255,7 @@
 			isa = PBXGroup;
 			children = (
 				27A22C1F71B3784803149C67 /* Candela.entitlements */,
+				4E631045A89FE55208B3A3E1 /* CandelaMAS-Info.plist */,
 				71C014411DFBAC303BD3B900 /* CandelaMAS.entitlements */,
 			);
 			path = Supporting;
@@ -586,7 +588,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = App/Candela/Resources/Info.plist;
+				INFOPLIST_FILE = "App/Candela/Supporting/CandelaMAS-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -716,7 +718,7 @@
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = App/Candela/Resources/Info.plist;
+				INFOPLIST_FILE = "App/Candela/Supporting/CandelaMAS-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

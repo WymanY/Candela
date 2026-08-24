@@ -31,7 +31,7 @@ final class MenuBarGuideController: NSWindowController {
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 390),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -101,13 +101,13 @@ final class MenuBarGuideController: NSWindowController {
         title.translatesAutoresizingMaskIntoConstraints = false
 
         let body = NSTextField(wrappingLabelWithString: localizedText("""
-        The hidden icon is not a privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.
+        The hidden icon is not a code-signing or privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.
 
-        macOS 26 added a switch that hides third-party status items by default. Open:
+        macOS 26 controls third-party status items here:
 
         System Settings → Menu Bar → Allow in the Menu Bar → enable Candela
 
-        The icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.
+        If Candela is already enabled, turn it off and back on. If it remains hidden, use Reset Control Center at the bottom as a last resort. Resetting also restores every Control Center and menu bar layout to its defaults.
 
         If you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.
         """))

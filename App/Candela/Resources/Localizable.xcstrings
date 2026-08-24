@@ -2466,19 +2466,19 @@
         }
       }
     },
-    "The hidden icon is not a privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.": {
+    "The hidden icon is not a code-signing or privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 controls third-party status items here:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nIf Candela is already enabled, turn it off and back on. If it remains hidden, use Reset Control Center at the bottom as a last resort. Resetting also restores every Control Center and menu bar layout to its defaults.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The hidden icon is not a privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 added a switch that hides third-party status items by default. Open:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nThe icon then appears on the right side of the built-in display menu bar. External-display menu bars usually do not show third-party icons.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item."
+            "value": "The hidden icon is not a code-signing or privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 controls third-party status items here:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nIf Candela is already enabled, turn it off and back on. If it remains hidden, use Reset Control Center at the bottom as a last resort. Resetting also restores every Control Center and menu bar layout to its defaults.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "菜单栏图标被隐藏，不是隐私权限的问题。画中画需要屏幕录制；从画中画控制另一块显示器还需要辅助功能。\n\nmacOS 26 新增了一道开关：第三方状态栏图标默认不允许显示。请打开：\n\n系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela\n\n打开后图标会出现在主显示器（笔记本屏幕）菜单栏右侧。外接屏菜单栏通常不会出现第三方图标。\n\n如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
+            "value": "菜单栏图标被隐藏，不是代码签名或隐私权限的问题。画中画需要屏幕录制；从画中画控制另一块显示器还需要辅助功能。\n\nmacOS 26 在这里管理第三方状态栏图标：\n\n系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela\n\n如果 Candela 已经打开，请先关闭再重新打开。若图标仍然隐藏，最后再使用页面底部的「重置控制中心」。重置也会将所有控制中心和菜单栏布局恢复为默认值。\n\n如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
           }
         }
       }
