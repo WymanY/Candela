@@ -37,9 +37,15 @@ final class StatusItemController: NSObject {
 
     private static func makeStatusItem() -> NSStatusItem {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        var behavior = item.behavior
-        behavior.insert(.removalAllowed)
-        item.behavior = behavior
+        // Give StatusKit one stable identity so it can restore the same item
+        // position across Developer ID installs and local builds.
+        item.autosaveName = "CandelaStatusItem"
+
+        // Candela's status item is its primary UI. Do not opt into interactive
+        // removal; visibility remains controlled by the macOS 26 Menu Bar
+        // setting and by showMainUI().
+        item.behavior.remove(.removalAllowed)
+        item.isVisible = false
         return item
     }
 

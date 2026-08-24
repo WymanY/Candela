@@ -40,6 +40,7 @@ targets:
       - path: App/Candela/Supporting
         excludes:
           - CandelaMAS.entitlements
+          - CandelaMAS-Info.plist
     resources:
       - path: App/Candela/Resources/Assets.xcassets
       - path: App/Candela/Resources/Localizable.xcstrings
@@ -54,6 +55,7 @@ targets:
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: false
         NSPrincipalClass: NSApplication
+        ITSAppUsesNonExemptEncryption: false
         NSAudioCaptureUsageDescription: Candela captures system audio so it can change the volume of HDMI and DisplayPort monitor speakers that have no hardware slider.
         NSScreenCaptureUsageDescription: Candela needs Screen Recording to mirror a display in Picture in Picture and to apply software volume to HDMI and DisplayPort monitor speakers.
         CFBundleLocalizations: [en, zh-Hans]
@@ -95,6 +97,8 @@ targets:
     sources:
       - path: App/Candela/Sources
       - path: App/Candela/Resources
+        excludes:
+          - Info.plist
       - path: App/Candela/Supporting
         excludes:
           - Candela.entitlements
@@ -104,7 +108,7 @@ targets:
       - path: App/Candela/Resources/Localizable.xcstrings
       - path: App/Candela/Resources/InfoPlist.xcstrings
     info:
-      path: App/Candela/Resources/Info.plist
+      path: App/Candela/Supporting/CandelaMAS-Info.plist
       properties:
         LSUIElement: true
         LSRequiresNativeExecution: true
@@ -134,7 +138,7 @@ targets:
       base:
         PRODUCT_NAME: Candela
         PRODUCT_BUNDLE_IDENTIFIER: app.candela.macos
-        INFOPLIST_FILE: App/Candela/Resources/Info.plist
+        INFOPLIST_FILE: App/Candela/Supporting/CandelaMAS-Info.plist
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_ENTITLEMENTS: App/Candela/Supporting/CandelaMAS.entitlements
         ENABLE_APP_SANDBOX: YES
