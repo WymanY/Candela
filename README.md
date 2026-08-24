@@ -208,6 +208,21 @@ CANDELA_FAKE_HARDWARE=1
 - HDMI Television — 软件 gamma；匹配到 HDMI 音箱时有软件音量
 - Sidecar — 不支持，灰色，没有滑条
 
+### 发布
+
+推送版本 tag 后，`release` workflow 会打一份 Apple Silicon（arm64）的 DMG，并挂到对应的 GitHub Release：
+
+```sh
+git tag 1.4
+git push origin 1.4
+```
+
+产物是 `Candela-<version>-arm64.dmg`（店外直装 scheme，不是 Mac App Store）。把里面的 `Candela.app` 拖进「应用程序」。
+
+也可以在 Actions 里手动跑 `release`。留空 `tag` 只上传 Actions artifact；填写一个已有 tag（例如 `1.3.3`）则会为该 tag 创建或更新 GitHub Release。
+
+发布必须完成 Developer ID 签名和 Apple 公证，否则 workflow 会停止且不会上传 Release。仓库 Secrets 需要配置 `APPLE_CERTIFICATE_P12_BASE64`、`APPLE_CERTIFICATE_PASSWORD`，以及 App Store Connect Notary 的 `APPLE_NOTARY_KEY` / `APPLE_NOTARY_KEY_ID` / `APPLE_NOTARY_ISSUER_ID`。
+
 ## 测试
 
 ```sh

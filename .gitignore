@@ -3,6 +3,8 @@ xcuserdata/
 DerivedData/
 .build/
 .swiftpm/
+/build/
+/dist/
 *.xcuserstate
 .idea/
 Configs/Developer.xcconfig
