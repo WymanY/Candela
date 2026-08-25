@@ -20,4 +20,6 @@ A running task cannot be rebound later. If the work must land on a branch, workt
 
 The goal is that Environment, the current branch, Changes, and the pull request all belong to the same task.
 
+After creating a pull request, open the modified project in the matching editor from this task's bound worktree. For Candela, open `Candela.xcodeproj` in Xcode, not the primary checkout on `main`.
+
 This project still does not create Linear issues. GitHub pull requests remain the source of truth. Do not merge into `main` unless the user explicitly asks to merge.
