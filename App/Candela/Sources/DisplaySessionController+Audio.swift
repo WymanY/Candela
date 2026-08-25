@@ -271,7 +271,6 @@ extension DisplaySessionController {
             return false
         }
         guard HALDeviceEnumerator.setDefaultOutputUID(trimmed) else { return false }
-        handleAudioRouteChange()
         return true
     }
 }

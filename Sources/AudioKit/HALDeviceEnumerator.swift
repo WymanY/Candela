@@ -121,8 +121,10 @@ public enum HALDeviceEnumerator {
         if readDefaultUID() == trimmed {
             return true
         }
-        guard writeDefault(deviceID) else { return false }
-        return readDefaultUID() == trimmed
+        // Core Audio applies some property changes asynchronously. A successful
+        // write is the acknowledgement for this request; the default-output
+        // listener is the source of truth for the eventual route state.
+        return writeDefault(deviceID)
     }
 
     public static func deviceID(forUID uid: String) -> AudioDeviceID? {

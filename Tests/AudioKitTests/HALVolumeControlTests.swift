@@ -253,7 +253,7 @@ final class HALVolumeControlTests: XCTestCase {
         XCTAssertFalse(HALDeviceEnumerator.setDefaultOutputUID("candela-no-such-device"))
     }
 
-    func testDefaultOutputSwitchRequiresReadBackConfirmation() {
+    func testDefaultOutputSwitchAcceptsAsynchronousHALChange() {
         var writes: [AudioDeviceID] = []
         let switched = HALDeviceEnumerator.switchDefaultOutput(
             uid: "target",
@@ -265,11 +265,22 @@ final class HALVolumeControlTests: XCTestCase {
             readDefaultUID: { "previous" }
         )
 
-        XCTAssertFalse(switched)
+        XCTAssertTrue(switched)
         XCTAssertEqual(writes, [42])
     }
 
-    func testDefaultOutputSwitchSucceedsOnlyAfterTargetIsObserved() {
+    func testDefaultOutputSwitchReportsWriteFailure() {
+        let switched = HALDeviceEnumerator.switchDefaultOutput(
+            uid: "target",
+            resolveDeviceID: { $0 == "target" ? 42 : nil },
+            writeDefault: { _ in false },
+            readDefaultUID: { "previous" }
+        )
+
+        XCTAssertFalse(switched)
+    }
+
+    func testDefaultOutputSwitchTrimsUID() {
         var currentUID = "previous"
         let switched = HALDeviceEnumerator.switchDefaultOutput(
             uid: " target ",
