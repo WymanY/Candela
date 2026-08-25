@@ -1,4 +1,5 @@
 import AppKit
+import DisplayCore
 import os
 
 @MainActor
@@ -13,6 +14,11 @@ final class StatusItemController: NSObject {
     private var localMonitor: Any?
     private var suppressDismissUntil: Date?
     private var appliedLanguage: String
+    private var launchAnchorTracker = StatusItemAnchorTracker()
+
+    /// Poll quickly while StatusKit creates and restores the autosaved status-item position,
+    /// then keep a few slower samples so a visible first-launch panel follows late menu-bar moves.
+    private let launchRevealDelays: [TimeInterval] = Array(repeating: 0.2, count: 10) + [1, 2, 5]
 
     init(session: DisplaySessionController) {
         self.session = session
@@ -60,37 +66,62 @@ final class StatusItemController: NSObject {
 
     func revealOnLaunch() {
         showMainUI()
+        launchAnchorTracker.reset()
         scheduleMenuBarReveal(attempt: 0)
     }
 
     private func scheduleMenuBarReveal(attempt: Int) {
-        let delays: [TimeInterval] = [0.2, 0.8, 2.0, 5.0]
-        guard attempt < delays.count else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + delays[attempt]) { [weak self] in
+        guard attempt < launchRevealDelays.count else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + launchRevealDelays[attempt]) { [weak self] in
             guard let self else { return }
-            self.showMainUI()
-            if self.isStatusItemOnScreen() {
-                self.showPanelIfReady()
+            self.refreshStatusItemVisibility()
+
+            if let anchor = self.statusItemAnchor() {
+                let isStable = self.launchAnchorTracker.observe(anchor.frame)
+                MenuBarGuideController.writeDiagnostic(
+                    "launch anchor attempt=\(attempt) screen=\(NSStringFromRect(anchor.frame)) onBar=true stable=\(isStable)"
+                )
+
+                if self.panelController.isVisible {
+                    self.panelController.reposition(relativeTo: anchor.button)
+                } else if !self.session.settings.hasOpenedPanelOnce, isStable {
+                    self.showPanel(relativeTo: anchor.button)
+                }
                 self.hideDockIfMenuBarReady()
-                return
+            } else {
+                self.launchAnchorTracker.reset()
+                MenuBarGuideController.writeDiagnostic("launch anchor attempt=\(attempt) onBar=false")
             }
-            if attempt == 0 {
-                self.showPanelIfReady()
+
+            let isLastAttempt = attempt == self.launchRevealDelays.count - 1
+            if isLastAttempt, !self.session.settings.hasOpenedPanelOnce {
+                self.showPanel(relativeTo: nil)
             }
-            if attempt >= 1 {
+            if isLastAttempt, !self.isStatusItemOnScreen() {
                 self.presentGuideIfMissing()
             }
             self.scheduleMenuBarReveal(attempt: attempt + 1)
         }
     }
 
-    private func isStatusItemOnScreen() -> Bool {
-        guard let button = statusItem.button, let window = button.window else { return false }
+    private func refreshStatusItemVisibility() {
+        configureButton()
+        statusItem.isVisible = true
+    }
+
+    private func statusItemAnchor() -> (button: NSView, frame: NSRect)? {
+        guard let button = statusItem.button, let window = button.window else { return nil }
         let frame = window.convertToScreen(button.convert(button.bounds, to: nil))
-        guard frame.width >= 8, frame.height >= 8 else { return false }
-        return NSScreen.screens.contains { screen in
-            frame.minY >= screen.frame.maxY - 48 && frame.maxY <= screen.frame.maxY + 8
+        guard NSScreen.screens.contains(where: {
+            StatusPanelLayout.isUsableStatusButtonFrame(frame, visible: $0.visibleFrame)
+        }) else {
+            return nil
         }
+        return (button, frame)
+    }
+
+    private func isStatusItemOnScreen() -> Bool {
+        statusItemAnchor() != nil
     }
 
     private func hideDockIfMenuBarReady() {
@@ -101,19 +132,10 @@ final class StatusItemController: NSObject {
         #endif
     }
 
-    private func showPanelIfReady() {
-        guard statusItem.button?.window != nil else { return }
-        showPanel()
-    }
-
     /// Dock click, first launch, and reopen all go through here.
     func showMainUI() {
-        configureButton()
-        statusItem.isVisible = true
+        refreshStatusItemVisibility()
         suppressDismissUntil = Date().addingTimeInterval(2)
-        if !session.settings.hasOpenedPanelOnce {
-            session.markPanelOpenedOnce()
-        }
         let button = statusItem.button
         let frame = button.map { NSStringFromRect($0.frame) } ?? "nil"
         let screenFrame: String
@@ -176,9 +198,16 @@ final class StatusItemController: NSObject {
     }
 
     private func showPanel() {
-        guard let button = statusItem.button else { return }
+        showPanel(relativeTo: statusItem.button)
+    }
+
+    private func showPanel(relativeTo button: NSView?) {
         panelController.show(relativeTo: button)
         statusItem.button?.image = statusImage(filled: true)
+        if panelController.isVisible, !session.settings.hasOpenedPanelOnce {
+            session.markPanelOpenedOnce()
+            BootLog.write("first-launch panel visible frame=\(NSStringFromRect(panelController.panel.frame))")
+        }
     }
 
     private func hidePanel() {
