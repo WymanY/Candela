@@ -30,7 +30,7 @@ final class DisplayArrangementTests: XCTestCase {
         )
     }
 
-    func testAvailabilityNeedsARealExternalOrSavedLayout() {
+    func testAvailabilityNeedsALiveExternalDisplay() {
         let builtin = target(id: 1, key: "builtin", builtin: true, main: true)
         let desk = target(id: 2, key: "desk")
         XCTAssertEqual(DisplayArrangementPlanning.availability(targets: [builtin], savedArrangement: nil), .unavailable)
@@ -54,7 +54,14 @@ final class DisplayArrangementTests: XCTestCase {
                 isBuiltin: false
             )
         ])
-        XCTAssertEqual(DisplayArrangementPlanning.availability(targets: [builtin], savedArrangement: saved), .available)
+        XCTAssertEqual(DisplayArrangementPlanning.availability(targets: [builtin], savedArrangement: saved), .unavailable)
+        XCTAssertEqual(
+            DisplayArrangementPlanning.availability(
+                targets: [builtin, target(id: 3, key: "sidecar", virtual: true)],
+                savedArrangement: saved
+            ),
+            .unavailable
+        )
     }
 
     func testMirrorPlanSkipsVirtualScreens() {

@@ -149,12 +149,14 @@ public enum DisplayArrangementPlanning {
 
     public static func availability(
         targets: [DisplayMirrorTarget],
-        savedArrangement: DisplayArrangementSnapshot?
+        savedArrangement _: DisplayArrangementSnapshot?
     ) -> DisplayMirrorAvailability {
         if kind(for: targets) == .builtin {
             return .mirroringBuiltIn
         }
-        guard canMirrorToBuiltIn(targets: targets) || savedArrangement != nil else {
+        // A leftover saved arrangement is not enough on a single display:
+        // restore cannot bring a missing external back, so hide Mirror.
+        guard canMirrorToBuiltIn(targets: targets) else {
             return .unavailable
         }
         return .available

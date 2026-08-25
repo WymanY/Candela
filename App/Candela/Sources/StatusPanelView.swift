@@ -401,6 +401,7 @@ final class StatusPanelView: NSView {
         mirrorButton.translatesAutoresizingMaskIntoConstraints = false
         mirrorButton.identifier = NSUserInterfaceItemIdentifier("mirror-builtin")
         sizeFooterButton(mirrorButton)
+        mirrorButton.isHidden = true
         let quitButton = CandelaChrome.makeQuietButton(title: localizedText("Quit"), symbolName: "power")
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
@@ -516,7 +517,10 @@ final class StatusPanelView: NSView {
         guard let mirrorButton = footerButton("mirror-builtin") else { return }
         let mirroring = session.isMirroringBuiltIn
         let available = session.canToggleBuiltInMirror
-        mirrorButton.isHidden = !available && !mirroring
+        let visibleCount = session.snapshots.filter { $0.kind != .virtualUnsupported }.count
+        // Keep Unmirror while a mirror is active, even if the slave has dropped
+        // out of the catalog. Hide Mirror whenever only one real display is live.
+        mirrorButton.isHidden = mirroring ? false : !(available && visibleCount > 1)
         mirrorButton.isEnabled = available
         mirrorButton.toolTip = mirroring
             ? localizedText("Stop mirroring and restore the previous arrangement.")
