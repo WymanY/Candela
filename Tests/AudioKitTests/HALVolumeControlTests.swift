@@ -253,6 +253,108 @@ final class HALVolumeControlTests: XCTestCase {
         XCTAssertFalse(HALDeviceEnumerator.setDefaultOutputUID("candela-no-such-device"))
     }
 
+    func testDefaultOutputSwitchAcceptsAsynchronousHALChange() {
+        var writes: [AudioDeviceID] = []
+        let switched = HALDeviceEnumerator.switchDefaultOutput(
+            uid: "target",
+            resolveDeviceID: { $0 == "target" ? 42 : nil },
+            writeDefault: {
+                writes.append($0)
+                return true
+            },
+            readDefaultUID: { "previous" }
+        )
+
+        XCTAssertTrue(switched)
+        XCTAssertEqual(writes, [42])
+    }
+
+    func testDefaultOutputSwitchReportsWriteFailure() {
+        let switched = HALDeviceEnumerator.switchDefaultOutput(
+            uid: "target",
+            resolveDeviceID: { $0 == "target" ? 42 : nil },
+            writeDefault: { _ in false },
+            readDefaultUID: { "previous" }
+        )
+
+        XCTAssertFalse(switched)
+    }
+
+    func testDefaultOutputSwitchTrimsUID() {
+        var currentUID = "previous"
+        let switched = HALDeviceEnumerator.switchDefaultOutput(
+            uid: " target ",
+            resolveDeviceID: { $0 == "target" ? 42 : nil },
+            writeDefault: { _ in
+                currentUID = "target"
+                return true
+            },
+            readDefaultUID: { currentUID }
+        )
+
+        XCTAssertTrue(switched)
+    }
+
+    func testDefaultOutputSwitchSkipsWriteWhenAlreadySelected() {
+        var didWrite = false
+        let switched = HALDeviceEnumerator.switchDefaultOutput(
+            uid: "target",
+            resolveDeviceID: { _ in 42 },
+            writeDefault: { _ in
+                didWrite = true
+                return true
+            },
+            readDefaultUID: { "target" }
+        )
+
+        XCTAssertTrue(switched)
+        XCTAssertFalse(didWrite)
+    }
+
+    func testPlaybackContinuityRequiresCapturedPlayback() {
+        XCTAssertFalse(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [],
+                runningProcessIDs: [],
+                expectedOutputUID: "target",
+                currentOutputUID: "target"
+            )
+        )
+    }
+
+    func testPlaybackContinuityDoesNotResumeWhileCapturedProcessIsRunning() {
+        XCTAssertFalse(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [101, 202],
+                runningProcessIDs: [202, 303],
+                expectedOutputUID: "target",
+                currentOutputUID: "target"
+            )
+        )
+    }
+
+    func testPlaybackContinuityRequiresExpectedOutputRoute() {
+        XCTAssertFalse(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [101],
+                runningProcessIDs: [],
+                expectedOutputUID: "target",
+                currentOutputUID: "other"
+            )
+        )
+    }
+
+    func testPlaybackContinuityResumesStoppedPlaybackOnExpectedRoute() {
+        XCTAssertTrue(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [101],
+                runningProcessIDs: [303],
+                expectedOutputUID: "target",
+                currentOutputUID: "target"
+            )
+        )
+    }
+
     func testUnknownUIDDoesNotThrow() {
         XCTAssertNil(HALDeviceEnumerator.deviceID(forUID: "candela-no-such-device"))
         XCTAssertFalse(HALVolumeControl.setVolume(uid: "candela-no-such-device", value: 0.5))

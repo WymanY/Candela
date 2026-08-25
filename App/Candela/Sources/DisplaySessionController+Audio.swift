@@ -270,9 +270,16 @@ extension DisplaySessionController {
         if Self.shouldUseFakeHardware {
             return false
         }
-        SoftwareVolumeControl.shared.stopAll()
+#if !CANDELA_MAS
+        if HALDeviceEnumerator.defaultOutputUID() == trimmed {
+            return true
+        }
+        let playbackSnapshot = playbackContinuity.captureBeforeRouteChange(targetOutputUID: trimmed)
+#endif
         guard HALDeviceEnumerator.setDefaultOutputUID(trimmed) else { return false }
-        handleAudioRouteChange()
+#if !CANDELA_MAS
+        playbackContinuity.restoreIfInterrupted(after: playbackSnapshot)
+#endif
         return true
     }
 }
