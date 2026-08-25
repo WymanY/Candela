@@ -3350,19 +3350,53 @@
         }
       }
     },
-    "Candela needs Screen Recording to show Picture in Picture and Display Overview. Enable Candela in System Settings, then click the feature again.": {
+    "Enable Candela in System Settings to use Picture in Picture and Display Overview.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Candela needs Screen Recording to show Picture in Picture and Display Overview. Enable Candela in System Settings, then click the feature again."
+            "value": "Enable Candela in System Settings to use Picture in Picture and Display Overview."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用 Picture in Picture 和 Display Overview 需要屏幕录制权限。请在系统设置中开启 Candela，然后再次点击该功能。"
+            "value": "请在系统设置中开启 Candela，才能使用 Picture in Picture 和 Display Overview。"
+          }
+        }
+      }
+    },
+    "System Settings → Privacy & Security → Screen Recording": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Settings → Privacy & Security → Screen Recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统设置 → 隐私与安全性 → 屏幕录制"
+          }
+        }
+      }
+    },
+    "Open System Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置"
           }
         }
       }
