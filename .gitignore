@@ -8,3 +8,5 @@ DerivedData/
 *.xcuserstate
 .idea/
 Configs/Developer.xcconfig
+.codex/config.toml
+.codex/worktrees/
