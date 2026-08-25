@@ -20,6 +20,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private let closeButton = CandelaChrome.makeIconButton(symbolName: "xmark", help: localizedText("Close Picture in Picture"))
     private let preview = PictureInPicturePreviewView()
     private let placeholder = CandelaChrome.makeCaption(localizedText("Waiting for display…"))
+    private let permissionOverlay = ScreenRecordingPermissionOverlay()
     private let chrome = NSStackView()
     private let sourceRow = NSStackView()
     private var stream: SCStream?
@@ -172,6 +173,12 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
         if usePlaceholder {
             showPlaceholder(localizedText("Preview only in fake-hardware mode."))
             windowCandidates = PictureInPictureCapture.fakeCandidates(displayID: displayID)
@@ -242,6 +249,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         applyMirror()
         applyCurrentTitle()
         reloadWindowMenu()
+        permissionOverlay.reloadLocalizedChrome()
     }
 
     private func applyCurrentTitle() {
@@ -535,6 +543,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         persistCurrentPlacement()
     }
 
+    @objc private func appDidBecomeActive() {
+        guard !usePlaceholder, !permissionOverlay.isHidden || !ScreenRecordingPermission.isGranted else { return }
+        Task { await startCapture() }
+    }
+
     private func makeContent(title: String, contentSize: CGSize) -> PictureInPictureRootView {
         let root = PictureInPictureRootView()
         CandelaChrome.applyPanelSurface(root)
@@ -634,6 +647,12 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         root.addSubview(sourceRow)
         root.addSubview(preview)
         root.addSubview(placeholder)
+        permissionOverlay.translatesAutoresizingMaskIntoConstraints = false
+        permissionOverlay.isHidden = true
+        permissionOverlay.onOpenSettings = { [weak self] in
+            self?.openScreenRecordingSettings()
+        }
+        root.addSubview(permissionOverlay)
         NSLayoutConstraint.activate([
             chrome.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 10),
             chrome.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -6),
@@ -651,6 +670,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             placeholder.centerXAnchor.constraint(equalTo: preview.centerXAnchor),
             placeholder.centerYAnchor.constraint(equalTo: preview.centerYAnchor),
             placeholder.leadingAnchor.constraint(greaterThanOrEqualTo: preview.leadingAnchor, constant: 12),
+            permissionOverlay.leadingAnchor.constraint(equalTo: preview.leadingAnchor),
+            permissionOverlay.trailingAnchor.constraint(equalTo: preview.trailingAnchor),
+            permissionOverlay.topAnchor.constraint(equalTo: preview.topAnchor),
+            permissionOverlay.bottomAnchor.constraint(equalTo: preview.bottomAnchor),
         ])
         return root
     }
@@ -971,7 +994,10 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         let sourceRect = window.convertToScreen(sourceRow.convert(sourceRow.bounds, to: nil))
             .insetBy(dx: -10, dy: -10)
         let hoveringChrome = chromeRect.contains(NSEvent.mouseLocation) || sourceRect.contains(NSEvent.mouseLocation)
-        window.ignoresMouseEvents = !hoveringChrome
+        let hoveringPermission = !permissionOverlay.isHidden && window.convertToScreen(
+            permissionOverlay.convert(permissionOverlay.bounds, to: nil)
+        ).contains(NSEvent.mouseLocation)
+        window.ignoresMouseEvents = !(hoveringChrome || hoveringPermission)
     }
 
     private func installClickThroughScrollMonitor() {
@@ -1122,6 +1148,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private func showPlaceholder(_ text: String) {
         placeholder.stringValue = text
         placeholder.isHidden = false
+        permissionOverlay.isHidden = true
     }
 
     private func startMagnifierTimer() {
@@ -1153,8 +1180,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             showPlaceholder(localizedText("This display is not available."))
             return
         }
-        if !CGPreflightScreenCaptureAccess() {
-            _ = CGRequestScreenCaptureAccess()
+        if !ScreenRecordingPermission.isGranted {
+            showScreenRecordingPermissionPrompt()
+            return
         }
         do {
             let contentList = try await PictureInPictureCapture.shareableContent()
@@ -1240,12 +1268,33 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
             try await stream.startCapture()
             self.stream = stream
             placeholder.isHidden = true
+            permissionOverlay.isHidden = true
             applyMirror()
             applySourceChrome()
             applyCurrentTitle()
         } catch {
-            showPlaceholder(localizedText("Screen Recording permission is required for Picture in Picture."))
+            if !ScreenRecordingPermission.isGranted {
+                showScreenRecordingPermissionPrompt()
+            } else {
+                showPlaceholder(localizedText("Screen Recording permission is required for Picture in Picture."))
+            }
         }
+    }
+
+    private func showScreenRecordingPermissionPrompt() {
+        placeholder.isHidden = true
+        permissionOverlay.reloadLocalizedChrome()
+        permissionOverlay.isHidden = false
+        ScreenRecordingPermission.prepareForCapturePrompt()
+        window?.makeKeyAndOrderFront(nil)
+        _ = ScreenRecordingPermission.requestSystemPrompt()
+    }
+
+    private func openScreenRecordingSettings() {
+        ScreenRecordingPermission.prepareForCapturePrompt()
+        window?.makeKeyAndOrderFront(nil)
+        _ = ScreenRecordingPermission.requestSystemPrompt()
+        _ = ScreenRecordingPermission.openSystemSettings()
     }
 
 

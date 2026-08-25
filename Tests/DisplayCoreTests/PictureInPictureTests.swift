@@ -862,3 +862,26 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(centered.ty, 0, accuracy: 0.0001)
     }
 }
+
+    func testScreenRecordingSettingsTriesPrivacyPaneFirst() {
+        XCTAssertEqual(
+            ScreenRecordingSettings.paneURLStrings.first,
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+        )
+
+        var attempted: [String] = []
+        let opened = ScreenRecordingSettings.firstOpenableURL { url in
+            attempted.append(url.absoluteString)
+            return url.absoluteString.contains("Privacy_ScreenCapture")
+        }
+        XCTAssertEqual(opened?.absoluteString, ScreenRecordingSettings.paneURLStrings[0])
+        XCTAssertEqual(attempted, [ScreenRecordingSettings.paneURLStrings[0]])
+
+        attempted.removeAll()
+        let fallback = ScreenRecordingSettings.firstOpenableURL { url in
+            attempted.append(url.absoluteString)
+            return url.absoluteString == "x-apple.systempreferences:"
+        }
+        XCTAssertEqual(fallback?.absoluteString, "x-apple.systempreferences:")
+        XCTAssertEqual(attempted, ScreenRecordingSettings.paneURLStrings)
+    }

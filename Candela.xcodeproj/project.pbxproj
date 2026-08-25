@@ -28,6 +28,7 @@
 		3E3331C8C641637B20B49D21 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5705532336236260D9C43BA /* StatusItemController.swift */; };
 		431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */; };
 		479649E80C10E3EEAEC137BA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = ADE601E5A9D4072E4B019D36 /* Localizable.xcstrings */; };
+		4802A26EB2DF8BDB4F3ABDE5 /* ScreenRecordingPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B41CFDCF8F66146D133A4E /* ScreenRecordingPermission.swift */; };
 		4C519E5C71C5AC8243AD9C3A /* PictureInPicturePinControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */; };
 		50A1E5A3A05FADEEF31276AD /* PictureInPictureWallWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */; };
 		5360DAD6B4AC47399E5E2D1A /* PrivateSymbols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 905089B8EC0FD548F605C25D /* PrivateSymbols.swift */; };
@@ -70,6 +71,7 @@
 		A41F21975B8638CF4B993532 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F8025C56D2F05F5E8F195926 /* InfoPlist.xcstrings */; };
 		ACD5F998D2F9CEFAAFEFE68B /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = D0CD76F44137A01270AA98F8 /* AudioKit */; };
 		AE38CB5DB255A317F0F09C79 /* PersistenceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A3433947766DA220FA1639C /* PersistenceKit */; };
+		B85180216F9C2949A3C10DAC /* ScreenRecordingPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B41CFDCF8F66146D133A4E /* ScreenRecordingPermission.swift */; };
 		BADCADD3C43F9C07E9C8118A /* HotPlugObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052FCAFA61CC19D79C40B393 /* HotPlugObserver.swift */; };
 		BD0764DA3CEDD6350A5C1C4A /* PictureInPictureEventInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67562031F0D46CD1FE12A4E /* PictureInPictureEventInjector.swift */; };
 		BEAD2060F6E47EA57C982FCF /* StatusPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE08E062782DE20F87A30B88 /* StatusPanelView.swift */; };
@@ -118,6 +120,7 @@
 		6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayIOBox.swift; sourceTree = "<group>"; };
 		7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitDisplaySource.swift; sourceTree = "<group>"; };
 		71C014411DFBAC303BD3B900 /* CandelaMAS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CandelaMAS.entitlements; sourceTree = "<group>"; };
+		76B41CFDCF8F66146D133A4E /* ScreenRecordingPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecordingPermission.swift; sourceTree = "<group>"; };
 		793C12C2B6450CCC0221E215 /* PictureInPictureCursorPulseOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPictureCursorPulseOverlay.swift; sourceTree = "<group>"; };
 		810C0393E03779607DA87A7F /* GammaTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GammaTable.swift; sourceTree = "<group>"; };
 		82C90E015F215A3B4FE7358C /* CoreDisplayInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDisplayInfo.swift; sourceTree = "<group>"; };
@@ -203,6 +206,7 @@
 				B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */,
 				86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */,
 				DCD355C315E3A7D07D9CEEA1 /* PlaybackContinuityController.swift */,
+				76B41CFDCF8F66146D133A4E /* ScreenRecordingPermission.swift */,
 				236871E20297EA15E8B19C30 /* SettingsAboutView.swift */,
 				D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */,
 				1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */,
@@ -453,6 +457,7 @@
 				431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */,
 				38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */,
 				0351D57DF87B360B293DFBD6 /* PlaybackContinuityController.swift in Sources */,
+				4802A26EB2DF8BDB4F3ABDE5 /* ScreenRecordingPermission.swift in Sources */,
 				148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */,
 				637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */,
 				E571621392FF6E664F9851C6 /* SettingsGeneralView.swift in Sources */,
@@ -501,6 +506,7 @@
 				734C6A91FD7FFF94C36D7478 /* PlaybackContinuityController.swift in Sources */,
 				EF9C05BA9E32D95E53A8CC44 /* PrivateIO+IOAV.swift in Sources */,
 				5360DAD6B4AC47399E5E2D1A /* PrivateSymbols.swift in Sources */,
+				B85180216F9C2949A3C10DAC /* ScreenRecordingPermission.swift in Sources */,
 				F301CFE813D82ABA5F369B43 /* SettingsAboutView.swift in Sources */,
 				E605057E24A14B999A79F675 /* SettingsDisplaysView.swift in Sources */,
 				F4F469C12599F6A149C4D3EA /* SettingsGeneralView.swift in Sources */,
