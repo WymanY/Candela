@@ -18,6 +18,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     )
     private let chrome = NSStackView()
     private let tilesHost = WallTilesHost()
+    private let permissionOverlay = ScreenRecordingPermissionOverlay()
     private var tiles: [WallTile] = []
     private var lastTileCount = 0
     private var hiddenKeys: [String]
@@ -101,6 +102,12 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
 
     @available(*, unavailable)
@@ -128,6 +135,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         applyClickThrough()
         applyTitle()
         tiles.forEach { $0.reloadLocalizedChrome() }
+        permissionOverlay.reloadLocalizedChrome()
     }
 
     func update(snapshots: [DisplaySnapshot]) {
@@ -140,6 +148,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         }
         rebuildTiles(sources)
         persistCurrentPlacement()
+        refreshScreenRecordingPermission()
     }
 
     func capturePlacement() {
@@ -240,6 +249,12 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
 
         root.addSubview(chrome)
         root.addSubview(tilesHost)
+        permissionOverlay.translatesAutoresizingMaskIntoConstraints = false
+        permissionOverlay.isHidden = true
+        permissionOverlay.onOpenSettings = { [weak self] in
+            self?.openScreenRecordingSettings()
+        }
+        root.addSubview(permissionOverlay)
         NSLayoutConstraint.activate([
             chrome.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 10),
             chrome.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -6),
@@ -249,6 +264,10 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
             tilesHost.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
             tilesHost.topAnchor.constraint(equalTo: chrome.bottomAnchor, constant: 2),
             tilesHost.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -8),
+            permissionOverlay.leadingAnchor.constraint(equalTo: tilesHost.leadingAnchor),
+            permissionOverlay.trailingAnchor.constraint(equalTo: tilesHost.trailingAnchor),
+            permissionOverlay.topAnchor.constraint(equalTo: tilesHost.topAnchor),
+            permissionOverlay.bottomAnchor.constraint(equalTo: tilesHost.bottomAnchor),
         ])
         return root
     }
@@ -383,6 +402,41 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         persistCurrentPlacement()
     }
 
+    @objc private func appDidBecomeActive() {
+        refreshScreenRecordingPermission()
+    }
+
+    private func refreshScreenRecordingPermission() {
+        guard !usePlaceholder else {
+            permissionOverlay.isHidden = true
+            return
+        }
+        if ScreenRecordingPermission.isGranted {
+            let wasDenied = !permissionOverlay.isHidden
+            permissionOverlay.isHidden = true
+            if wasDenied {
+                tiles.forEach { $0.retryCaptureIfNeeded() }
+            }
+            return
+        }
+        let shouldPrompt = permissionOverlay.isHidden
+        permissionOverlay.reloadLocalizedChrome()
+        permissionOverlay.isHidden = false
+        tiles.forEach { $0.stop() }
+        if shouldPrompt {
+            ScreenRecordingPermission.prepareForCapturePrompt()
+            window?.makeKeyAndOrderFront(nil)
+            _ = ScreenRecordingPermission.requestSystemPrompt()
+        }
+    }
+
+    private func openScreenRecordingSettings() {
+        ScreenRecordingPermission.prepareForCapturePrompt()
+        window?.makeKeyAndOrderFront(nil)
+        _ = ScreenRecordingPermission.requestSystemPrompt()
+        _ = ScreenRecordingPermission.openSystemSettings()
+    }
+
     private func applyPlacementToWindow() {
         isApplying = true
         opacitySlider.doubleValue = placement.opacity * 100
@@ -437,7 +491,10 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
                 .insetBy(dx: -6, dy: -6)
                 .contains(mouse)
         }
-        window.ignoresMouseEvents = !(hoveringChrome || hoveringHide)
+        let hoveringPermission = !permissionOverlay.isHidden && window.convertToScreen(
+            permissionOverlay.convert(permissionOverlay.bounds, to: nil)
+        ).contains(mouse)
+        window.ignoresMouseEvents = !(hoveringChrome || hoveringHide || hoveringPermission)
     }
 
     private func installClickThroughScrollMonitor() {
@@ -695,14 +752,20 @@ private final class WallTile: NSObject {
         preview.flush()
     }
 
+    func retryCaptureIfNeeded() {
+        guard !usePlaceholder else { return }
+        Task { await startCapture() }
+    }
+
     private func startCapture() async {
         guard snapshot.sessionDisplayID != 0 else {
             placeholder.isHidden = false
             placeholder.stringValue = localizedText("This display is not available.")
             return
         }
-        if !CGPreflightScreenCaptureAccess() {
-            _ = CGRequestScreenCaptureAccess()
+        guard ScreenRecordingPermission.isGranted else {
+            placeholder.isHidden = true
+            return
         }
         do {
             let content = try await PictureInPictureCapture.shareableContent()
@@ -730,8 +793,12 @@ private final class WallTile: NSObject {
             self.stream = stream
             placeholder.isHidden = true
         } catch {
-            placeholder.isHidden = false
-            placeholder.stringValue = localizedText("Screen Recording permission is required for Picture in Picture.")
+            if !ScreenRecordingPermission.isGranted {
+                placeholder.isHidden = true
+            } else {
+                placeholder.isHidden = false
+                placeholder.stringValue = localizedText("Screen Recording permission is required for Picture in Picture.")
+            }
         }
     }
 }

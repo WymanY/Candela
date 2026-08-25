@@ -3332,6 +3332,57 @@
           }
         }
       }
+    },
+    "Screen Recording is required": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording is required"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要屏幕录制权限"
+          }
+        }
+      }
+    },
+    "Candela needs Screen Recording to show Picture in Picture and Display Overview. Enable Candela in System Settings, then click the feature again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candela needs Screen Recording to show Picture in Picture and Display Overview. Enable Candela in System Settings, then click the feature again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 Picture in Picture 和 Display Overview 需要屏幕录制权限。请在系统设置中开启 Candela，然后再次点击该功能。"
+          }
+        }
+      }
+    },
+    "Open System Settings · Screen Recording": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings · Screen Recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置 · 屏幕录制"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
