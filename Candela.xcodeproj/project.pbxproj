@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		02363366446ED003772BB623 /* DDCPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */; };
+		0351D57DF87B360B293DFBD6 /* PlaybackContinuityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD355C315E3A7D07D9CEEA1 /* PlaybackContinuityController.swift */; };
 		0992B9EDA691A5DA59BC4F16 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD764C727BD56351F6A07A8 /* AppDelegate.swift */; };
 		0EDC51A740249CDF2D36688B /* PictureInPictureEventInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67562031F0D46CD1FE12A4E /* PictureInPictureEventInjector.swift */; };
 		0F8E93374BCEC37D401CC0EB /* PictureInPictureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */; };
@@ -41,6 +42,7 @@
 		6C46FE1D24F76C1573BBB02D /* BrightnessProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC0402D868CAED63B7BC4F1 /* BrightnessProbe.swift */; };
 		6E3D061424AB3C7C2BFF4532 /* TestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 5F6245109EDD65BFC9C59AAF /* TestSupport */; };
 		733383736CF5E7E902876333 /* BrightnessKit in Frameworks */ = {isa = PBXBuildFile; productRef = 75B34A6470F248E2DA5598B7 /* BrightnessKit */; };
+		734C6A91FD7FFF94C36D7478 /* PlaybackContinuityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD355C315E3A7D07D9CEEA1 /* PlaybackContinuityController.swift */; };
 		7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C13464143DB251CFC1D652 /* AppLanguage.swift */; };
 		74BA19C7C6794E8F45B536D0 /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
 		765633F98315E4C36AC68A0D /* PictureInPictureCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BDCF48467B8FC1B5088499 /* PictureInPictureCapture.swift */; };
@@ -139,6 +141,7 @@
 		D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDisplaysView.swift; sourceTree = "<group>"; };
 		DA3EF9683C1B04C03535D3B8 /* DisplayArrangementControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayArrangementControl.swift; sourceTree = "<group>"; };
 		DB5AC7C8E8EB522D8357C7DB /* DDCPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DDCPacket.swift; sourceTree = "<group>"; };
+		DCD355C315E3A7D07D9CEEA1 /* PlaybackContinuityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackContinuityController.swift; sourceTree = "<group>"; };
 		DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryStatusView.swift; sourceTree = "<group>"; };
 		E5705532336236260D9C43BA /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		EBD764C727BD56351F6A07A8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -199,6 +202,7 @@
 				55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */,
 				B7601D5808FBBD68599A7774 /* PictureInPictureWallWindowController.swift */,
 				86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */,
+				DCD355C315E3A7D07D9CEEA1 /* PlaybackContinuityController.swift */,
 				236871E20297EA15E8B19C30 /* SettingsAboutView.swift */,
 				D9CDF7F78B220E73D467B27E /* SettingsDisplaysView.swift */,
 				1EA7D73709586D725F10E419 /* SettingsGeneralView.swift */,
@@ -448,6 +452,7 @@
 				4C519E5C71C5AC8243AD9C3A /* PictureInPicturePinControl.swift in Sources */,
 				431ED15DB9A163A1FA14FE91 /* PictureInPictureWallWindowController.swift in Sources */,
 				38D23E9976F5CFD66A36793F /* PictureInPictureWindowController.swift in Sources */,
+				0351D57DF87B360B293DFBD6 /* PlaybackContinuityController.swift in Sources */,
 				148EC823944A35901C80BC79 /* SettingsAboutView.swift in Sources */,
 				637094C600AA02BE12C2AD77 /* SettingsDisplaysView.swift in Sources */,
 				E571621392FF6E664F9851C6 /* SettingsGeneralView.swift in Sources */,
@@ -493,6 +498,7 @@
 				1671697A02F7E305214DCA82 /* PictureInPicturePinControl.swift in Sources */,
 				50A1E5A3A05FADEEF31276AD /* PictureInPictureWallWindowController.swift in Sources */,
 				0F8E93374BCEC37D401CC0EB /* PictureInPictureWindowController.swift in Sources */,
+				734C6A91FD7FFF94C36D7478 /* PlaybackContinuityController.swift in Sources */,
 				EF9C05BA9E32D95E53A8CC44 /* PrivateIO+IOAV.swift in Sources */,
 				5360DAD6B4AC47399E5E2D1A /* PrivateSymbols.swift in Sources */,
 				F301CFE813D82ABA5F369B43 /* SettingsAboutView.swift in Sources */,

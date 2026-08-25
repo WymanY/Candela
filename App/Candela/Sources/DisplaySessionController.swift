@@ -50,6 +50,9 @@ final class DisplaySessionController {
     var onChange: (() -> Void)?
     var launchAtLoginError: String?
     private var audioRouteObserver: HALAudioRouteObserver?
+#if !CANDELA_MAS
+    let playbackContinuity = PlaybackContinuityController()
+#endif
     var isAdjustingSpeakerVolume = false
     var lastLiveVolumeWrite: Date?
 
@@ -140,6 +143,9 @@ final class DisplaySessionController {
         hotPlugObserver = nil
         audioRouteObserver?.invalidate()
         audioRouteObserver = nil
+#if !CANDELA_MAS
+        playbackContinuity.cancel()
+#endif
         stopPowerSourceObserver()
         stopLowPowerModeObserver()
         stopBrightnessFollowObserver()

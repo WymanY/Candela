@@ -94,6 +94,24 @@ public enum HALDeviceEnumerator {
         return uid.isEmpty ? nil : uid
     }
 
+    /// Process IDs for clients that currently have active output streams.
+    /// Callers can use this around a route change to distinguish playback that
+    /// was interrupted from an already-paused player.
+    public static func runningOutputProcessIDs() -> Set<Int32> {
+        let system = AudioObjectID(kAudioObjectSystemObject)
+        let processListAddress = HALObject.address(kAudioHardwarePropertyProcessObjectList)
+        let pidAddress = HALObject.address(kAudioProcessPropertyPID)
+        let runningOutputAddress = HALObject.address(kAudioProcessPropertyIsRunningOutput)
+
+        return Set(
+            HALObject.array(system, processListAddress, as: AudioObjectID.self).compactMap { processID in
+                guard HALObject.uint32(processID, runningOutputAddress) == 1 else { return nil }
+                let pid: pid_t? = HALObject.get(processID, pidAddress)
+                return pid
+            }
+        )
+    }
+
     @discardableResult
     public static func setDefaultOutputUID(_ uid: String) -> Bool {
         switchDefaultOutput(
@@ -152,6 +170,19 @@ public enum HALDeviceEnumerator {
     static func deviceIDs() -> [AudioDeviceID] {
         HALObject.array(AudioObjectID(kAudioObjectSystemObject), devicesAddress, as: AudioDeviceID.self)
             .filter { $0 != kAudioObjectUnknown && $0 != 0 }
+    }
+}
+
+public enum PlaybackContinuityPolicy {
+    public static func shouldResume(
+        capturedProcessIDs: Set<Int32>,
+        runningProcessIDs: Set<Int32>,
+        expectedOutputUID: String,
+        currentOutputUID: String?
+    ) -> Bool {
+        guard !capturedProcessIDs.isEmpty else { return false }
+        guard currentOutputUID == expectedOutputUID else { return false }
+        return capturedProcessIDs.isDisjoint(with: runningProcessIDs)
     }
 }
 

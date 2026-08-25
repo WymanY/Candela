@@ -311,6 +311,50 @@ final class HALVolumeControlTests: XCTestCase {
         XCTAssertFalse(didWrite)
     }
 
+    func testPlaybackContinuityRequiresCapturedPlayback() {
+        XCTAssertFalse(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [],
+                runningProcessIDs: [],
+                expectedOutputUID: "target",
+                currentOutputUID: "target"
+            )
+        )
+    }
+
+    func testPlaybackContinuityDoesNotResumeWhileCapturedProcessIsRunning() {
+        XCTAssertFalse(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [101, 202],
+                runningProcessIDs: [202, 303],
+                expectedOutputUID: "target",
+                currentOutputUID: "target"
+            )
+        )
+    }
+
+    func testPlaybackContinuityRequiresExpectedOutputRoute() {
+        XCTAssertFalse(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [101],
+                runningProcessIDs: [],
+                expectedOutputUID: "target",
+                currentOutputUID: "other"
+            )
+        )
+    }
+
+    func testPlaybackContinuityResumesStoppedPlaybackOnExpectedRoute() {
+        XCTAssertTrue(
+            PlaybackContinuityPolicy.shouldResume(
+                capturedProcessIDs: [101],
+                runningProcessIDs: [303],
+                expectedOutputUID: "target",
+                currentOutputUID: "target"
+            )
+        )
+    }
+
     func testUnknownUIDDoesNotThrow() {
         XCTAssertNil(HALDeviceEnumerator.deviceID(forUID: "candela-no-such-device"))
         XCTAssertFalse(HALVolumeControl.setVolume(uid: "candela-no-such-device", value: 0.5))
