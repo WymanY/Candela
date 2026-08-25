@@ -96,12 +96,33 @@ public enum HALDeviceEnumerator {
 
     @discardableResult
     public static func setDefaultOutputUID(_ uid: String) -> Bool {
-        guard let deviceID = deviceID(forUID: uid) else { return false }
-        return HALObject.set(
-            AudioObjectID(kAudioObjectSystemObject),
-            defaultOutputDeviceAddress,
-            deviceID
+        switchDefaultOutput(
+            uid: uid,
+            resolveDeviceID: deviceID(forUID:),
+            writeDefault: { deviceID in
+                HALObject.set(
+                    AudioObjectID(kAudioObjectSystemObject),
+                    defaultOutputDeviceAddress,
+                    deviceID
+                )
+            },
+            readDefaultUID: defaultOutputUID
         )
+    }
+
+    static func switchDefaultOutput(
+        uid: String,
+        resolveDeviceID: (String) -> AudioDeviceID?,
+        writeDefault: (AudioDeviceID) -> Bool,
+        readDefaultUID: () -> String?
+    ) -> Bool {
+        let trimmed = uid.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let deviceID = resolveDeviceID(trimmed) else { return false }
+        if readDefaultUID() == trimmed {
+            return true
+        }
+        guard writeDefault(deviceID) else { return false }
+        return readDefaultUID() == trimmed
     }
 
     public static func deviceID(forUID uid: String) -> AudioDeviceID? {

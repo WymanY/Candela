@@ -5,7 +5,7 @@ import DisplayCore
 final class SpeakerRowView: NSView {
     var onVolume: ((Double) -> Void)?
     var onMute: ((Bool) -> Void)?
-    var onSelect: ((String) -> Void)?
+    var onSelect: ((String) -> Bool)?
     var onVolumeTrackingBegan: (() -> Void)?
     var onVolumeTrackingEnded: ((Double) -> Void)?
 
@@ -23,6 +23,7 @@ final class SpeakerRowView: NSView {
     private var isApplying = false
     private var showPercent = true
     private var isMuted = false
+    private var selectedUID: String?
 
     override init(frame frameRect: NSRect) {
         volumeSlider = CandelaChrome.makeSlider()
@@ -57,6 +58,8 @@ final class SpeakerRowView: NSView {
         nameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         nameLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         metaLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        nameLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        metaLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
         let identity = NSStackView(views: [nameLabel, metaLabel])
         identity.orientation = .vertical
@@ -64,6 +67,7 @@ final class SpeakerRowView: NSView {
         identity.spacing = 2
         identity.setHuggingPriority(.defaultLow, for: .horizontal)
         identity.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        identity.setContentCompressionResistancePriority(.required, for: .vertical)
 
         let header = NSStackView(views: [identity, outputPopup])
         header.orientation = .horizontal
@@ -97,6 +101,7 @@ final class SpeakerRowView: NSView {
             volumeRow.widthAnchor.constraint(equalTo: column.widthAnchor),
             volumeNote.widthAnchor.constraint(equalTo: column.widthAnchor),
             outputPopup.widthAnchor.constraint(lessThanOrEqualToConstant: 168),
+            header.heightAnchor.constraint(greaterThanOrEqualTo: identity.heightAnchor),
         ])
     }
 
@@ -154,6 +159,7 @@ final class SpeakerRowView: NSView {
     }
 
     private func reloadChoices(_ choices: [SpeakerChoice], selectedUID: String?) {
+        self.selectedUID = selectedUID
         outputPopup.removeAllItems()
         let canSwitch = choices.count > 1
         outputPopup.isHidden = !canSwitch
@@ -203,7 +209,15 @@ final class SpeakerRowView: NSView {
 
     @objc private func outputChanged(_ sender: NSPopUpButton) {
         guard !isApplying, let uid = sender.selectedItem?.representedObject as? String else { return }
-        onSelect?(uid)
+        guard onSelect?(uid) == true else {
+            if let selectedUID,
+               let previousItem = sender.itemArray.first(where: { ($0.representedObject as? String) == selectedUID })
+            {
+                sender.select(previousItem)
+            }
+            return
+        }
+        selectedUID = uid
     }
 
     private func updateVolumePercent(_ value: Double) {

@@ -365,7 +365,7 @@ final class StatusPanelView: NSView {
             self?.session.setSpeakerMuted(muted)
         }
         speakerRow.onSelect = { [weak self] uid in
-            self?.session.setDefaultSpeaker(uid: uid)
+            self?.session.setDefaultSpeaker(uid: uid) ?? false
         }
         content.addSubview(speakerRow)
     }

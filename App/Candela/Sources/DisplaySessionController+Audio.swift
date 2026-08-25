@@ -270,7 +270,6 @@ extension DisplaySessionController {
         if Self.shouldUseFakeHardware {
             return false
         }
-        SoftwareVolumeControl.shared.stopAll()
         guard HALDeviceEnumerator.setDefaultOutputUID(trimmed) else { return false }
         handleAudioRouteChange()
         return true
