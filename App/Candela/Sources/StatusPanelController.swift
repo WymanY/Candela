@@ -85,7 +85,7 @@ final class StatusPanelController {
             contentRect: NSRect(x: 0, y: 0, width: CandelaChrome.panelWidth, height: 120),
             styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
             backing: .buffered,
-            defer: false
+            defer: true
         )
         panel.isFloatingPanel = true
         panel.level = .popUpMenu
@@ -118,14 +118,13 @@ final class StatusPanelController {
         panelView.needsLayout = true
         panelView.layoutSubtreeIfNeeded()
         let height = StatusPanelLayout.clampedHeight(panelView.fittingSize.height)
-        panel.setContentSize(NSSize(width: CandelaChrome.panelWidth, height: height))
-        position(relativeTo: button, height: height)
+        position(relativeTo: button, height: height, display: false)
         panel.orderFrontRegardless()
         panel.makeKey()
     }
 
     func reposition(relativeTo button: NSView) {
-        position(relativeTo: button, height: panel.frame.height)
+        position(relativeTo: button, height: panel.frame.height, display: true)
     }
 
     func hide() {
@@ -167,7 +166,7 @@ final class StatusPanelController {
         return screen.visibleFrame.intersects(panel.frame.insetBy(dx: 8, dy: 8))
     }
 
-    private func position(relativeTo button: NSView?, height: CGFloat) {
+    private func position(relativeTo button: NSView?, height: CGFloat, display: Bool) {
         let converted = button.flatMap { item in
             item.window.map { window in
                 window.convertToScreen(item.convert(item.bounds, to: nil))
@@ -192,7 +191,7 @@ final class StatusPanelController {
                 visible: visible,
                 width: CandelaChrome.panelWidth
             ),
-            display: true
+            display: display
         )
     }
 }
