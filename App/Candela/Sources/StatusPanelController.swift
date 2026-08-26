@@ -6,11 +6,16 @@ final class StatusPanel: NSPanel {
     var canvasPanActive = false
     var onCommandW: (() -> Void)?
     var onCommandComma: (() -> Void)?
+    var onEscape: (() -> Void)?
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
     override func cancelOperation(_ sender: Any?) {
+        if let onEscape {
+            onEscape()
+            return
+        }
         orderOut(sender)
     }
 

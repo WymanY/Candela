@@ -52,7 +52,7 @@ It is an AppKit accessory app. Bundle ID: `app.candela.macos`.
 - In Magnifier, hold Space and drag or scroll the preview to pan around the magnified region. That gesture does not resize the PiP window.
 - Flip the preview horizontally for a teleprompter.
 - Scroll or pinch to zoom. A single PiP stays between 280 and 1280 wide. The monitor wall can grow to the current screen. A pinned window grows from that position.
-- The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. ⌘W closes the hovered PiP.
+- The title bar has opacity (down to 25%) and click-through. Clicks on the preview reach the work underneath. Hovering the window still zooms it with the scroll wheel. Esc closes the hovered PiP or Display Overview; otherwise it closes Overview first, then every remaining PiP. Control-Esc only leaves source control. ⌘W still closes the hovered window.
 - Pin it to top-left, top-right, bottom-left, bottom-right, or center. Dragging it off that position unpins it.
 - Each display remembers the last place, size, opacity, click-through, pin, flip, mode, and window identity. Closing and opening the window brings that layout back.
 - The monitor wall tiles every real display into one floating window, remembers its own placement, and can zoom up to the current screen. Each tile has a close control so a display can be dismissed. Show Hidden brings those tiles back. Closing the wall, or dismissing every tile, also turns Overview off in the menu-bar panel. The next open restores the full wall. Virtual screens stay out. Desktop Backstop layers and black capture overlays such as Screen Studio's window-picker highlighter are hidden from the window list.
@@ -236,6 +236,7 @@ CI also builds **Candela** and **CandelaMAS** on macOS 14.
 - Keyboard brightness keys now move every controllable display. External panels keep a relative offset from the built-in panel.
 - Follow can be turned on from the menu-bar panel or Settings for this launch only. Each display can still be dimmed on its own.
 - Display Overview tiles can be dismissed one by one and restored with Show Hidden. Dismissing every tile, or closing the wall, turns Overview off in the menu-bar panel.
+- Esc now leaves Picture in Picture and Display Overview: the hovered window first, otherwise Overview, then every remaining PiP.
 
 ## 1.2
 

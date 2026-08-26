@@ -140,6 +140,9 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         panel.onCommandW = { [weak self] in
             self?.closeIfHovered()
         }
+        panel.onEscape = { [weak self] in
+            self?.window?.close()
+        }
         let root = makeContent(title: title, contentSize: content)
         root.onMagnify = { [weak self] event in
             self?.handleMagnify(event)
@@ -316,6 +319,11 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     }
 
     var currentPlacement: PictureInPicturePlacement { placement }
+
+    var isPointerOverWindow: Bool {
+        guard let window else { return false }
+        return PictureInPictureLayout.isMouseOverWindow(mouse: NSEvent.mouseLocation, windowFrame: window.frame)
+    }
 
     func capturePlacement() {
         persistCurrentPlacement()

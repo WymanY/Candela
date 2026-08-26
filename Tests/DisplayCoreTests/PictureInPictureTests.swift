@@ -823,6 +823,102 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(PictureInPictureInteraction.escapeKeyCode, 53)
     }
 
+    func testBareEscapeClosesOverlaysInPriorityOrder() {
+        XCTAssertTrue(
+            PictureInPictureInteraction.isBareEscapeKey(
+                keyCode: 53,
+                commandPressed: false,
+                optionPressed: false,
+                controlPressed: false,
+                shiftPressed: false
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureInteraction.isBareEscapeKey(
+                keyCode: 53,
+                commandPressed: false,
+                optionPressed: false,
+                controlPressed: true,
+                shiftPressed: false
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureInteraction.isBareEscapeKey(
+                keyCode: 53,
+                commandPressed: true,
+                optionPressed: false,
+                controlPressed: false,
+                shiftPressed: false
+            )
+        )
+
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                keyOverview: true,
+                hoveredOverview: true,
+                hoveredPictureInPicture: true,
+                overviewOpen: true,
+                pictureInPictureOpen: true
+            ),
+            .keyOverview
+        )
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                keyPictureInPicture: true,
+                hoveredOverview: true,
+                hoveredPictureInPicture: true,
+                overviewOpen: true,
+                pictureInPictureOpen: true
+            ),
+            .keyPictureInPicture
+        )
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                hoveredOverview: true,
+                hoveredPictureInPicture: true,
+                overviewOpen: true,
+                pictureInPictureOpen: true
+            ),
+            .hoveredOverview
+        )
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                hoveredOverview: false,
+                hoveredPictureInPicture: true,
+                overviewOpen: true,
+                pictureInPictureOpen: true
+            ),
+            .hoveredPictureInPicture
+        )
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                hoveredOverview: false,
+                hoveredPictureInPicture: false,
+                overviewOpen: true,
+                pictureInPictureOpen: true
+            ),
+            .overview
+        )
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                hoveredOverview: false,
+                hoveredPictureInPicture: false,
+                overviewOpen: false,
+                pictureInPictureOpen: true
+            ),
+            .allPictureInPicture
+        )
+        XCTAssertEqual(
+            PictureInPictureInteraction.overlayEscapeTarget(
+                hoveredOverview: false,
+                hoveredPictureInPicture: false,
+                overviewOpen: false,
+                pictureInPictureOpen: false
+            ),
+            .none
+        )
+    }
+
     func testControlRequiresADifferentHostDisplay() {
         XCTAssertTrue(PictureInPictureInteraction.canControlSource(hostDisplayID: 1, sourceDisplayID: 2))
         XCTAssertFalse(PictureInPictureInteraction.canControlSource(hostDisplayID: 2, sourceDisplayID: 2))
