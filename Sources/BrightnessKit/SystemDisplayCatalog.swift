@@ -198,8 +198,8 @@ public final class SystemDisplayCatalog: DisplayCataloging {
         let canMirror = DisplayArrangementPlanning.canMirrorToBuiltIn(targets: targets)
         return snapshots.map { snapshot in
             var next = snapshot
-            next.isMirroringBuiltIn = kind == .builtin
-            next.canMirrorBuiltIn = canMirror || kind == .builtin
+            next.isMirroringBuiltIn = kind != .none
+            next.canMirrorBuiltIn = canMirror || kind != .none
             return next
         }
     }

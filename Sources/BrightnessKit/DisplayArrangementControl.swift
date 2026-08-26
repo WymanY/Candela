@@ -196,8 +196,12 @@ public enum DisplayArrangementControl {
         isVirtual: (CGDirectDisplayID) -> Bool = { _ in false }
     ) -> [DisplayMirrorTarget] {
         let keys = resolvedKeys(keysByDisplayID, displayIDs: displayIDs)
-        return displayIDs.compactMap { id in
-            guard let key = keys[id] else { return nil }
+        return displayIDs.map { id in
+            // Mirror slaves disappear from Candela's normal catalog. On a
+            // fresh launch there may be no remembered persistent key for the
+            // hidden display, but it must still participate in mirror-state
+            // detection and in the emergency Unmirror path.
+            let key = keys[id] ?? "candela-unresolved-display-\(id)"
             let bounds = CGDisplayBounds(id)
             return DisplayMirrorTarget(
                 displayID: id,
@@ -300,6 +304,24 @@ public enum DisplayArrangementControl {
             }
             return true
         }
+    }
+
+    /// Stops system mirroring even when Candela has no saved extended layout.
+    /// This is primarily the recovery path for launching while a mirror slave
+    /// is already hidden from the normal display catalog.
+    @discardableResult
+    public static func stopMirroring(
+        keysByDisplayID: [CGDirectDisplayID: String]
+    ) -> Bool {
+        let targets = currentTargets(keysByDisplayID: keysByDisplayID)
+        let slaves = targets.compactMap { target -> CGDirectDisplayID? in
+            guard target.mirrorsDisplayID != 0 else {
+                return nil
+            }
+            return target.displayID
+        }
+        guard !slaves.isEmpty else { return false }
+        return disableMirroring(for: slaves)
     }
 
     @discardableResult

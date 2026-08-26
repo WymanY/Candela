@@ -101,7 +101,7 @@ public enum DisplayMirrorKind: String, Equatable, Sendable {
 public enum DisplayMirrorAvailability: Equatable, Sendable {
     case unavailable
     case available
-    case mirroringBuiltIn
+    case mirroring
 }
 
 public enum DisplayArrangementPlanning {
@@ -151,8 +151,8 @@ public enum DisplayArrangementPlanning {
         targets: [DisplayMirrorTarget],
         savedArrangement _: DisplayArrangementSnapshot?
     ) -> DisplayMirrorAvailability {
-        if kind(for: targets) == .builtin {
-            return .mirroringBuiltIn
+        if kind(for: targets) != .none {
+            return .mirroring
         }
         // A leftover saved arrangement is not enough on a single display:
         // restore cannot bring a missing external back, so hide Mirror.

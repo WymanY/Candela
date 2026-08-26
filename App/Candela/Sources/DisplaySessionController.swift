@@ -458,7 +458,7 @@ final class DisplaySessionController {
 
     var isMirroringBuiltIn: Bool {
         snapshots.contains(where: \.isMirroringBuiltIn)
-            || DisplayArrangementPlanning.kind(for: liveMirrorTargets()) == .builtin
+            || DisplayArrangementPlanning.kind(for: liveMirrorTargets()) != .none
     }
 
     var canToggleBuiltInMirror: Bool {
@@ -468,7 +468,7 @@ final class DisplaySessionController {
         ) {
         case .unavailable:
             return false
-        case .available, .mirroringBuiltIn:
+        case .available, .mirroring:
             return true
         }
     }
@@ -572,12 +572,15 @@ final class DisplaySessionController {
 
     @discardableResult
     func restoreExtendedArrangement() -> Bool {
-        guard let saved = savedExtendedArrangement else { return false }
         if Self.shouldUseFakeHardware {
             applyFakeMirrorState(isMirroring: false)
             return true
         }
-        guard DisplayArrangementControl.restore(saved, keysByDisplayID: liveKeysByDisplayID()) else {
+        let keys = liveKeysByDisplayID()
+        let restored = savedExtendedArrangement.map {
+            DisplayArrangementControl.restore($0, keysByDisplayID: keys)
+        } ?? false
+        guard restored || DisplayArrangementControl.stopMirroring(keysByDisplayID: keys) else {
             return false
         }
         applyOptimisticMirrorState(isMirroring: false)
@@ -1125,7 +1128,7 @@ final class DisplaySessionController {
             targets: liveMirrorTargets(),
             savedArrangement: savedExtendedArrangement
         )
-        let mirroring = availability == .mirroringBuiltIn
+        let mirroring = availability == .mirroring
         let canToggle = availability != .unavailable
         for index in snapshots.indices {
             snapshots[index].isMirroringBuiltIn = mirroring
