@@ -17,10 +17,11 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private var workspace: DisplayLayoutWorkspace?
     private var draftIsStale = false
     private var screenObserver: NSObjectProtocol?
-    private var ignoreScreenChangesUntil: Date?
+    private var ignoreScreenChangesUntil = Date.distantPast
     private var autoApplyWorkItem: DispatchWorkItem?
     private var lastAppliedDraft: DisplayLayoutDraft?
     private static let autoApplyDelay: TimeInterval = 0.8
+    private static let applyQuietPeriod: TimeInterval = 2.5
 
     init(session: DisplaySessionController) {
         self.session = session
@@ -204,7 +205,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             return
         }
         do {
-            ignoreScreenChangesUntil = Date().addingTimeInterval(1.5)
+            ignoreScreenChangesUntil = Date().addingTimeInterval(Self.applyQuietPeriod)
             let verified = try session.applyDisplayLayout(
                 workspace.draft,
                 revision: workspace.revision
@@ -216,7 +217,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             applyButton.isEnabled = true
             setStatus(localizedText("Display layout applied."), error: false)
         } catch {
-            ignoreScreenChangesUntil = nil
+            ignoreScreenChangesUntil = Date.distantPast
             handle(error)
         }
     }
@@ -288,12 +289,12 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private func screenParametersChanged() {
         ensureWindowVisible()
         session.requestDisplayLayoutRescan()
-        if let until = ignoreScreenChangesUntil, Date() < until {
+        if Date() < ignoreScreenChangesUntil {
             return
         }
-        ignoreScreenChangesUntil = nil
         guard window?.isVisible == true, workspace != nil else { return }
         draftIsStale = true
+        cancelAutoApply()
         setStaleStatus()
     }
 
