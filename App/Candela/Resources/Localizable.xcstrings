@@ -3435,23 +3435,6 @@
         }
       }
     },
-    "Drag any display to arrange it. Displays stay connected and cannot overlap.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Drag any display to arrange it. Displays stay connected and cannot overlap."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "拖动任意显示器进行排列。显示器会保持相接，且不能重叠。"
-          }
-        }
-      }
-    },
     "Reload": {
       "extractionState": "manual",
       "localizations": {
@@ -3737,6 +3720,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "打开系统设置 · 屏幕录制"
+          }
+        }
+      }
+    },
+    "Drag any display to arrange it. The layout applies after you stop dragging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag any display to arrange it. The layout applies after you stop dragging."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动任意显示器进行排列。停手后会自动应用。"
+          }
+        }
+      }
+    },
+    "Applying layout after you stop dragging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applying layout after you stop dragging."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停手后即将应用排列。"
           }
         }
       }

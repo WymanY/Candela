@@ -18,6 +18,9 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private var draftIsStale = false
     private var screenObserver: NSObjectProtocol?
     private var ignoreScreenChangesUntil: Date?
+    private var autoApplyWorkItem: DispatchWorkItem?
+    private var lastAppliedDraft: DisplayLayoutDraft?
+    private static let autoApplyDelay: TimeInterval = 0.8
 
     init(session: DisplaySessionController) {
         self.session = session
@@ -74,7 +77,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         window?.title = localizedText("Display Layout")
         titleLabel.stringValue = localizedText("Display Layout")
         instructionsLabel.stringValue = localizedText(
-            "Drag any display to arrange it. Displays stay connected and cannot overlap."
+            "Drag any display to arrange it. The layout applies after you stop dragging."
         )
         applyButton.title = localizedText("Apply")
         reloadButton.title = localizedText("Reload")
@@ -83,8 +86,10 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     }
 
     func windowWillClose(_ notification: Notification) {
+        cancelAutoApply()
         workspace = nil
         canvas.setDraft(nil)
+        lastAppliedDraft = nil
         draftIsStale = false
     }
 
@@ -110,6 +115,12 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             workspace.draft = draft
             self.workspace = workspace
             self.refreshValidationMessage()
+        }
+        canvas.onDragBegan = { [weak self] in
+            self?.cancelAutoApply()
+        }
+        canvas.onDragEnded = { [weak self] in
+            self?.scheduleAutoApply()
         }
 
         for view in [titleLabel, instructionsLabel, statusLabel, applyButton, reloadButton, cancelButton] {
@@ -161,8 +172,35 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     }
 
     @objc private func applyClicked() {
+        applyCurrentLayout(automatic: false)
+    }
+
+    @objc private func reloadClicked() {
+        cancelAutoApply()
+        reloadFromHardware(successMessage: localizedText("Reloaded the current display layout."))
+    }
+
+    @objc private func cancelClicked() {
+        window?.performClose(nil)
+    }
+
+    private func applyCurrentLayout(automatic: Bool) {
+        cancelAutoApply()
         guard let workspace, !draftIsStale else {
-            setStaleStatus()
+            if !automatic {
+                setStaleStatus()
+            }
+            return
+        }
+        do {
+            try workspace.draft.validated()
+        } catch {
+            if !automatic {
+                handle(error)
+            }
+            return
+        }
+        guard workspace.draft != lastAppliedDraft else {
             return
         }
         do {
@@ -173,6 +211,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             )
             self.workspace = verified
             canvas.setDraft(verified.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
+            lastAppliedDraft = verified.draft
             draftIsStale = false
             applyButton.isEnabled = true
             setStatus(localizedText("Display layout applied."), error: false)
@@ -182,19 +221,35 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         }
     }
 
-    @objc private func reloadClicked() {
-        reloadFromHardware(successMessage: localizedText("Reloaded the current display layout."))
+    private func scheduleAutoApply() {
+        cancelAutoApply()
+        guard window?.isVisible == true, !draftIsStale, let workspace else { return }
+        do {
+            try workspace.draft.validated()
+        } catch {
+            return
+        }
+        guard workspace.draft != lastAppliedDraft else { return }
+        let work = DispatchWorkItem { [weak self] in
+            self?.applyCurrentLayout(automatic: true)
+        }
+        autoApplyWorkItem = work
+        setStatus(localizedText("Applying layout after you stop dragging."), error: false)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.autoApplyDelay, execute: work)
     }
 
-    @objc private func cancelClicked() {
-        window?.performClose(nil)
+    private func cancelAutoApply() {
+        autoApplyWorkItem?.cancel()
+        autoApplyWorkItem = nil
     }
 
     private func reloadFromHardware(successMessage: String?) {
+        cancelAutoApply()
         do {
             let workspace = try session.loadDisplayLayout()
             self.workspace = workspace
             canvas.setDraft(workspace.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
+            lastAppliedDraft = workspace.draft
             draftIsStale = false
             applyButton.isEnabled = true
             setStatus(successMessage ?? localizedText("Layout is ready."), error: false)
@@ -218,7 +273,9 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         do {
             try workspace.draft.validated()
             applyButton.isEnabled = true
-            setStatus(localizedText("Layout is ready."), error: false)
+            if autoApplyWorkItem == nil {
+                setStatus(localizedText("Layout is ready."), error: false)
+            }
         } catch let error as DisplayLayoutValidationError {
             applyButton.isEnabled = false
             setStatus(validationMessage(error), error: true)
@@ -339,6 +396,8 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
 @MainActor
 private final class DisplayLayoutCanvasView: NSView {
     var onDraftChange: ((DisplayLayoutDraft) -> Void)?
+    var onDragBegan: (() -> Void)?
+    var onDragEnded: (() -> Void)?
     private var draft: DisplayLayoutDraft?
     private var wallpaperByKey: [String: NSImage] = [:]
     private var viewport: CGRect?
@@ -409,6 +468,7 @@ private final class DisplayLayoutCanvasView: NSView {
         dragScale = transform.scale
         NSCursor.closedHand.set()
         needsDisplay = true
+        onDragBegan?()
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -433,9 +493,13 @@ private final class DisplayLayoutCanvasView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        let didDrag = draggedKey != nil
         draggedKey = nil
         NSCursor.openHand.set()
         needsDisplay = true
+        if didDrag {
+            onDragEnded?()
+        }
     }
 
     override func resetCursorRects() {
