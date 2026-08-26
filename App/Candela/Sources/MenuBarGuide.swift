@@ -227,7 +227,7 @@ final class MenuBarGuideController: NSWindowController {
 }
 
 private enum MenuBarAppRowRevealer {
-    private static let maxAttempts = 20
+    private static let maxAttempts = 24
     private static let retryInterval: TimeInterval = 0.25
 
     static func revealIfPossible() {
@@ -236,7 +236,7 @@ private enum MenuBarAppRowRevealer {
             MenuBarGuideController.writeDiagnostic("skip Candela row reveal: accessibility not trusted")
             return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             attempt(remaining: maxAttempts)
         }
     }
@@ -258,12 +258,21 @@ private enum MenuBarAppRowRevealer {
     @discardableResult
     private static func revealNow() -> Bool {
         guard let app = settingsApp(),
-              let window = firstWindow(of: app.processIdentifier)
+              let window = firstWindow(of: app.processIdentifier),
+              let row = preferredRow(in: window)
         else { return false }
-        guard let row = firstMatch(in: window, names: appRowNames()) else { return false }
-        _ = AXUIElementPerformAction(row, "AXScrollToVisible" as CFString)
+        if let scrollArea = nearestContentScrollArea(from: row) {
+            jump(row, in: scrollArea)
+        }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.12))
         AXUIElementSetAttributeValue(row, kAXFocusedAttribute as CFString, kCFBooleanTrue as CFTypeRef)
-        return true
+        let visible = isVisible(row, in: window)
+        if let rowFrame = frame(of: row), let windowFrame = frame(of: window) {
+            MenuBarGuideController.writeDiagnostic(
+                "Candela row visible=\(visible) row=\(NSStringFromRect(rowFrame)) window=\(NSStringFromRect(windowFrame))"
+            )
+        }
+        return visible
     }
 
     private static func settingsApp() -> NSRunningApplication? {
@@ -271,67 +280,160 @@ private enum MenuBarAppRowRevealer {
             ?? NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == "System Settings" })
     }
 
-    private static func appRowNames() -> [String] {
-        var names = Set<String>()
+    private static func appRowNames() -> Set<String> {
+        var names = Set<String>(["Candela"])
         if let displayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String, !displayName.isEmpty {
             names.insert(displayName)
         }
         if let bundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String, !bundleName.isEmpty {
             names.insert(bundleName)
         }
-        names.insert("Candela")
-        return Array(names)
+        return names
     }
 
     private static func firstWindow(of pid: pid_t) -> AXUIElement? {
         let app = AXUIElementCreateApplication(pid)
-        var value: AnyObject?
-        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value) == .success,
-              let windows = value as? [AXUIElement]
-        else { return nil }
+        guard let windows = attributeValue(app, kAXWindowsAttribute as String) as? [AXUIElement] else { return nil }
         let titles = ["Menu Bar", "菜单栏"]
-        for window in windows {
-            if let title = stringValue(window, kAXTitleAttribute as String), titles.contains(title) {
-                return window
-            }
-        }
-        return windows.first
+        return windows.first { window in
+            titles.contains(stringValue(window, kAXTitleAttribute as String) ?? "")
+        } ?? windows.first
     }
 
-    private static func firstMatch(in root: AXUIElement, names: [String]) -> AXUIElement? {
+    private static func preferredRow(in root: AXUIElement) -> AXUIElement? {
+        let names = appRowNames()
+        var labels: [AXUIElement] = []
         var stack = [root]
-        var fallback: AXUIElement?
         while let current = stack.popLast() {
-            let role = stringValue(current, kAXRoleAttribute as String)
-            let title = stringValue(current, kAXTitleAttribute as String)
-                ?? stringValue(current, kAXDescriptionAttribute as String)
-                ?? stringValue(current, kAXValueAttribute as String)
-            if let title, names.contains(title) {
-                if role == "AXCheckBox" || role == "AXSwitch" {
-                    return current
-                }
-                if fallback == nil {
-                    fallback = current
-                }
+            if stringValue(current, kAXRoleAttribute as String) == "AXStaticText",
+               let value = stringValue(current, kAXValueAttribute as String),
+               names.contains(value)
+            {
+                labels.append(current)
             }
-            stack.append(contentsOf: children(of: current).reversed())
+            stack.append(contentsOf: children(of: current))
         }
-        return fallback
+        labels.sort { lhs, rhs in
+            (frame(of: lhs)?.minY ?? 0) < (frame(of: rhs)?.minY ?? 0)
+        }
+        guard !labels.isEmpty else { return nil }
+
+        func checkbox(for label: AXUIElement) -> AXUIElement? {
+            if let linked = attributeValue(label, "AXServesAsTitleForUIElements") as? [AXUIElement],
+               let checkbox = linked.first
+            {
+                return checkbox
+            }
+            guard let parent = parent(of: label) else { return nil }
+            let siblings = children(of: parent)
+            if let index = siblings.firstIndex(where: { CFEqual($0, label) }),
+               index + 1 < siblings.count,
+               stringValue(siblings[index + 1], kAXRoleAttribute as String) == "AXCheckBox"
+            {
+                return siblings[index + 1]
+            }
+            return nil
+        }
+
+        let labeled = labels.map { label in (label, checkbox(for: label)) }
+        if let off = labeled.first(where: { numberValue($0.1) == 0 }) {
+            return off.1 ?? off.0
+        }
+        return labeled.first?.1 ?? labeled.first?.0
     }
 
     private static func children(of element: AXUIElement) -> [AXUIElement] {
-        var value: AnyObject?
-        guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value) == .success else {
-            return []
-        }
-        return value as? [AXUIElement] ?? []
+        attributeValue(element, kAXChildrenAttribute as String) as? [AXUIElement] ?? []
     }
 
-    private static func stringValue(_ element: AXUIElement, _ attribute: String) -> String? {
+    private static func attributeValue(_ element: AXUIElement, _ attribute: String) -> AnyObject? {
         var value: AnyObject?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else {
             return nil
         }
-        return value as? String
+        return value
+    }
+
+    private static func stringValue(_ element: AXUIElement, _ attribute: String) -> String? {
+        attributeValue(element, attribute) as? String
+    }
+
+    private static func numberValue(_ element: AXUIElement?) -> Int? {
+        guard let element else { return nil }
+        if let number = attributeValue(element, kAXValueAttribute as String) as? NSNumber {
+            return number.intValue
+        }
+        return nil
+    }
+
+    private static func parent(of element: AXUIElement) -> AXUIElement? {
+        attributeValue(element, kAXParentAttribute as String) as! AXUIElement?
+    }
+
+    private static func frame(of element: AXUIElement) -> NSRect? {
+        guard let positionValue = attributeValue(element, kAXPositionAttribute as String),
+              let sizeValue = attributeValue(element, kAXSizeAttribute as String)
+        else { return nil }
+        var position = CGPoint.zero
+        var size = CGSize.zero
+        AXValueGetValue(positionValue as! AXValue, .cgPoint, &position)
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+        return NSRect(origin: position, size: size)
+    }
+
+    private static func sizeValue(_ element: AXUIElement, _ attribute: String) -> CGSize? {
+        guard let value = attributeValue(element, attribute) else { return nil }
+        var size = CGSize.zero
+        AXValueGetValue(value as! AXValue, .cgSize, &size)
+        return size
+    }
+
+    private static func isVisible(_ row: AXUIElement, in window: AXUIElement) -> Bool {
+        guard let rowFrame = frame(of: row), let windowFrame = frame(of: window) else { return false }
+        return windowFrame.insetBy(dx: 8, dy: 36).intersects(rowFrame)
+    }
+
+    private static func nearestContentScrollArea(from row: AXUIElement) -> AXUIElement? {
+        var current = parent(of: row)
+        while let element = current {
+            if stringValue(element, kAXRoleAttribute as String) == "AXScrollArea",
+               (frame(of: element)?.size.width ?? 0) > 300
+            {
+                return element
+            }
+            current = parent(of: element)
+        }
+        return nil
+    }
+
+    private static func verticalScrollBar(in scrollArea: AXUIElement) -> AXUIElement? {
+        if let bar = attributeValue(scrollArea, "AXVerticalScrollBar") as! AXUIElement? {
+            return bar
+        }
+        return children(of: scrollArea).first { child in
+            stringValue(child, kAXRoleAttribute as String) == "AXScrollBar"
+                && (frame(of: child)?.size.height ?? 0) > 100
+        }
+    }
+
+    private static func scrollBarValue(_ scrollBar: AXUIElement) -> CGFloat {
+        if let number = attributeValue(scrollBar, kAXValueAttribute as String) as? NSNumber {
+            return CGFloat(truncating: number)
+        }
+        return 0
+    }
+
+    private static func jump(_ row: AXUIElement, in scrollArea: AXUIElement) {
+        guard let bar = verticalScrollBar(in: scrollArea),
+              let areaFrame = frame(of: scrollArea),
+              let rowFrame = frame(of: row)
+        else { return }
+        let contentHeight = sizeValue(scrollArea, "AXContentSize")?.height ?? areaFrame.height
+        let travel = max(contentHeight - areaFrame.height, 1)
+        let current = scrollBarValue(bar)
+        let rowAtZero = rowFrame.minY + current * travel
+        let targetY = areaFrame.minY + min(220, areaFrame.height * 0.32)
+        let value = min(max((rowAtZero - targetY) / travel, 0), 1)
+        AXUIElementSetAttributeValue(bar, kAXValueAttribute as CFString, NSNumber(value: Double(value)))
     }
 }
