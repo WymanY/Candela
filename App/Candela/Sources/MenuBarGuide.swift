@@ -1,27 +1,13 @@
 import AppKit
+import DisplayCore
 import os
 
-/// macOS 26+ gates third-party `NSStatusItem`s behind
-/// System Settings → Menu Bar → Allow in the Menu Bar.
-/// There is no public API to flip that switch.
-enum MenuBarSettings {
-    static let paneURLs = [
-        "x-apple.systempreferences:com.apple.MenuBar-Settings.extension",
-        "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
-        "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension",
-    ]
-
+enum MenuBarSettingsOpener {
     @discardableResult
     static func openPane() -> Bool {
-        for raw in paneURLs {
-            if let url = URL(string: raw), NSWorkspace.shared.open(url) {
-                return true
-            }
-        }
-        if let url = URL(string: "x-apple.systempreferences:") {
-            return NSWorkspace.shared.open(url)
-        }
-        return false
+        MenuBarSettings.firstOpenableURL { url in
+            NSWorkspace.shared.open(url)
+        } != nil
     }
 }
 
@@ -31,17 +17,21 @@ final class MenuBarGuideController: NSWindowController {
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 390),
-            styleMask: [.titled, .closable, .miniaturizable],
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 520),
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        window.title = localizedText("Candela")
+        window.title = localizedText("Menu Bar")
         window.isReleasedWhenClosed = false
         window.level = .floating
         window.isRestorable = false
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         self.init(window: window)
         window.contentView = Self.makeContent(target: self)
+        window.contentView?.layoutSubtreeIfNeeded()
+        let fitting = window.contentView?.fittingSize ?? NSSize(width: 480, height: 500)
+        window.setContentSize(NSSize(width: 480, height: max(fitting.height, 1)))
     }
 
     func present() {
@@ -91,52 +81,142 @@ final class MenuBarGuideController: NSWindowController {
     }
 
     @objc private func openSettingsPane() {
-        MenuBarSettings.openPane()
+        MenuBarSettingsOpener.openPane()
     }
 
     private static func makeContent(target: MenuBarGuideController) -> NSView {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 520, height: 340))
-        let title = NSTextField(labelWithString: localizedText("The menu bar icon is hidden by macOS 26."))
-        title.font = .systemFont(ofSize: 18, weight: .semibold)
-        title.translatesAutoresizingMaskIntoConstraints = false
+        let root = NSView()
+        root.wantsLayer = true
+        root.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
 
-        let body = NSTextField(wrappingLabelWithString: localizedText("""
-        The hidden icon is not a code-signing or privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.
+        let iconWell = NSView()
+        iconWell.wantsLayer = true
+        iconWell.layer?.cornerRadius = 16
+        iconWell.layer?.cornerCurve = .continuous
+        iconWell.layer?.backgroundColor = CandelaChrome.accentSoft.cgColor
+        iconWell.translatesAutoresizingMaskIntoConstraints = false
 
-        macOS 26 controls third-party status items here:
+        let iconView = NSImageView()
+        iconView.image = CandelaChrome.symbol("menubar.rectangle", size: 22, weight: .semibold)
+        iconView.imageScaling = .scaleProportionallyDown
+        iconView.contentTintColor = CandelaChrome.accent
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconWell.addSubview(iconView)
 
-        System Settings → Menu Bar → Allow in the Menu Bar → enable Candela
+        let title = wrappingLabel(
+            localizedText("The menu bar icon is hidden by macOS 26."),
+            font: .systemFont(ofSize: 20, weight: .semibold),
+            color: .labelColor
+        )
+        let subtitle = wrappingLabel(
+            localizedText("macOS hid Candela in Menu Bar settings. This is not a signing or privacy-permission issue."),
+            font: .systemFont(ofSize: 13, weight: .medium),
+            color: .secondaryLabelColor
+        )
 
-        If Candela is already enabled, turn it off and back on. If it remains hidden, use Reset Control Center at the bottom as a last resort. Resetting also restores every Control Center and menu bar layout to its defaults.
+        let header = NSStackView(views: [iconWell, title, subtitle])
+        header.orientation = .vertical
+        header.alignment = .leading
+        header.spacing = 8
+        header.setCustomSpacing(12, after: iconWell)
+        header.translatesAutoresizingMaskIntoConstraints = false
 
-        If you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.
-        """))
-        body.font = .systemFont(ofSize: 13)
-        body.translatesAutoresizingMaskIntoConstraints = false
+        let pathCard = makeInfoCard(
+            heading: localizedText("Turn Candela on"),
+            body: localizedText("System Settings → Menu Bar → Allow in the Menu Bar → enable Candela"),
+            symbolName: "checkmark.circle"
+        )
+        let retryCard = makeInfoCard(
+            heading: localizedText("If it is already on"),
+            body: localizedText("Quit Candela and open it again. If the icon is still missing, use Reset Control Center at the bottom of that page. Resetting restores every Control Center and menu bar layout."),
+            symbolName: "arrow.triangle.2.circlepath"
+        )
+        let extrasCard = makeInfoCard(
+            heading: localizedText("Menu bar managers"),
+            body: localizedText("Ice, Bartender, and BetterTouchTool can also hide Candela behind their menu-bar buttons."),
+            symbolName: "rectangle.3.group"
+        )
 
         let button = NSButton(
-            title: localizedText("Open System Settings · Menu Bar"),
+            title: localizedText("Open Menu Bar Settings"),
             target: target,
             action: #selector(MenuBarGuideController.openSettingsPane)
         )
         button.bezelStyle = .rounded
         button.keyEquivalent = "\r"
+        button.image = CandelaChrome.symbol("gearshape", size: 12, weight: .semibold)
+        button.imagePosition = .imageLeading
+        if #available(macOS 11.0, *) {
+            button.imageHugsTitle = true
+        }
         button.translatesAutoresizingMaskIntoConstraints = false
+        button.setContentHuggingPriority(.required, for: .vertical)
 
-        view.addSubview(title)
-        view.addSubview(body)
-        view.addSubview(button)
+        let stack = NSStackView(views: [header, pathCard, retryCard, extrasCard, button])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 12
+        stack.setCustomSpacing(16, after: header)
+        stack.setCustomSpacing(18, after: extrasCard)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        root.addSubview(stack)
         NSLayoutConstraint.activate([
-            title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            title.topAnchor.constraint(equalTo: view.topAnchor, constant: 24),
-            body.leadingAnchor.constraint(equalTo: title.leadingAnchor),
-            body.trailingAnchor.constraint(equalTo: title.trailingAnchor),
-            body.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 12),
-            button.leadingAnchor.constraint(equalTo: title.leadingAnchor),
-            button.topAnchor.constraint(equalTo: body.bottomAnchor, constant: 20),
-            button.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -24),
+            iconWell.widthAnchor.constraint(equalToConstant: 44),
+            iconWell.heightAnchor.constraint(equalToConstant: 44),
+            iconView.centerXAnchor.constraint(equalTo: iconWell.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconWell.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 24),
+            iconView.heightAnchor.constraint(equalToConstant: 24),
+            stack.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 28),
+            stack.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
+            stack.topAnchor.constraint(equalTo: root.topAnchor, constant: 22),
+            stack.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -24),
+            header.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            pathCard.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            retryCard.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            extrasCard.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            button.heightAnchor.constraint(equalToConstant: 28),
         ])
-        return view
+        return root
+    }
+
+    private static func makeInfoCard(heading: String, body: String, symbolName: String) -> NSView {
+        let card = CandelaChrome.makeModule()
+        let icon = CandelaChrome.makeSymbol(symbolName, size: 13)
+        icon.contentTintColor = CandelaChrome.accent
+        let headingField = wrappingLabel(
+            heading,
+            font: .systemFont(ofSize: 13, weight: .semibold),
+            color: .labelColor
+        )
+        let bodyField = wrappingLabel(
+            body,
+            font: .systemFont(ofSize: 12, weight: .medium),
+            color: .secondaryLabelColor
+        )
+        let texts = NSStackView(views: [headingField, bodyField])
+        texts.orientation = .vertical
+        texts.alignment = .leading
+        texts.spacing = 3
+        texts.translatesAutoresizingMaskIntoConstraints = false
+        let row = NSStackView(views: [icon, texts])
+        row.orientation = .horizontal
+        row.alignment = .top
+        row.spacing = 10
+        CandelaChrome.pin(row, to: card, insets: NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12))
+        return card
+    }
+
+    private static func wrappingLabel(_ text: String, font: NSFont, color: NSColor) -> NSTextField {
+        let field = NSTextField(wrappingLabelWithString: text)
+        field.font = font
+        field.textColor = color
+        field.maximumNumberOfLines = 0
+        field.lineBreakMode = .byWordWrapping
+        field.isSelectable = false
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.translatesAutoresizingMaskIntoConstraints = false
+        return field
     }
 }
