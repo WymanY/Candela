@@ -2,8 +2,164 @@ import CoreGraphics
 import DisplayCore
 import Foundation
 
+public enum DisplayLayoutHardwareError: Error, Equatable, Sendable {
+    case displayQueryFailed(Int32)
+    case unresolvedDisplay(CGDirectDisplayID)
+    case unresolvedPersistentKey(String)
+    case ambiguousPersistentKey(String)
+    case insufficientDisplays
+    case mirroringActive
+    case invalidDraft(DisplayLayoutValidationError)
+    case displayGeometryChanged(String)
+    case beginConfigurationFailed(Int32)
+    case configureOriginFailed(persistentKey: String, code: Int32)
+    case completeConfigurationFailed(Int32)
+    case verificationFailed([String])
+}
+
 /// Applies or restores a macOS display arrangement through CoreGraphics.
 public enum DisplayArrangementControl {
+    public static func currentLayout(
+        keysByDisplayID: [CGDirectDisplayID: String],
+        namesByKey: [String: String] = [:],
+        isVirtual: (CGDirectDisplayID) -> Bool = { _ in false }
+    ) throws -> DisplayLayoutDraft {
+        let displayIDs = try onlineDisplayIDsThrowing()
+        let keys = resolvedKeys(keysByDisplayID, displayIDs: displayIDs)
+        let eligibleIDs = displayIDs.filter {
+            CGDisplayIsAsleep($0) == 0 && !isVirtual($0)
+        }
+        for id in eligibleIDs where keys[id] == nil {
+            throw DisplayLayoutHardwareError.unresolvedDisplay(id)
+        }
+
+        let targets = currentTargets(
+            displayIDs: displayIDs,
+            keysByDisplayID: keys,
+            isVirtual: isVirtual
+        ).filter { target in
+            !target.isVirtual && CGDisplayIsAsleep(target.displayID) == 0
+        }
+        switch DisplayLayoutPlanning.availability(targets: targets) {
+        case .available:
+            break
+        case .insufficientDisplays:
+            throw DisplayLayoutHardwareError.insufficientDisplays
+        case .mirroring:
+            throw DisplayLayoutHardwareError.mirroringActive
+        }
+
+        let slots = targets.map { target -> DisplayLayoutSlot in
+            let bounds = CGDisplayBounds(target.displayID)
+            return DisplayLayoutSlot(
+                persistentKey: target.persistentKey,
+                name: namesByKey[target.persistentKey] ?? "Display",
+                origin: DisplayLayoutPoint(
+                    x: Double(bounds.origin.x),
+                    y: Double(bounds.origin.y)
+                ),
+                // CGConfigureDisplayOrigin uses the CGDisplayBounds coordinate
+                // space, which can differ from physical pixel dimensions.
+                size: DisplayLayoutSize(
+                    width: Double(bounds.size.width),
+                    height: Double(bounds.size.height)
+                ),
+                isMain: target.isMain,
+                isBuiltin: target.isBuiltin
+            )
+        }
+        let draft = DisplayLayoutDraft(slots: slots)
+        do {
+            try draft.validated()
+        } catch let error as DisplayLayoutValidationError {
+            throw DisplayLayoutHardwareError.invalidDraft(error)
+        }
+        return draft
+    }
+
+    /// Atomically applies every display origin, then re-reads and verifies the
+    /// hardware arrangement. No mode, rotation, mirror, or main-display setting
+    /// is changed by this operation.
+    @discardableResult
+    public static func applyLayout(
+        _ draft: DisplayLayoutDraft,
+        keysByDisplayID: [CGDirectDisplayID: String],
+        namesByKey: [String: String] = [:],
+        isVirtual: (CGDirectDisplayID) -> Bool = { _ in false }
+    ) throws -> DisplayLayoutDraft {
+        let live = try currentLayout(
+            keysByDisplayID: keysByDisplayID,
+            namesByKey: namesByKey,
+            isVirtual: isVirtual
+        )
+        do {
+            try draft.validated(liveDeviceKeys: live.capturedDeviceKeys)
+        } catch let error as DisplayLayoutValidationError {
+            throw DisplayLayoutHardwareError.invalidDraft(error)
+        }
+
+        guard draft.anchorPersistentKey == live.anchorPersistentKey else {
+            throw DisplayLayoutHardwareError.invalidDraft(.missingMainDisplay)
+        }
+        let normalized = draft.placingMainAtZero()
+        for slot in normalized.slots {
+            guard let liveSlot = live.slot(for: slot.persistentKey),
+                  abs(liveSlot.size.width - slot.size.width) < 0.5,
+                  abs(liveSlot.size.height - slot.size.height) < 0.5
+            else {
+                throw DisplayLayoutHardwareError.displayGeometryChanged(slot.persistentKey)
+            }
+        }
+
+        let displayIDs = try onlineDisplayIDsThrowing()
+        let keys = resolvedKeys(keysByDisplayID, displayIDs: displayIDs)
+        var idsByKey: [String: CGDirectDisplayID] = [:]
+        for (displayID, key) in keys {
+            if idsByKey[key] != nil {
+                throw DisplayLayoutHardwareError.ambiguousPersistentKey(key)
+            }
+            idsByKey[key] = displayID
+        }
+        var config: CGDisplayConfigRef?
+        let beginError = CGBeginDisplayConfiguration(&config)
+        guard beginError == .success, let config else {
+            throw DisplayLayoutHardwareError.beginConfigurationFailed(beginError.rawValue)
+        }
+
+        for slot in normalized.slots {
+            guard let displayID = idsByKey[slot.persistentKey] else {
+                CGCancelDisplayConfiguration(config)
+                throw DisplayLayoutHardwareError.unresolvedPersistentKey(slot.persistentKey)
+            }
+            let error = CGConfigureDisplayOrigin(
+                config,
+                displayID,
+                Int32(slot.origin.x.rounded()),
+                Int32(slot.origin.y.rounded())
+            )
+            guard error == .success else {
+                CGCancelDisplayConfiguration(config)
+                throw DisplayLayoutHardwareError.configureOriginFailed(
+                    persistentKey: slot.persistentKey,
+                    code: error.rawValue
+                )
+            }
+        }
+
+        let completeError = CGCompleteDisplayConfiguration(config, .permanently)
+        guard completeError == .success else {
+            throw DisplayLayoutHardwareError.completeConfigurationFailed(completeError.rawValue)
+        }
+
+        // macOS may still normalize origins after a successful commit.
+        // The live arrangement is the source of truth, matching System Settings.
+        return try currentLayout(
+            keysByDisplayID: keys,
+            namesByKey: namesByKey,
+            isVirtual: isVirtual
+        )
+    }
+
     public static func currentTargets(
         keysByDisplayID: [CGDirectDisplayID: String],
         isVirtual: (CGDirectDisplayID) -> Bool = { _ in false }
@@ -160,19 +316,23 @@ public enum DisplayArrangementControl {
     }
 
     private static func onlineDisplayIDs() -> [CGDirectDisplayID] {
+        (try? onlineDisplayIDsThrowing()) ?? []
+    }
+
+    private static func onlineDisplayIDsThrowing() throws -> [CGDirectDisplayID] {
         var allocated: UInt32 = 64
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(allocated))
         var count: UInt32 = 0
         var error = CGGetOnlineDisplayList(allocated, &ids, &count)
         if error != .success {
-            return []
+            throw DisplayLayoutHardwareError.displayQueryFailed(error.rawValue)
         }
         if count > allocated {
             allocated = count
             ids = [CGDirectDisplayID](repeating: 0, count: Int(allocated))
             error = CGGetOnlineDisplayList(allocated, &ids, &count)
             if error != .success {
-                return []
+                throw DisplayLayoutHardwareError.displayQueryFailed(error.rawValue)
             }
         }
         return Array(ids.prefix(Int(count)))

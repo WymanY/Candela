@@ -104,8 +104,13 @@ final class StatusPanelController {
         panelView.reload(session.snapshots)
     }
 
-    func bindActions(openSettings: @escaping () -> Void, quit: @escaping () -> Void) {
+    func bindActions(
+        openSettings: @escaping () -> Void,
+        openLayout: @escaping () -> Void,
+        quit: @escaping () -> Void
+    ) {
         panelView.onOpenSettings = openSettings
+        panelView.onOpenLayout = openLayout
         panelView.onQuit = quit
         panel.onCommandComma = openSettings
     }
@@ -134,6 +139,7 @@ final class StatusPanelController {
     func rebuild() {
         let next = StatusPanelView(session: session)
         next.onOpenSettings = panelView.onOpenSettings
+        next.onOpenLayout = panelView.onOpenLayout
         next.onQuit = panelView.onQuit
         panelView = next
         panel.contentView = next
