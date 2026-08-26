@@ -518,7 +518,7 @@ final class DisplaySessionController {
             throw DisplayLayoutSessionError.validation(error)
         }
         if Self.shouldUseFakeHardware {
-            return DisplayLayoutWorkspace(draft: draft, revision: displayLayoutRevision)
+            return DisplayLayoutWorkspace(draft: draft.placingMainAtZero(), revision: displayLayoutRevision)
         }
         do {
             let verified = try DisplayArrangementControl.applyLayout(

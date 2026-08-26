@@ -98,12 +98,11 @@ public enum DisplayArrangementControl {
             throw DisplayLayoutHardwareError.invalidDraft(error)
         }
 
-        guard draft.anchorPersistentKey == live.anchorPersistentKey,
-              draft.anchorOrigin == live.anchorOrigin
-        else {
-            throw DisplayLayoutHardwareError.invalidDraft(.mainDisplayIsAnchored)
+        guard draft.anchorPersistentKey == live.anchorPersistentKey else {
+            throw DisplayLayoutHardwareError.invalidDraft(.missingMainDisplay)
         }
-        for slot in draft.slots {
+        let normalized = draft.placingMainAtZero()
+        for slot in normalized.slots {
             guard let liveSlot = live.slot(for: slot.persistentKey),
                   abs(liveSlot.size.width - slot.size.width) < 0.5,
                   abs(liveSlot.size.height - slot.size.height) < 0.5
@@ -127,7 +126,7 @@ public enum DisplayArrangementControl {
             throw DisplayLayoutHardwareError.beginConfigurationFailed(beginError.rawValue)
         }
 
-        for slot in draft.slots {
+        for slot in normalized.slots {
             guard let displayID = idsByKey[slot.persistentKey] else {
                 CGCancelDisplayConfiguration(config)
                 throw DisplayLayoutHardwareError.unresolvedPersistentKey(slot.persistentKey)
@@ -158,7 +157,7 @@ public enum DisplayArrangementControl {
             isVirtual: isVirtual
         )
         var mismatches: [String] = []
-        for slot in draft.slots {
+        for slot in normalized.slots {
             guard let actual = verified.slot(for: slot.persistentKey),
                   abs(actual.origin.x - slot.origin.x.rounded()) < 0.5,
                   abs(actual.origin.y - slot.origin.y.rounded()) < 0.5

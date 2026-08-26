@@ -74,7 +74,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         window?.title = localizedText("Display Layout")
         titleLabel.stringValue = localizedText("Display Layout")
         instructionsLabel.stringValue = localizedText(
-            "Drag displays to arrange them. Edges snap automatically. The main display stays fixed."
+            "Drag any display to arrange it. Displays stay connected and cannot overlap."
         )
         applyButton.title = localizedText("Apply")
         reloadButton.title = localizedText("Reload")
@@ -110,9 +110,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             workspace.draft = draft
             self.workspace = workspace
             self.refreshValidationMessage()
-        }
-        canvas.onMainDisplayAttempt = { [weak self] in
-            self?.setStatus(localizedText("The main display is fixed as the anchor."), error: true)
         }
 
         for view in [titleLabel, instructionsLabel, statusLabel, applyButton, reloadButton, cancelButton] {
@@ -328,8 +325,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             return localizedText("Every display must touch another display.")
         case .deviceSetChanged, .displayGeometryChanged:
             return localizedText("Display configuration changed. Reload before applying.")
-        case .mainDisplayIsAnchored:
-            return localizedText("The main display is fixed as the anchor.")
         case .missingMainDisplay, .multipleMainDisplays, .unknownDisplay, .invalidGeometry:
             return localizedText("Could not validate the display layout.")
         }
@@ -344,8 +339,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
 @MainActor
 private final class DisplayLayoutCanvasView: NSView {
     var onDraftChange: ((DisplayLayoutDraft) -> Void)?
-    var onMainDisplayAttempt: (() -> Void)?
-
     private var draft: DisplayLayoutDraft?
     private var viewport: CGRect?
     private var draggedKey: String?
@@ -445,10 +438,6 @@ private final class DisplayLayoutCanvasView: NSView {
         guard let slot = draft.slots.reversed().first(where: {
             displayRect(for: $0, transform: transform).contains(point)
         }) else { return }
-        guard !slot.isMain else {
-            onMainDisplayAttempt?()
-            return
-        }
         draggedKey = slot.persistentKey
         dragStartPoint = point
         dragStartOrigin = slot.origin
@@ -490,7 +479,7 @@ private final class DisplayLayoutCanvasView: NSView {
         for slot in draft.slots {
             addCursorRect(
                 displayRect(for: slot, transform: transform),
-                cursor: slot.isMain ? .arrow : .openHand
+                cursor: .openHand
             )
         }
     }

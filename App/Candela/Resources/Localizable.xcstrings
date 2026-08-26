@@ -3435,19 +3435,19 @@
         }
       }
     },
-    "Drag displays to arrange them. Edges snap automatically. The main display stays fixed.": {
+    "Drag any display to arrange it. Displays stay connected and cannot overlap.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Drag displays to arrange them. Edges snap automatically. The main display stays fixed."
+            "value": "Drag any display to arrange it. Displays stay connected and cannot overlap."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "拖动显示器进行排列，边缘会自动吸附。主显示器保持固定。"
+            "value": "拖动任意显示器进行排列。显示器会保持相接，且不能重叠。"
           }
         }
       }
@@ -3465,23 +3465,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "重新载入"
-          }
-        }
-      }
-    },
-    "The main display is fixed as the anchor.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The main display is fixed as the anchor."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "主显示器固定为锚点。"
           }
         }
       }
