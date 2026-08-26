@@ -210,12 +210,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
                 workspace.draft,
                 revision: workspace.revision
             )
-            self.workspace = verified
-            canvas.setDraft(verified.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
-            lastAppliedDraft = verified.draft
-            draftIsStale = false
-            applyButton.isEnabled = true
-            setStatus(localizedText("Display layout applied."), error: false)
+            adoptLiveLayout(verified, status: localizedText("Display layout applied."))
         } catch {
             ignoreScreenChangesUntil = Date.distantPast
             handle(error)
@@ -247,19 +242,25 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private func reloadFromHardware(successMessage: String?) {
         cancelAutoApply()
         do {
-            let workspace = try session.loadDisplayLayout()
-            self.workspace = workspace
-            canvas.setDraft(workspace.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
-            lastAppliedDraft = workspace.draft
-            draftIsStale = false
-            applyButton.isEnabled = true
-            setStatus(successMessage ?? localizedText("Layout is ready."), error: false)
+            adoptLiveLayout(
+                try session.loadDisplayLayout(),
+                status: successMessage ?? localizedText("Layout is ready.")
+            )
         } catch {
             workspace = nil
             canvas.setDraft(nil)
             applyButton.isEnabled = false
             handle(error)
         }
+    }
+
+    private func adoptLiveLayout(_ live: DisplayLayoutWorkspace, status: String) {
+        workspace = live
+        canvas.setDraft(live.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
+        lastAppliedDraft = live.draft
+        draftIsStale = false
+        applyButton.isEnabled = true
+        setStatus(status, error: false)
     }
 
     private func refreshValidationMessage() {
@@ -289,13 +290,28 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private func screenParametersChanged() {
         ensureWindowVisible()
         session.requestDisplayLayoutRescan()
+        guard window?.isVisible == true else { return }
         if Date() < ignoreScreenChangesUntil {
+            syncLiveLayoutPreservingStatus()
             return
         }
-        guard window?.isVisible == true, workspace != nil else { return }
-        draftIsStale = true
-        cancelAutoApply()
-        setStaleStatus()
+        if canvas.isDragging {
+            return
+        }
+        reloadFromHardware(successMessage: localizedText("Layout is ready."))
+    }
+
+    private func syncLiveLayoutPreservingStatus() {
+        let currentStatus = statusLabel.stringValue
+        let currentError = statusLabel.textColor == .systemRed
+        do {
+            adoptLiveLayout(try session.loadDisplayLayout(), status: currentStatus)
+            if currentError {
+                setStatus(currentStatus, error: true)
+            }
+        } catch {
+            // Keep the just-applied arrangement on screen.
+        }
     }
 
     private func centerOnPointerScreen() {
@@ -418,6 +434,7 @@ private final class DisplayLayoutCanvasView: NSView {
     var onDraftChange: ((DisplayLayoutDraft) -> Void)?
     var onDragBegan: (() -> Void)?
     var onDragEnded: (() -> Void)?
+    private(set) var isDragging = false
     private var draft: DisplayLayoutDraft?
     private var wallpaperByKey: [String: NSImage] = [:]
     private var viewport: CGRect?
@@ -486,6 +503,7 @@ private final class DisplayLayoutCanvasView: NSView {
         dragStartPoint = point
         dragStartOrigin = slot.origin
         dragScale = transform.scale
+        isDragging = true
         NSCursor.closedHand.set()
         needsDisplay = true
         onDragBegan?()
@@ -515,6 +533,7 @@ private final class DisplayLayoutCanvasView: NSView {
     override func mouseUp(with event: NSEvent) {
         let didDrag = draggedKey != nil
         draggedKey = nil
+        isDragging = false
         NSCursor.openHand.set()
         needsDisplay = true
         if didDrag {

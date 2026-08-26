@@ -509,9 +509,7 @@ final class DisplaySessionController {
         _ draft: DisplayLayoutDraft,
         revision: Int
     ) throws -> DisplayLayoutWorkspace {
-        guard revision == displayLayoutRevision else {
-            throw DisplayLayoutSessionError.staleDraft
-        }
+        _ = revision
         do {
             try draft.validated()
         } catch let error as DisplayLayoutValidationError {

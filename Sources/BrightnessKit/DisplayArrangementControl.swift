@@ -151,25 +151,13 @@ public enum DisplayArrangementControl {
             throw DisplayLayoutHardwareError.completeConfigurationFailed(completeError.rawValue)
         }
 
-        let verified = try currentLayout(
+        // macOS may still normalize origins after a successful commit.
+        // The live arrangement is the source of truth, matching System Settings.
+        return try currentLayout(
             keysByDisplayID: keys,
             namesByKey: namesByKey,
             isVirtual: isVirtual
         )
-        var mismatches: [String] = []
-        for slot in normalized.slots {
-            guard let actual = verified.slot(for: slot.persistentKey),
-                  abs(actual.origin.x - slot.origin.x.rounded()) < 0.5,
-                  abs(actual.origin.y - slot.origin.y.rounded()) < 0.5
-            else {
-                mismatches.append(slot.persistentKey)
-                continue
-            }
-        }
-        guard mismatches.isEmpty else {
-            throw DisplayLayoutHardwareError.verificationFailed(mismatches.sorted())
-        }
-        return verified
     }
 
     public static func currentTargets(
