@@ -172,7 +172,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
                 revision: workspace.revision
             )
             self.workspace = verified
-            canvas.setDraft(verified.draft)
+            canvas.setDraft(verified.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
             draftIsStale = false
             applyButton.isEnabled = true
             setStatus(localizedText("Display layout applied."), error: false)
@@ -194,7 +194,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         do {
             let workspace = try session.loadDisplayLayout()
             self.workspace = workspace
-            canvas.setDraft(workspace.draft)
+            canvas.setDraft(workspace.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
             draftIsStale = false
             applyButton.isEnabled = true
             setStatus(successMessage ?? localizedText("Layout is ready."), error: false)
@@ -340,6 +340,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
 private final class DisplayLayoutCanvasView: NSView {
     var onDraftChange: ((DisplayLayoutDraft) -> Void)?
     private var draft: DisplayLayoutDraft?
+    private var wallpaperByKey: [String: NSImage] = [:]
     private var viewport: CGRect?
     private var draggedKey: String?
     private var dragStartPoint = CGPoint.zero
@@ -363,8 +364,12 @@ private final class DisplayLayoutCanvasView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func setDraft(_ draft: DisplayLayoutDraft?) {
+    func setDraft(_ draft: DisplayLayoutDraft?, displayIDsByKey: [String: CGDirectDisplayID] = [:]) {
         self.draft = draft
+        wallpaperByKey = DisplayLayoutWallpaper.images(
+            for: draft?.slots ?? [],
+            displayIDsByKey: displayIDsByKey
+        )
         viewport = draft.map(makeViewport)
         draggedKey = nil
         needsDisplay = true
@@ -388,47 +393,7 @@ private final class DisplayLayoutCanvasView: NSView {
         }
 
         for slot in draft.slots {
-            let rect = displayRect(for: slot, transform: transform)
-            let path = NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9)
-            let selected = draggedKey == slot.persistentKey
-            let fill = slot.isMain
-                ? NSColor.controlAccentColor.withAlphaComponent(selected ? 0.34 : 0.22)
-                : NSColor.selectedControlColor.withAlphaComponent(selected ? 0.25 : 0.12)
-            fill.setFill()
-            path.fill()
-            (slot.isMain ? NSColor.controlAccentColor : NSColor.separatorColor).setStroke()
-            path.lineWidth = slot.isMain ? 2 : 1.5
-            path.stroke()
-
-            let name = slot.name as NSString
-            let nameAttributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
-                .foregroundColor: NSColor.labelColor,
-            ]
-            name.draw(
-                in: rect.insetBy(dx: 10, dy: 10),
-                withAttributes: nameAttributes
-            )
-            let detail = "\(Int(slot.size.width.rounded())) × \(Int(slot.size.height.rounded()))" as NSString
-            let detailAttributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .regular),
-                .foregroundColor: NSColor.secondaryLabelColor,
-            ]
-            detail.draw(
-                at: NSPoint(x: rect.minX + 10, y: rect.maxY - 24),
-                withAttributes: detailAttributes
-            )
-            if slot.isMain {
-                let badge = localizedText("Main Display") as NSString
-                let badgeAttributes: [NSAttributedString.Key: Any] = [
-                    .font: NSFont.systemFont(ofSize: 9, weight: .bold),
-                    .foregroundColor: NSColor.controlAccentColor,
-                ]
-                badge.draw(
-                    at: NSPoint(x: rect.minX + 10, y: rect.maxY - 40),
-                    withAttributes: badgeAttributes
-                )
-            }
+            drawDisplay(slot, transform: transform)
         }
     }
 
@@ -482,6 +447,86 @@ private final class DisplayLayoutCanvasView: NSView {
                 cursor: .openHand
             )
         }
+    }
+
+    private func drawDisplay(
+        _ slot: DisplayLayoutSlot,
+        transform: (viewport: CGRect, scale: CGFloat, offset: CGPoint)
+    ) {
+        let rect = displayRect(for: slot, transform: transform)
+        let selected = draggedKey == slot.persistentKey
+        let radius = min(8, min(rect.width, rect.height) * 0.06)
+        let bezel = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+        NSColor.black.withAlphaComponent(0.88).setFill()
+        bezel.fill()
+
+        let screenRect = rect.insetBy(dx: 2.5, dy: 2.5)
+        let screenPath = NSBezierPath(roundedRect: screenRect, xRadius: max(2, radius - 2), yRadius: max(2, radius - 2))
+        NSGraphicsContext.saveGraphicsState()
+        screenPath.addClip()
+        if let wallpaper = wallpaperByKey[slot.persistentKey] {
+            wallpaper.draw(
+                in: aspectFillRect(imageSize: wallpaper.size, in: screenRect),
+                from: .zero,
+                operation: .copy,
+                fraction: 1,
+                respectFlipped: true,
+                hints: [.interpolation: NSNumber(value: NSImageInterpolation.high.rawValue)]
+            )
+        } else {
+            DisplayLayoutWallpaper.fallbackFill.setFill()
+            screenPath.fill()
+        }
+        if slot.isMain {
+            let barHeight = min(11, max(7, screenRect.height * 0.06))
+            NSColor.white.withAlphaComponent(0.78).setFill()
+            NSBezierPath(rect: CGRect(
+                x: screenRect.minX,
+                y: screenRect.minY,
+                width: screenRect.width,
+                height: barHeight
+            )).fill()
+        }
+        NSGraphicsContext.restoreGraphicsState()
+
+        (selected ? NSColor.controlAccentColor : NSColor.black.withAlphaComponent(0.7)).setStroke()
+        bezel.lineWidth = selected ? 2 : 1
+        bezel.stroke()
+
+        let name = slot.name as NSString
+        let nameAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: min(12, max(9, screenRect.height * 0.08)), weight: .semibold),
+            .foregroundColor: NSColor.white,
+            .shadow: labelShadow,
+        ]
+        let nameSize = name.size(withAttributes: nameAttributes)
+        name.draw(
+            at: NSPoint(
+                x: screenRect.minX + 8,
+                y: screenRect.maxY - nameSize.height - 6
+            ),
+            withAttributes: nameAttributes
+        )
+    }
+
+    private var labelShadow: NSShadow {
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.7)
+        shadow.shadowBlurRadius = 3
+        shadow.shadowOffset = NSSize(width: 0, height: -0.5)
+        return shadow
+    }
+
+    private func aspectFillRect(imageSize: NSSize, in bounds: CGRect) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else { return bounds }
+        let scale = max(bounds.width / imageSize.width, bounds.height / imageSize.height)
+        let size = NSSize(width: imageSize.width * scale, height: imageSize.height * scale)
+        return CGRect(
+            x: bounds.midX - size.width / 2,
+            y: bounds.midY - size.height / 2,
+            width: size.width,
+            height: size.height
+        )
     }
 
     private func makeViewport(_ draft: DisplayLayoutDraft) -> CGRect {

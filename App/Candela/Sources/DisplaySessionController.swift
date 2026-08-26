@@ -891,6 +891,16 @@ final class DisplaySessionController {
         return lines.joined(separator: "\n")
     }
 
+    func liveLayoutDisplayIDsByKey() -> [String: CGDirectDisplayID] {
+        var ids: [String: CGDirectDisplayID] = [:]
+        for (displayID, key) in liveKeysByDisplayID() {
+            if ids[key] == nil || snapshots.first(where: { $0.id.persistentKey == key })?.sessionDisplayID == displayID {
+                ids[key] = displayID
+            }
+        }
+        return ids
+    }
+
     private func liveKeysByDisplayID() -> [CGDirectDisplayID: String] {
         var keys: [CGDirectDisplayID: String] = [:]
         for (key, id) in knownDisplayIDsByKey where id != 0 {

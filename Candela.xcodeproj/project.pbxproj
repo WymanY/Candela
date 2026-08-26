@@ -11,6 +11,7 @@
 		0351D57DF87B360B293DFBD6 /* PlaybackContinuityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD355C315E3A7D07D9CEEA1 /* PlaybackContinuityController.swift */; };
 		08BF0EC152DBA93545C4DAC6 /* DisplayLayoutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40FF5BEB5107BB88BE4EA562 /* DisplayLayoutWindowController.swift */; };
 		0992B9EDA691A5DA59BC4F16 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD764C727BD56351F6A07A8 /* AppDelegate.swift */; };
+		09BDEA82F75970B967AC7A99 /* DisplayLayoutWallpaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59B785276824DFE681BCE2AA /* DisplayLayoutWallpaper.swift */; };
 		0EDC51A740249CDF2D36688B /* PictureInPictureEventInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67562031F0D46CD1FE12A4E /* PictureInPictureEventInjector.swift */; };
 		0F8E93374BCEC37D401CC0EB /* PictureInPictureWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B3F6291980C0D2CCFDE8B9 /* PictureInPictureWindowController.swift */; };
 		11987C674586E024C0599DB2 /* DisplayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF47ABA59743DE249AC5488F /* DisplayRowView.swift */; };
@@ -58,6 +59,7 @@
 		87FAFF8076EE924CA5893831 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5455D272FE6AB3D2C088B2 /* main.swift */; };
 		8B4629877D7CB41F513E7B48 /* CandelaChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C65B68A38C3CFB42408055 /* CandelaChrome.swift */; };
 		8B752083F19415DE630DC453 /* DisplayCore in Frameworks */ = {isa = PBXBuildFile; productRef = C2BBF6C2EEC9EDA7940995A3 /* DisplayCore */; };
+		8B8C0C950722615DA786351C /* DisplayLayoutWallpaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59B785276824DFE681BCE2AA /* DisplayLayoutWallpaper.swift */; };
 		8D8A4971992AA78C77AE4BCE /* StatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */; };
 		93BBE63E7EF09B0DB7E134F3 /* NSScreen+Candela.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D4EC46FAC3BF6ED7AE9796 /* NSScreen+Candela.swift */; };
 		9415BC99B12024C7C7E07F11 /* DisplaySessionController+Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE0CFBDD7C6B7D691EF52E1 /* DisplaySessionController+Audio.swift */; };
@@ -120,6 +122,7 @@
 		4D4C13FBD8FB0F747CE635EB /* StatusPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPanelController.swift; sourceTree = "<group>"; };
 		4E631045A89FE55208B3A3E1 /* CandelaMAS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "CandelaMAS-Info.plist"; sourceTree = "<group>"; };
 		55E02D54B30BD0D2E25479D8 /* PictureInPicturePinControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PictureInPicturePinControl.swift; sourceTree = "<group>"; };
+		59B785276824DFE681BCE2AA /* DisplayLayoutWallpaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLayoutWallpaper.swift; sourceTree = "<group>"; };
 		6A26D3C890A03D6AB3F2F98C /* DisplayIOBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayIOBox.swift; sourceTree = "<group>"; };
 		7167909AB7EA54F4DA66F03C /* IOKitDisplaySource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitDisplaySource.swift; sourceTree = "<group>"; };
 		71C014411DFBAC303BD3B900 /* CandelaMAS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CandelaMAS.entitlements; sourceTree = "<group>"; };
@@ -195,6 +198,7 @@
 				86C13464143DB251CFC1D652 /* AppLanguage.swift */,
 				DFC1EE8688D00DAC5824D6ED /* BatteryStatusView.swift */,
 				84C65B68A38C3CFB42408055 /* CandelaChrome.swift */,
+				59B785276824DFE681BCE2AA /* DisplayLayoutWallpaper.swift */,
 				40FF5BEB5107BB88BE4EA562 /* DisplayLayoutWindowController.swift */,
 				BF47ABA59743DE249AC5488F /* DisplayRowView.swift */,
 				CF1190F28E8134A74CC775B1 /* DisplaySessionController.swift */,
@@ -448,6 +452,7 @@
 				7478D56D7005A659DCE7CAC7 /* AppLanguage.swift in Sources */,
 				9C935A90DBDA4AFA0666686E /* BatteryStatusView.swift in Sources */,
 				8400F3B75B65401C998792C5 /* CandelaChrome.swift in Sources */,
+				8B8C0C950722615DA786351C /* DisplayLayoutWallpaper.swift in Sources */,
 				08BF0EC152DBA93545C4DAC6 /* DisplayLayoutWindowController.swift in Sources */,
 				69A43BA8D4A1E133A1EDB4EA /* DisplayRowView.swift in Sources */,
 				99EFFE79C651F8E12F30E556 /* DisplaySessionController+Audio.swift in Sources */,
@@ -492,6 +497,7 @@
 				02363366446ED003772BB623 /* DDCPacket.swift in Sources */,
 				2CB7B94B22876C0BB2FEC013 /* DisplayArrangementControl.swift in Sources */,
 				A29DA4472371F6613A18E023 /* DisplayIOBox.swift in Sources */,
+				09BDEA82F75970B967AC7A99 /* DisplayLayoutWallpaper.swift in Sources */,
 				A3B855A2F297B7D5F60100A7 /* DisplayLayoutWindowController.swift in Sources */,
 				9B27FB9C5D8BE0D9EDB0F32F /* DisplayRotationControl.swift in Sources */,
 				11987C674586E024C0599DB2 /* DisplayRowView.swift in Sources */,
