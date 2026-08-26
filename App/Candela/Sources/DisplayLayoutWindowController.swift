@@ -11,9 +11,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private let titleLabel = NSTextField(labelWithString: "")
     private let instructionsLabel = NSTextField(wrappingLabelWithString: "")
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
-    private let applyButton = NSButton(title: "", target: nil, action: nil)
-    private let reloadButton = NSButton(title: "", target: nil, action: nil)
-    private let cancelButton = NSButton(title: "", target: nil, action: nil)
+    private let doneButton = NSButton(title: "", target: nil, action: nil)
     private var workspace: DisplayLayoutWorkspace?
     private var draftIsStale = false
     private var screenObserver: NSObjectProtocol?
@@ -80,9 +78,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         instructionsLabel.stringValue = localizedText(
             "Drag any display to arrange it. The layout applies after you stop dragging."
         )
-        applyButton.title = localizedText("Apply")
-        reloadButton.title = localizedText("Reload")
-        cancelButton.title = localizedText("Cancel")
+        doneButton.title = localizedText("Done")
         canvas.needsDisplay = true
     }
 
@@ -124,27 +120,19 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             self?.scheduleAutoApply()
         }
 
-        for view in [titleLabel, instructionsLabel, statusLabel, applyButton, reloadButton, cancelButton] {
+        for view in [titleLabel, instructionsLabel, statusLabel, doneButton] {
             view.translatesAutoresizingMaskIntoConstraints = false
         }
-        applyButton.bezelStyle = .rounded
-        applyButton.keyEquivalent = "\r"
-        applyButton.target = self
-        applyButton.action = #selector(applyClicked)
-        reloadButton.bezelStyle = .rounded
-        reloadButton.target = self
-        reloadButton.action = #selector(reloadClicked)
-        cancelButton.bezelStyle = .rounded
-        cancelButton.target = self
-        cancelButton.action = #selector(cancelClicked)
+        doneButton.bezelStyle = .rounded
+        doneButton.keyEquivalent = "\r"
+        doneButton.target = self
+        doneButton.action = #selector(doneClicked)
 
         root.addSubview(titleLabel)
         root.addSubview(instructionsLabel)
         root.addSubview(canvas)
         root.addSubview(statusLabel)
-        root.addSubview(applyButton)
-        root.addSubview(reloadButton)
-        root.addSubview(cancelButton)
+        root.addSubview(doneButton)
 
         NSLayoutConstraint.activate([
             titleLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 24),
@@ -158,30 +146,15 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             canvas.topAnchor.constraint(equalTo: instructionsLabel.bottomAnchor, constant: 14),
             canvas.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -12),
             statusLabel.leadingAnchor.constraint(equalTo: canvas.leadingAnchor),
-            statusLabel.centerYAnchor.constraint(equalTo: applyButton.centerYAnchor),
-            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: reloadButton.leadingAnchor, constant: -16),
-            cancelButton.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -24),
-            cancelButton.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -18),
-            reloadButton.trailingAnchor.constraint(equalTo: cancelButton.leadingAnchor, constant: -8),
-            reloadButton.centerYAnchor.constraint(equalTo: cancelButton.centerYAnchor),
-            applyButton.trailingAnchor.constraint(equalTo: reloadButton.leadingAnchor, constant: -8),
-            applyButton.centerYAnchor.constraint(equalTo: cancelButton.centerYAnchor),
-            applyButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 76),
-            reloadButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 76),
-            cancelButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 76),
+            statusLabel.centerYAnchor.constraint(equalTo: doneButton.centerYAnchor),
+            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: doneButton.leadingAnchor, constant: -16),
+            doneButton.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -24),
+            doneButton.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -18),
+            doneButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 76),
         ])
     }
 
-    @objc private func applyClicked() {
-        applyCurrentLayout(automatic: false)
-    }
-
-    @objc private func reloadClicked() {
-        cancelAutoApply()
-        reloadFromHardware(successMessage: localizedText("Reloaded the current display layout."))
-    }
-
-    @objc private func cancelClicked() {
+    @objc private func doneClicked() {
         window?.performClose(nil)
     }
 
@@ -249,7 +222,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         } catch {
             workspace = nil
             canvas.setDraft(nil)
-            applyButton.isEnabled = false
             handle(error)
         }
     }
@@ -259,13 +231,11 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         canvas.setDraft(live.draft, displayIDsByKey: session.liveLayoutDisplayIDsByKey())
         lastAppliedDraft = live.draft
         draftIsStale = false
-        applyButton.isEnabled = true
         setStatus(status, error: false)
     }
 
     private func refreshValidationMessage() {
         guard let workspace else {
-            applyButton.isEnabled = false
             return
         }
         guard !draftIsStale else {
@@ -274,15 +244,12 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         }
         do {
             try workspace.draft.validated()
-            applyButton.isEnabled = true
             if autoApplyWorkItem == nil {
                 setStatus(localizedText("Layout is ready."), error: false)
             }
         } catch let error as DisplayLayoutValidationError {
-            applyButton.isEnabled = false
             setStatus(validationMessage(error), error: true)
         } catch {
-            applyButton.isEnabled = false
             setStatus(localizedText("Could not validate the display layout."), error: true)
         }
     }
@@ -352,7 +319,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     }
 
     private func setStaleStatus() {
-        applyButton.isEnabled = false
         setStatus(
             localizedText("Display configuration changed. Reload before applying."),
             error: true
@@ -361,25 +327,20 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
 
     private func handle(_ error: Error) {
         guard let error = error as? DisplayLayoutSessionError else {
-            applyButton.isEnabled = false
             setStatus(localizedText("Could not apply the display layout."), error: true)
             return
         }
         switch error {
         case .unavailable(.mirroring):
-            applyButton.isEnabled = false
             setStatus(localizedText("Stop mirroring before editing the display layout."), error: true)
         case .unavailable(.insufficientDisplays):
-            applyButton.isEnabled = false
             setStatus(localizedText("Connect at least two real displays in extended desktop mode."), error: true)
         case .unavailable(.available):
-            applyButton.isEnabled = false
             setStatus(localizedText("Could not read the current display layout."), error: true)
         case .staleDraft:
             draftIsStale = true
             setStaleStatus()
         case let .validation(validation):
-            applyButton.isEnabled = false
             setStatus(validationMessage(validation), error: true)
         case let .hardware(hardware):
             handleHardwareError(hardware)
@@ -387,7 +348,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     }
 
     private func handleHardwareError(_ error: DisplayLayoutHardwareError) {
-        applyButton.isEnabled = false
         switch error {
         case .mirroringActive:
             setStatus(localizedText("Stop mirroring before editing the display layout."), error: true)
