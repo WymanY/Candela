@@ -572,12 +572,15 @@ final class DisplaySessionController {
 
     @discardableResult
     func restoreExtendedArrangement() -> Bool {
-        guard let saved = savedExtendedArrangement else { return false }
         if Self.shouldUseFakeHardware {
             applyFakeMirrorState(isMirroring: false)
             return true
         }
-        guard DisplayArrangementControl.restore(saved, keysByDisplayID: liveKeysByDisplayID()) else {
+        let keys = liveKeysByDisplayID()
+        let restored = savedExtendedArrangement.map {
+            DisplayArrangementControl.restore($0, keysByDisplayID: keys)
+        } ?? false
+        guard restored || DisplayArrangementControl.stopBuiltInMirroring(keysByDisplayID: keys) else {
             return false
         }
         applyOptimisticMirrorState(isMirroring: false)
