@@ -11,6 +11,18 @@ import PersistenceKit
 import ServiceManagement
 import TestSupport
 
+struct DisplayLayoutWorkspace: Equatable {
+    var draft: DisplayLayoutDraft
+    var revision: Int
+}
+
+enum DisplayLayoutSessionError: Error, Equatable {
+    case unavailable(DisplayLayoutAvailability)
+    case staleDraft
+    case validation(DisplayLayoutValidationError)
+    case hardware(DisplayLayoutHardwareError)
+}
+
 @MainActor
 final class DisplaySessionController {
     private let catalog: DisplayCataloging
@@ -27,6 +39,7 @@ final class DisplaySessionController {
     private var pictureInPictureWall: PictureInPictureWallWindowController?
     private var lastExtendedArrangementOverride: DisplayArrangementSnapshot?
     private var knownDisplayIDsByKey: [String: CGDirectDisplayID] = [:]
+    private var displayLayoutRevision = 0
 
     var snapshots: [DisplaySnapshot] = []
     var pictureInPictureKeys: Set<String> {
@@ -460,6 +473,74 @@ final class DisplaySessionController {
         }
     }
 
+    var displayLayoutAvailability: DisplayLayoutAvailability {
+        let targets = liveMirrorTargets()
+        guard DisplayArrangementPlanning.kind(for: targets.filter { !$0.isVirtual }) == .none else {
+            return .mirroring
+        }
+        let visibleRealCount = snapshots.filter { $0.kind != .virtualUnsupported }.count
+        return visibleRealCount >= 2 ? .available : .insufficientDisplays
+    }
+
+    func loadDisplayLayout() throws -> DisplayLayoutWorkspace {
+        let availability = displayLayoutAvailability
+        guard availability == .available else {
+            throw DisplayLayoutSessionError.unavailable(availability)
+        }
+        if Self.shouldUseFakeHardware {
+            return DisplayLayoutWorkspace(
+                draft: fakeDisplayLayout(),
+                revision: displayLayoutRevision
+            )
+        }
+        do {
+            let draft = try DisplayArrangementControl.currentLayout(
+                keysByDisplayID: liveKeysByDisplayID(),
+                namesByKey: displayNamesByKey(),
+                isVirtual: isVirtualDisplayID
+            )
+            return DisplayLayoutWorkspace(draft: draft, revision: displayLayoutRevision)
+        } catch let error as DisplayLayoutHardwareError {
+            throw DisplayLayoutSessionError.hardware(error)
+        }
+    }
+
+    func applyDisplayLayout(
+        _ draft: DisplayLayoutDraft,
+        revision: Int
+    ) throws -> DisplayLayoutWorkspace {
+        guard revision == displayLayoutRevision else {
+            throw DisplayLayoutSessionError.staleDraft
+        }
+        do {
+            try draft.validated()
+        } catch let error as DisplayLayoutValidationError {
+            throw DisplayLayoutSessionError.validation(error)
+        }
+        if Self.shouldUseFakeHardware {
+            return DisplayLayoutWorkspace(draft: draft, revision: displayLayoutRevision)
+        }
+        do {
+            let verified = try DisplayArrangementControl.applyLayout(
+                draft,
+                keysByDisplayID: liveKeysByDisplayID(),
+                namesByKey: displayNamesByKey(),
+                isVirtual: isVirtualDisplayID
+            )
+            // Preserve the newly applied extended layout so the existing Mirror
+            // toggle restores this arrangement rather than an older one.
+            rememberExtendedArrangement(from: liveMirrorTargets())
+            catalog.requestRescan()
+            return DisplayLayoutWorkspace(draft: verified, revision: displayLayoutRevision)
+        } catch let error as DisplayLayoutHardwareError {
+            throw DisplayLayoutSessionError.hardware(error)
+        }
+    }
+
+    func requestDisplayLayoutRescan() {
+        catalog.requestRescan()
+    }
+
     private var savedExtendedArrangement: DisplayArrangementSnapshot? {
         lastExtendedArrangementOverride ?? settings.lastExtendedArrangement
     }
@@ -821,6 +902,35 @@ final class DisplaySessionController {
         return keys
     }
 
+    private func displayNamesByKey() -> [String: String] {
+        Dictionary(uniqueKeysWithValues: snapshots.map { ($0.id.persistentKey, $0.name) })
+    }
+
+    private func isVirtualDisplayID(_ displayID: CGDirectDisplayID) -> Bool {
+        snapshots.first(where: { $0.sessionDisplayID == displayID })?.kind == .virtualUnsupported
+    }
+
+    private func fakeDisplayLayout() -> DisplayLayoutDraft {
+        var nextX = 0.0
+        let mainKey = snapshots.first(where: \.isMain)?.id.persistentKey
+            ?? snapshots.first?.id.persistentKey
+        let slots = snapshots.compactMap { snapshot -> DisplayLayoutSlot? in
+            guard snapshot.kind != .virtualUnsupported else { return nil }
+            let width = max(1, Double(snapshot.pixelWidth))
+            let height = max(1, Double(snapshot.pixelHeight))
+            defer { nextX += width }
+            return DisplayLayoutSlot(
+                persistentKey: snapshot.id.persistentKey,
+                name: snapshot.name,
+                origin: DisplayLayoutPoint(x: nextX, y: 0),
+                size: DisplayLayoutSize(width: width, height: height),
+                isMain: snapshot.id.persistentKey == mainKey,
+                isBuiltin: snapshot.isBuiltin
+            )
+        }
+        return DisplayLayoutDraft(slots: slots)
+    }
+
     private func liveMirrorTargets() -> [DisplayMirrorTarget] {
         if Self.shouldUseFakeHardware {
             return snapshots.map { snapshot in
@@ -895,6 +1005,9 @@ final class DisplaySessionController {
     }
 
     private func apply(_ next: [DisplaySnapshot]) {
+        if !snapshots.isEmpty, layoutSignature(snapshots) != layoutSignature(next) {
+            displayLayoutRevision &+= 1
+        }
         applyGeneration += 1
         let generation = applyGeneration
         let fake = Self.shouldUseFakeHardware
@@ -984,6 +1097,19 @@ final class DisplaySessionController {
                 )
             }
         }
+    }
+
+    private func layoutSignature(_ values: [DisplaySnapshot]) -> [String] {
+        values.map { snapshot in
+            [
+                snapshot.id.persistentKey,
+                String(snapshot.pixelWidth),
+                String(snapshot.pixelHeight),
+                snapshot.isMain ? "main" : "secondary",
+                snapshot.kind.rawValue,
+                snapshot.isMirroringBuiltIn ? "mirrored" : "extended",
+            ].joined(separator: "|")
+        }.sorted()
     }
 
     private func stampMirrorState() {

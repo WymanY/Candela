@@ -31,6 +31,7 @@ final class StatusPanelView: NSView {
     private var rowKeys: [String] = []
     var isDraggingBrightness = false
     var onOpenSettings: (() -> Void)?
+    var onOpenLayout: (() -> Void)?
     var onQuit: (() -> Void)?
 
     init(session: DisplaySessionController) {
@@ -132,6 +133,7 @@ final class StatusPanelView: NSView {
             if !isDraggingBrightness {
                 reloadScenes()
                 syncWallButton()
+                syncLayoutButton()
                 syncMirrorButton()
                 syncFollowButton()
             }
@@ -151,6 +153,7 @@ final class StatusPanelView: NSView {
             syncPresetSelection(with: snapshots)
             reloadScenes()
             syncWallButton()
+            syncLayoutButton()
             syncMirrorButton()
             syncFollowButton()
             return
@@ -201,6 +204,7 @@ final class StatusPanelView: NSView {
         syncPresetSelection(with: snapshots)
         reloadScenes()
         syncWallButton()
+        syncLayoutButton()
         syncMirrorButton()
         syncFollowButton()
     }
@@ -392,6 +396,15 @@ final class StatusPanelView: NSView {
             : localizedText("Open Display Overview")
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.setAccessibilityLabel(wallButton.toolTip)
+        let layoutButton = CandelaChrome.makeQuietButton(
+            title: localizedText("Layout"),
+            symbolName: "rectangle.3.group"
+        )
+        layoutButton.target = self
+        layoutButton.action = #selector(openLayout)
+        layoutButton.translatesAutoresizingMaskIntoConstraints = false
+        layoutButton.identifier = NSUserInterfaceItemIdentifier("display-layout")
+        sizeFooterButton(layoutButton)
         let mirrorButton = CandelaChrome.makeQuietButton(
             title: localizedText("Mirror"),
             symbolName: "rectangle.split.2x1"
@@ -410,10 +423,10 @@ final class StatusPanelView: NSView {
         sizeFooterButton(quitButton)
         footer.addSubview(line)
 
-        let actions = NSStackView(views: [settingsButton, wallButton, mirrorButton])
+        let actions = NSStackView(views: [settingsButton, wallButton, layoutButton, mirrorButton])
         actions.orientation = .horizontal
         actions.alignment = .centerY
-        actions.spacing = 6
+        actions.spacing = 2
         actions.translatesAutoresizingMaskIntoConstraints = false
         actions.setHuggingPriority(.required, for: .horizontal)
         footer.addSubview(actions)
@@ -428,7 +441,7 @@ final class StatusPanelView: NSView {
             actions.centerYAnchor.constraint(equalTo: footer.centerYAnchor, constant: 3),
             quitButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: 4),
             quitButton.centerYAnchor.constraint(equalTo: actions.centerYAnchor),
-            quitButton.leadingAnchor.constraint(greaterThanOrEqualTo: actions.trailingAnchor, constant: 8),
+            quitButton.leadingAnchor.constraint(greaterThanOrEqualTo: actions.trailingAnchor, constant: 6),
         ])
     }
 
@@ -475,6 +488,7 @@ final class StatusPanelView: NSView {
     }
 
     @objc private func openSettings() { onOpenSettings?() }
+    @objc private func openLayout() { onOpenLayout?() }
     @objc private func quitClicked() { onQuit?() }
 
     @objc private func toggleWall() {
@@ -511,6 +525,27 @@ final class StatusPanelView: NSView {
         wallButton.contentTintColor = session.isPictureInPictureWallOpen ? CandelaChrome.accent : .secondaryLabelColor
         wallButton.title = localizedText("Overview")
         sizeFooterButton(wallButton)
+    }
+
+    private func syncLayoutButton() {
+        guard let layoutButton = footerButton("display-layout") else { return }
+        let availability = session.displayLayoutAvailability
+        layoutButton.isHidden = false
+        layoutButton.isEnabled = availability == .available
+        layoutButton.title = localizedText("Layout")
+        layoutButton.contentTintColor = availability == .available
+            ? .secondaryLabelColor
+            : .tertiaryLabelColor
+        switch availability {
+        case .available:
+            layoutButton.toolTip = localizedText("Arrange extended displays")
+        case .insufficientDisplays:
+            layoutButton.toolTip = localizedText("Connect at least two real displays to edit their layout.")
+        case .mirroring:
+            layoutButton.toolTip = localizedText("Stop mirroring before editing the display layout.")
+        }
+        layoutButton.setAccessibilityLabel(layoutButton.toolTip)
+        sizeFooterButton(layoutButton)
     }
 
     private func syncMirrorButton() {
@@ -573,14 +608,18 @@ final class StatusPanelView: NSView {
 
     private func footerSlotWidth(for button: NSButton) -> CGFloat {
         switch button.identifier?.rawValue {
+        case "settings":
+            return 68
         case "monitor-wall":
-            return 82
+            return 76
+        case "display-layout":
+            return 64
         case "mirror-builtin":
-            return 70
+            return 62
         case "quit":
-            return 50
+            return 48
         default:
-            return 74
+            return 68
         }
     }
 }

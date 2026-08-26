@@ -8,6 +8,7 @@ final class StatusItemController: NSObject {
     private let statusItem: NSStatusItem
     private let panelController: StatusPanelController
     private var settingsController: SettingsWindowController
+    private let layoutController: DisplayLayoutWindowController
     private let guideController = MenuBarGuideController()
     private let log = Logger(subsystem: "app.candela.macos", category: "ui")
     private var globalMonitor: Any?
@@ -25,6 +26,7 @@ final class StatusItemController: NSObject {
         self.statusItem = Self.makeStatusItem()
         self.panelController = StatusPanelController(session: session)
         self.settingsController = SettingsWindowController(session: session)
+        self.layoutController = DisplayLayoutWindowController(session: session)
         self.appliedLanguage = session.settings.preferredLanguage
         super.init()
         bindSettingsController()
@@ -33,6 +35,7 @@ final class StatusItemController: NSObject {
         }
         panelController.bindActions(
             openSettings: { [weak self] in self?.openSettings() },
+            openLayout: { [weak self] in self?.openLayout() },
             quit: { [weak self] in self?.quit() }
         )
         configureButton()
@@ -250,6 +253,7 @@ final class StatusItemController: NSObject {
             panelController.rebuild()
             rebuildSettingsWindow()
             session.reloadLocalizedChrome()
+            layoutController.reloadLocalizedChrome()
             (NSApp.delegate as? AppDelegate)?.reloadApplicationMenu()
         } else {
             panelController.reload()
@@ -287,6 +291,11 @@ final class StatusItemController: NSObject {
         NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
         presentSettingsWindow()
+    }
+
+    @objc private func openLayout() {
+        hidePanel()
+        layoutController.present()
     }
 
     private func presentSettingsWindow() {
