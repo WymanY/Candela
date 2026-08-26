@@ -10,3 +10,4 @@ DerivedData/
 Configs/Developer.xcconfig
 .codex/config.toml
 .codex/worktrees/
+.codegraph/
