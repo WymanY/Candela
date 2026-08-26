@@ -50,8 +50,9 @@ final class SettingsShortcutsView: NSView {
         stack.addArrangedSubview(makeGroup(
             title: localizedText("Picture in Picture"),
             rows: [
-                (localizedText("Close Picture in Picture"), "⌘W"),
+                (localizedText("Close Picture in Picture"), "Esc"),
                 (localizedText("Exit source control"), "⌃Esc"),
+                (localizedText("Close hovered Picture in Picture"), "⌘W"),
                 (localizedText("Scroll to zoom"), localizedText("Scroll")),
                 (localizedText("Space-drag to pan"), localizedText("Space-drag")),
             ]
@@ -59,7 +60,8 @@ final class SettingsShortcutsView: NSView {
         stack.addArrangedSubview(makeGroup(
             title: localizedText("Display Overview"),
             rows: [
-                (localizedText("Close Display Overview"), "⌘W"),
+                (localizedText("Close Display Overview"), "Esc"),
+                (localizedText("Close hovered Display Overview"), "⌘W"),
                 (localizedText("Scroll to zoom"), localizedText("Scroll")),
             ]
         ))

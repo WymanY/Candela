@@ -3876,6 +3876,40 @@
           }
         }
       }
+    },
+    "Close hovered Picture in Picture": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close hovered Picture in Picture"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭指针下的 Picture in Picture"
+          }
+        }
+      }
+    },
+    "Close hovered Display Overview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close hovered Display Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭指针下的多屏预览"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

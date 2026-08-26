@@ -105,4 +105,60 @@ public enum PictureInPictureInteraction {
     public static func isExitControlShortcut(keyCode: UInt16, controlPressed: Bool) -> Bool {
         controlPressed && keyCode == escapeKeyCode
     }
+
+    /// Escape with no other modifiers. Caps Lock is ignored by the caller.
+    public static func isBareEscapeKey(
+        keyCode: UInt16,
+        commandPressed: Bool,
+        optionPressed: Bool,
+        controlPressed: Bool,
+        shiftPressed: Bool
+    ) -> Bool {
+        keyCode == escapeKeyCode
+            && !commandPressed
+            && !optionPressed
+            && !controlPressed
+            && !shiftPressed
+    }
+
+    public enum OverlayEscapeTarget: Equatable, Sendable {
+        case none
+        case keyOverview
+        case keyPictureInPicture
+        case hoveredOverview
+        case hoveredPictureInPicture
+        case overview
+        case allPictureInPicture
+    }
+
+    /// One Escape closes one overlay layer. A key overlay window wins, then a
+    /// hovered overlay, then Display Overview, then remaining Picture in Picture windows.
+    public static func overlayEscapeTarget(
+        keyOverview: Bool = false,
+        keyPictureInPicture: Bool = false,
+        hoveredOverview: Bool,
+        hoveredPictureInPicture: Bool,
+        overviewOpen: Bool,
+        pictureInPictureOpen: Bool
+    ) -> OverlayEscapeTarget {
+        if keyOverview {
+            return .keyOverview
+        }
+        if keyPictureInPicture {
+            return .keyPictureInPicture
+        }
+        if hoveredOverview {
+            return .hoveredOverview
+        }
+        if hoveredPictureInPicture {
+            return .hoveredPictureInPicture
+        }
+        if overviewOpen {
+            return .overview
+        }
+        if pictureInPictureOpen {
+            return .allPictureInPicture
+        }
+        return .none
+    }
 }

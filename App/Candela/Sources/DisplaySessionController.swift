@@ -37,6 +37,10 @@ final class DisplaySessionController {
     private var pendingRotationByKey: [String: DisplayRotation] = [:]
     private var pictureInPictureWindows: [String: PictureInPictureWindowController] = [:]
     private var pictureInPictureWall: PictureInPictureWallWindowController?
+    private var overlayEscapeMonitor: Any?
+    private var overlayEscapeGlobalMonitor: Any?
+    private var overlayEscapeTap: OverlayEscapeTap?
+    private var overlayEscapeActivityObservers: [NSObjectProtocol] = []
     private var lastExtendedArrangementOverride: DisplayArrangementSnapshot?
     private var knownDisplayIDsByKey: [String: CGDirectDisplayID] = [:]
     private var displayLayoutRevision = 0
@@ -149,6 +153,7 @@ final class DisplaySessionController {
             refreshPowerStatus()
             syncBrightnessFollowFromSettings()
         }
+        observeOverlayEscapeActivity()
     }
 
     func prepareToQuit() {
@@ -171,6 +176,7 @@ final class DisplaySessionController {
         restoreTasks.removeAll()
         closeAllPictureInPicture()
         closePictureInPictureWall()
+        removeOverlayEscapeActivityObservers()
         catalog.stop()
         if !Self.shouldUseFakeHardware {
             for box in boxes.values {
@@ -267,12 +273,14 @@ final class DisplaySessionController {
             guard let self else { return }
             self.pictureInPictureWindows.removeValue(forKey: key)
             self.stampPictureInPictureState()
+            self.refreshOverlayEscapeMonitor()
             self.onChange?()
         }
         pictureInPictureWindows[key] = controller
         controller.showWindow(nil)
         controller.capturePlacement()
         stampPictureInPictureState()
+        refreshOverlayEscapeMonitor()
         onChange?()
         return true
     }
@@ -282,6 +290,7 @@ final class DisplaySessionController {
         controller.onClose = nil
         controller.stop()
         stampPictureInPictureState()
+        refreshOverlayEscapeMonitor()
         onChange?()
     }
 
@@ -291,6 +300,7 @@ final class DisplaySessionController {
             controller.stop()
         }
         pictureInPictureWindows.removeAll()
+        refreshOverlayEscapeMonitor()
     }
 
     func configurePictureInPicture(
@@ -368,12 +378,14 @@ final class DisplaySessionController {
         controller.onClose = { [weak self] in
             guard let self else { return }
             self.pictureInPictureWall = nil
+            self.refreshOverlayEscapeMonitor()
             self.onChange?()
         }
         pictureInPictureWall = controller
         controller.showWindow(nil)
         controller.update(snapshots: snapshots)
         controller.capturePlacement()
+        refreshOverlayEscapeMonitor()
         onChange?()
         return true
     }
@@ -383,7 +395,154 @@ final class DisplaySessionController {
         pictureInPictureWall = nil
         controller.onClose = nil
         controller.stop()
+        refreshOverlayEscapeMonitor()
         onChange?()
+    }
+
+    @discardableResult
+    func handleOverlayEscape() -> Bool {
+        switch PictureInPictureInteraction.overlayEscapeTarget(
+            keyOverview: pictureInPictureWall?.window?.isKeyWindow == true,
+            keyPictureInPicture: keyPictureInPictureController() != nil,
+            hoveredOverview: pictureInPictureWall?.isPointerOverWindow == true,
+            hoveredPictureInPicture: hoveredPictureInPictureController() != nil,
+            overviewOpen: isPictureInPictureWallOpen,
+            pictureInPictureOpen: !pictureInPictureWindows.isEmpty
+        ) {
+        case .none:
+            return false
+        case .keyOverview, .hoveredOverview, .overview:
+            closePictureInPictureWall()
+            return true
+        case .keyPictureInPicture, .hoveredPictureInPicture:
+            if let key = (keyPictureInPictureController() ?? hoveredPictureInPictureController())?.persistentKey {
+                closePictureInPicture(key: key)
+            }
+            return true
+        case .allPictureInPicture:
+            closeAllPictureInPicture()
+            stampPictureInPictureState()
+            onChange?()
+            return true
+        }
+    }
+
+    private func hoveredPictureInPictureController() -> PictureInPictureWindowController? {
+        pictureInPictureWindows.values.first { $0.isPointerOverWindow }
+    }
+
+    private func keyPictureInPictureController() -> PictureInPictureWindowController? {
+        pictureInPictureWindows.values.first { $0.window?.isKeyWindow == true }
+    }
+
+    private func refreshOverlayEscapeMonitor() {
+        let overlaysOpen = isPictureInPictureWallOpen || !pictureInPictureWindows.isEmpty
+        if !overlaysOpen {
+            removeOverlayEscapeMonitor()
+            return
+        }
+        if overlayEscapeMonitor == nil {
+            overlayEscapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self else { return event }
+                let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                guard PictureInPictureInteraction.isBareEscapeKey(
+                    keyCode: event.keyCode,
+                    commandPressed: flags.contains(.command),
+                    optionPressed: flags.contains(.option),
+                    controlPressed: flags.contains(.control),
+                    shiftPressed: flags.contains(.shift)
+                ) else {
+                    return event
+                }
+                if Self.shouldPreserveEscapeForKeyWindow(NSApp.keyWindow) {
+                    return event
+                }
+                return self.handleOverlayEscape() ? nil : event
+            }
+        }
+        if overlayEscapeTap == nil {
+            let tap = OverlayEscapeTap()
+            tap.onEscape = { [weak self] in
+                _ = self?.handleOverlayEscape()
+            }
+            if tap.start() {
+                overlayEscapeTap = tap
+                tap.isArmed = true
+                tap.candelaIsActive = NSApp.isActive
+            } else if overlayEscapeGlobalMonitor == nil {
+                overlayEscapeGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                    guard let self else { return }
+                    let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                    guard PictureInPictureInteraction.isBareEscapeKey(
+                        keyCode: event.keyCode,
+                        commandPressed: flags.contains(.command),
+                        optionPressed: flags.contains(.option),
+                        controlPressed: flags.contains(.control),
+                        shiftPressed: flags.contains(.shift)
+                    ) else {
+                        return
+                    }
+                    Task { @MainActor in
+                        _ = self.handleOverlayEscape()
+                    }
+                }
+            }
+        }
+        overlayEscapeTap?.isArmed = true
+        overlayEscapeTap?.candelaIsActive = NSApp.isActive
+    }
+
+    private func removeOverlayEscapeMonitor() {
+        if let overlayEscapeMonitor {
+            NSEvent.removeMonitor(overlayEscapeMonitor)
+            self.overlayEscapeMonitor = nil
+        }
+        if let overlayEscapeGlobalMonitor {
+            NSEvent.removeMonitor(overlayEscapeGlobalMonitor)
+            self.overlayEscapeGlobalMonitor = nil
+        }
+        overlayEscapeTap?.stop()
+        overlayEscapeTap = nil
+    }
+
+    private func observeOverlayEscapeActivity() {
+        guard overlayEscapeActivityObservers.isEmpty else { return }
+        overlayEscapeActivityObservers = [
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.overlayEscapeTap?.candelaIsActive = true
+                }
+            },
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.didResignActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.overlayEscapeTap?.candelaIsActive = false
+                }
+            },
+        ]
+        overlayEscapeTap?.candelaIsActive = NSApp.isActive
+    }
+
+    private func removeOverlayEscapeActivityObservers() {
+        for observer in overlayEscapeActivityObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        overlayEscapeActivityObservers.removeAll()
+        removeOverlayEscapeMonitor()
+    }
+
+    private static func shouldPreserveEscapeForKeyWindow(_ window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        if window is StatusPanel { return false }
+        if window is NSPanel { return true }
+        return window.styleMask.contains(.titled)
     }
 
     func reloadLocalizedChrome() {

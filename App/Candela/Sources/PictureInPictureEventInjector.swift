@@ -78,6 +78,15 @@ enum PictureInPictureEventInjector {
         ) {
             return false
         }
+        if PictureInPictureInteraction.isBareEscapeKey(
+            keyCode: event.keyCode,
+            commandPressed: flags.contains(.command),
+            optionPressed: flags.contains(.option),
+            controlPressed: flags.contains(.control),
+            shiftPressed: flags.contains(.shift)
+        ) {
+            return false
+        }
         if flags.contains(.command) {
             let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
             if key == "w" || key == "," || key == "tab" { return false }
@@ -164,5 +173,100 @@ private func controlExitTapCallback(
     _ = proxy
     guard let refcon else { return Unmanaged.passUnretained(event) }
     let tap = Unmanaged<PictureInPictureControlExitTap>.fromOpaque(refcon).takeUnretainedValue()
+    return tap.handleTap(type: type, event: event)
+}
+
+/// Swallows bare Escape while Picture in Picture or Display Overview is open,
+/// including when another app is focused.
+final class OverlayEscapeTap {
+    /// Written from the main actor; read from the event-tap callback.
+    nonisolated(unsafe) var isArmed = false
+    /// When Candela is active, the local monitor and key window keep Escape.
+    nonisolated(unsafe) var candelaIsActive = true
+    var onEscape: (() -> Void)?
+    private var port: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
+
+    @discardableResult
+    func start() -> Bool {
+        stop()
+        let mask = CGEventMask(
+            (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
+        )
+        guard let port = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: mask,
+            callback: overlayEscapeTapCallback,
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else {
+            return false
+        }
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: port, enable: true)
+        self.port = port
+        self.runLoopSource = source
+        return true
+    }
+
+    func stop() {
+        if let port {
+            CGEvent.tapEnable(tap: port, enable: false)
+        }
+        if let source = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        }
+        port = nil
+        runLoopSource = nil
+    }
+
+    fileprivate func handleTap(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let port {
+                CGEvent.tapEnable(tap: port, enable: true)
+            }
+            return Unmanaged.passUnretained(event)
+        }
+        guard type == .keyDown || type == .keyUp else {
+            return Unmanaged.passUnretained(event)
+        }
+        let keyCode = UInt16(truncatingIfNeeded: event.getIntegerValueField(.keyboardEventKeycode))
+        let flags = event.flags
+        guard PictureInPictureInteraction.isBareEscapeKey(
+            keyCode: keyCode,
+            commandPressed: flags.contains(.maskCommand),
+            optionPressed: flags.contains(.maskAlternate),
+            controlPressed: flags.contains(.maskControl),
+            shiftPressed: flags.contains(.maskShift)
+        ) else {
+            return Unmanaged.passUnretained(event)
+        }
+        guard isArmed, !candelaIsActive else {
+            return Unmanaged.passUnretained(event)
+        }
+        if type == .keyDown {
+            DispatchQueue.main.async { [weak self] in
+                self?.onEscape?()
+            }
+        }
+        return nil
+    }
+
+    deinit {
+        stop()
+    }
+}
+
+private func overlayEscapeTapCallback(
+    proxy: CGEventTapProxy,
+    type: CGEventType,
+    event: CGEvent,
+    refcon: UnsafeMutableRawPointer?
+) -> Unmanaged<CGEvent>? {
+    _ = proxy
+    guard let refcon else { return Unmanaged.passUnretained(event) }
+    let tap = Unmanaged<OverlayEscapeTap>.fromOpaque(refcon).takeUnretainedValue()
     return tap.handleTap(type: type, event: event)
 }

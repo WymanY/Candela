@@ -351,7 +351,18 @@ final class StatusItemController: NSObject {
                     }
                 }
             } else if event.type == .keyDown {
-                if self.panelController.isVisible, event.keyCode == 53 {
+                if self.panelController.isVisible,
+                   PictureInPictureInteraction.isBareEscapeKey(
+                    keyCode: event.keyCode,
+                    commandPressed: event.modifierFlags.contains(.command),
+                    optionPressed: event.modifierFlags.contains(.option),
+                    controlPressed: event.modifierFlags.contains(.control),
+                    shiftPressed: event.modifierFlags.contains(.shift)
+                   )
+                {
+                    if self.session.handleOverlayEscape() {
+                        return nil
+                    }
                     self.hidePanel()
                     return nil
                 }
