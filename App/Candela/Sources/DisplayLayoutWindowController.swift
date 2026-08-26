@@ -300,12 +300,12 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
 
     private func centerOnPointerScreen() {
         guard let window else { return }
-        place(window, on: pointerScreen(), centered: true)
+        place(window, on: pointerScreen(), pinnedToTop: true)
     }
 
     private func ensureWindowVisible() {
         guard let window else { return }
-        place(window, on: window.screen ?? pointerScreen(), centered: false)
+        place(window, on: window.screen ?? pointerScreen(), pinnedToTop: false)
         if window.isVisible {
             window.orderFrontRegardless()
         }
@@ -317,7 +317,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
             ?? NSScreen.screens.first
     }
 
-    private func place(_ window: NSWindow, on screen: NSScreen?, centered: Bool) {
+    private func place(_ window: NSWindow, on screen: NSScreen?, pinnedToTop: Bool) {
         guard let visible = screen?.visibleFrame else {
             window.center()
             return
@@ -325,13 +325,13 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         var frame = window.frame
         frame.size.width = min(frame.size.width, visible.width)
         frame.size.height = min(frame.size.height, visible.height)
-        if centered {
-            frame.origin.x = visible.midX - frame.width / 2
-            frame.origin.y = visible.midY - frame.height / 2
-        } else {
-            frame.origin.x = min(max(frame.origin.x, visible.minX), visible.maxX - frame.width)
-            frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - frame.height)
+        frame.origin.x = visible.midX - frame.width / 2
+        if pinnedToTop {
+            let topInset: CGFloat = 80
+            frame.origin.y = visible.maxY - topInset - frame.height
         }
+        frame.origin.x = min(max(frame.origin.x, visible.minX), visible.maxX - frame.width)
+        frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - frame.height)
         window.setFrame(frame, display: true)
     }
 
