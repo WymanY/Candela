@@ -12,6 +12,8 @@ Use GitHub pull requests as the source of truth. Do not file leftover work in Li
 
 Keep the primary checkout on `main`. Do not implement Candela coding work there, and do not touch dirty files on that checkout.
 
+Do not create, fork, or bind a Codex `worktree` Environment just because a new chat opened against this repo. Questions, code explanation, Git status, diagnosis, tagging, merge or cleanup of already-merged PRs, and other work that does not change Candela source stay on the existing checkout. A leftover detached Codex worktree from a no-code task is a mistake, not a required binding.
+
 For a coding task in this repository, bind a Codex `worktree` Environment to the Candela / betterDisplay project before changing code. Do not leave the task on the primary checkout and then isolate only with shell `git worktree add` plus `gh pr create`. That leaves the Environment panel, current branch, Changes, and pull request detached from the running task.
 
 Put an isolated checkout at `<repo-root>/.codex/worktrees/<branch-or-task-slug>`. Do not default to a sibling directory next to the repo, and do not treat `/Users/wyman/.codex/worktrees` as the default location.
