@@ -2466,36 +2466,138 @@
         }
       }
     },
-    "The hidden icon is not a code-signing or privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 controls third-party status items here:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nIf Candela is already enabled, turn it off and back on. If it remains hidden, use Reset Control Center at the bottom as a last resort. Resetting also restores every Control Center and menu bar layout to its defaults.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item.": {
+    "macOS hid Candela in Menu Bar settings. This is not a signing or privacy-permission issue.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The hidden icon is not a code-signing or privacy-permission issue. Picture in Picture uses Screen Recording. Controlling another display from Picture in Picture also uses Accessibility.\n\nmacOS 26 controls third-party status items here:\n\nSystem Settings → Menu Bar → Allow in the Menu Bar → enable Candela\n\nIf Candela is already enabled, turn it off and back on. If it remains hidden, use Reset Control Center at the bottom as a last resort. Resetting also restores every Control Center and menu bar layout to its defaults.\n\nIf you use Ice, Bartender, or BetterTouchTool, their menu-bar buttons can also reveal a hidden Candela item."
+            "value": "macOS hid Candela in Menu Bar settings. This is not a signing or privacy-permission issue."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "菜单栏图标被隐藏，不是代码签名或隐私权限的问题。画中画需要屏幕录制；从画中画控制另一块显示器还需要辅助功能。\n\nmacOS 26 在这里管理第三方状态栏图标：\n\n系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela\n\n如果 Candela 已经打开，请先关闭再重新打开。若图标仍然隐藏，最后再使用页面底部的「重置控制中心」。重置也会将所有控制中心和菜单栏布局恢复为默认值。\n\n如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
+            "value": "macOS 把 Candela 收进了菜单栏设置，不是代码签名或隐私权限的问题。"
           }
         }
       }
     },
-    "Open System Settings · Menu Bar": {
+    "Turn Candela on": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open System Settings · Menu Bar"
+            "value": "Turn Candela on"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "打开系统设置 · 菜单栏"
+            "value": "打开 Candela"
+          }
+        }
+      }
+    },
+    "System Settings → Menu Bar → Allow in the Menu Bar → enable Candela": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Settings → Menu Bar → Allow in the Menu Bar → enable Candela"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统设置 → 菜单栏 → 允许出现在菜单栏 → 打开 Candela"
+          }
+        }
+      }
+    },
+    "If it is already on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If it is already on"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果已经打开"
+          }
+        }
+      }
+    },
+    "Quit Candela and open it again. If the icon is still missing, use Reset Control Center at the bottom of that page. Resetting restores every Control Center and menu bar layout.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Candela and open it again. If the icon is still missing, use Reset Control Center at the bottom of that page. Resetting restores every Control Center and menu bar layout."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先退出 Candela 再重新打开。若图标仍然隐藏，最后再使用该页底部的「重置控制中心」。重置会把控制中心和菜单栏布局恢复为默认值。"
+          }
+        }
+      }
+    },
+    "Menu bar managers": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu bar managers"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏管理工具"
+          }
+        }
+      }
+    },
+    "Ice, Bartender, and BetterTouchTool can also hide Candela behind their menu-bar buttons.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ice, Bartender, and BetterTouchTool can also hide Candela behind their menu-bar buttons."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果你装了 Ice / Bartender / BetterTouchTool，点它们的菜单栏按钮也能看到被收纳的 Candela。"
+          }
+        }
+      }
+    },
+    "Open Menu Bar Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Menu Bar Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开菜单栏设置"
           }
         }
       }
