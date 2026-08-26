@@ -1,13 +1,18 @@
 import AppKit
 import DisplayCore
 import os
+import ApplicationServices
 
 enum MenuBarSettingsOpener {
     @discardableResult
     static func openPane() -> Bool {
-        MenuBarSettings.firstOpenableURL { url in
+        let opened = MenuBarSettings.firstOpenableURL { url in
             NSWorkspace.shared.open(url)
         } != nil
+        if opened {
+            MenuBarAppRowRevealer.revealIfPossible()
+        }
+        return opened
     }
 }
 
@@ -59,7 +64,7 @@ final class MenuBarGuideController: NSWindowController {
         Self.writeDiagnostic("presented guide")
     }
 
-    static func writeDiagnostic(_ line: String) {
+    nonisolated static func writeDiagnostic(_ line: String) {
         let dir = (FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library", isDirectory: true))
             .appendingPathComponent("Logs/Candela", isDirectory: true)
@@ -218,5 +223,115 @@ final class MenuBarGuideController: NSWindowController {
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
+    }
+}
+
+private enum MenuBarAppRowRevealer {
+    private static let maxAttempts = 20
+    private static let retryInterval: TimeInterval = 0.25
+
+    static func revealIfPossible() {
+        if PictureInPictureEventInjector.isSandboxed { return }
+        guard AXIsProcessTrusted() else {
+            MenuBarGuideController.writeDiagnostic("skip Candela row reveal: accessibility not trusted")
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            attempt(remaining: maxAttempts)
+        }
+    }
+
+    private static func attempt(remaining: Int) {
+        if revealNow() {
+            MenuBarGuideController.writeDiagnostic("revealed Candela row in Menu Bar settings")
+            return
+        }
+        guard remaining > 1 else {
+            MenuBarGuideController.writeDiagnostic("could not reveal Candela row in Menu Bar settings")
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + retryInterval) {
+            attempt(remaining: remaining - 1)
+        }
+    }
+
+    @discardableResult
+    private static func revealNow() -> Bool {
+        guard let app = settingsApp(),
+              let window = firstWindow(of: app.processIdentifier)
+        else { return false }
+        guard let row = firstMatch(in: window, names: appRowNames()) else { return false }
+        _ = AXUIElementPerformAction(row, "AXScrollToVisible" as CFString)
+        AXUIElementSetAttributeValue(row, kAXFocusedAttribute as CFString, kCFBooleanTrue as CFTypeRef)
+        return true
+    }
+
+    private static func settingsApp() -> NSRunningApplication? {
+        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.systempreferences").first
+            ?? NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == "System Settings" })
+    }
+
+    private static func appRowNames() -> [String] {
+        var names = Set<String>()
+        if let displayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String, !displayName.isEmpty {
+            names.insert(displayName)
+        }
+        if let bundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String, !bundleName.isEmpty {
+            names.insert(bundleName)
+        }
+        names.insert("Candela")
+        return Array(names)
+    }
+
+    private static func firstWindow(of pid: pid_t) -> AXUIElement? {
+        let app = AXUIElementCreateApplication(pid)
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value) == .success,
+              let windows = value as? [AXUIElement]
+        else { return nil }
+        let titles = ["Menu Bar", "菜单栏"]
+        for window in windows {
+            if let title = stringValue(window, kAXTitleAttribute as String), titles.contains(title) {
+                return window
+            }
+        }
+        return windows.first
+    }
+
+    private static func firstMatch(in root: AXUIElement, names: [String]) -> AXUIElement? {
+        var stack = [root]
+        var fallback: AXUIElement?
+        while let current = stack.popLast() {
+            let role = stringValue(current, kAXRoleAttribute as String)
+            let title = stringValue(current, kAXTitleAttribute as String)
+                ?? stringValue(current, kAXDescriptionAttribute as String)
+                ?? stringValue(current, kAXValueAttribute as String)
+            if let title, names.contains(title) {
+                if role == "AXCheckBox" || role == "AXSwitch" {
+                    return current
+                }
+                if fallback == nil {
+                    fallback = current
+                }
+            }
+            stack.append(contentsOf: children(of: current).reversed())
+        }
+        return fallback
+    }
+
+    private static func children(of element: AXUIElement) -> [AXUIElement] {
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value) == .success else {
+            return []
+        }
+        return value as? [AXUIElement] ?? []
+    }
+
+    private static func stringValue(_ element: AXUIElement, _ attribute: String) -> String? {
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else {
+            return nil
+        }
+        return value as? String
     }
 }
