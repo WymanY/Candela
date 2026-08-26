@@ -18,7 +18,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
     private var ignoreScreenChangesUntil = Date.distantPast
     private var autoApplyWorkItem: DispatchWorkItem?
     private var lastAppliedDraft: DisplayLayoutDraft?
-    private var pendingCursorRestore: (persistentKey: String, normalizedPoint: CGPoint)?
     private static let autoApplyDelay: TimeInterval = 0.8
     private static let applyQuietPeriod: TimeInterval = 2.5
 
@@ -88,7 +87,6 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         workspace = nil
         canvas.setDraft(nil)
         lastAppliedDraft = nil
-        pendingCursorRestore = nil
         draftIsStale = false
     }
 
@@ -118,10 +116,8 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         canvas.onDragBegan = { [weak self] in
             self?.cancelAutoApply()
         }
-        canvas.onDragEnded = { [weak self] key, normalizedPoint in
-            guard let self else { return }
-            self.pendingCursorRestore = (key, normalizedPoint)
-            self.scheduleAutoApply()
+        canvas.onDragEnded = { [weak self] in
+            self?.scheduleAutoApply()
         }
 
         for view in [titleLabel, instructionsLabel, statusLabel, doneButton] {
@@ -188,7 +184,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
                 revision: workspace.revision
             )
             adoptLiveLayout(verified, status: localizedText("Display layout applied."))
-            restoreCursorAfterApply(verified.draft)
+            restoreCursorToLayoutWindow()
         } catch {
             ignoreScreenChangesUntil = Date.distantPast
             handle(error)
@@ -323,28 +319,12 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
         window.setFrame(frame, display: true)
     }
 
-    private func restoreCursorAfterApply(_ draft: DisplayLayoutDraft) {
-        defer { pendingCursorRestore = nil }
-        guard let pending = pendingCursorRestore else { return }
-        let bounds: CGRect
-        if let displayID = session.liveLayoutDisplayIDsByKey()[pending.persistentKey] {
-            bounds = CGDisplayBounds(displayID)
-        } else if let slot = draft.slot(for: pending.persistentKey) {
-            bounds = CGRect(
-                x: slot.origin.x,
-                y: slot.origin.y,
-                width: slot.size.width,
-                height: slot.size.height
-            )
-        } else {
-            return
-        }
-        let quartz = CGPoint(
-            x: bounds.minX + pending.normalizedPoint.x * bounds.width,
-            y: bounds.minY + pending.normalizedPoint.y * bounds.height
-        )
+    private func restoreCursorToLayoutWindow() {
+        guard let window else { return }
+        let frame = window.frame
+        let appKitPoint = CGPoint(x: frame.midX, y: frame.midY)
         CGAssociateMouseAndMouseCursorPosition(boolean_t(0))
-        CGWarpMouseCursorPosition(quartz)
+        CGWarpMouseCursorPosition(PictureInPictureEventInjector.quartzPoint(fromAppKit: appKitPoint))
         CGAssociateMouseAndMouseCursorPosition(boolean_t(1))
     }
 
@@ -423,8 +403,7 @@ final class DisplayLayoutWindowController: NSWindowController, NSWindowDelegate 
 private final class DisplayLayoutCanvasView: NSView {
     var onDraftChange: ((DisplayLayoutDraft) -> Void)?
     var onDragBegan: (() -> Void)?
-    var onDragEnded: ((String, CGPoint) -> Void)?
-    private(set) var lastDragTarget: (persistentKey: String, normalizedPoint: CGPoint)?
+    var onDragEnded: (() -> Void)?
     private(set) var isDragging = false
     private var draft: DisplayLayoutDraft?
     private var wallpaperByKey: [String: NSImage] = [:]
@@ -494,10 +473,6 @@ private final class DisplayLayoutCanvasView: NSView {
         dragStartPoint = point
         dragStartOrigin = slot.origin
         dragScale = transform.scale
-        lastDragTarget = (
-            slot.persistentKey,
-            normalizedPoint(at: point, in: slot, transform: transform)
-        )
         isDragging = true
         NSCursor.closedHand.set()
         needsDisplay = true
@@ -518,12 +493,6 @@ private final class DisplayLayoutCanvasView: NSView {
                 snapDistance: Double(12 / dragScale)
             )
             self.draft = next
-            if let slot = next.slot(for: draggedKey), let transform = transform() {
-                lastDragTarget = (
-                    draggedKey,
-                    normalizedPoint(at: point, in: slot, transform: transform)
-                )
-            }
             needsDisplay = true
             onDraftChange?(next)
         } catch {
@@ -537,8 +506,8 @@ private final class DisplayLayoutCanvasView: NSView {
         isDragging = false
         NSCursor.openHand.set()
         needsDisplay = true
-        if didDrag, let target = lastDragTarget {
-            onDragEnded?(target.persistentKey, target.normalizedPoint)
+        if didDrag {
+            onDragEnded?()
         }
     }
 
@@ -660,19 +629,6 @@ private final class DisplayLayoutCanvasView: NSView {
             viewport,
             scale,
             CGPoint(x: drawable.midX - rendered.width / 2, y: drawable.midY - rendered.height / 2)
-        )
-    }
-
-    private func normalizedPoint(
-        at point: CGPoint,
-        in slot: DisplayLayoutSlot,
-        transform: (viewport: CGRect, scale: CGFloat, offset: CGPoint)
-    ) -> CGPoint {
-        let rect = displayRect(for: slot, transform: transform)
-        guard rect.width > 0, rect.height > 0 else { return CGPoint(x: 0.5, y: 0.5) }
-        return CGPoint(
-            x: min(max((point.x - rect.minX) / rect.width, 0), 1),
-            y: min(max((point.y - rect.minY) / rect.height, 0), 1)
         )
     }
 
