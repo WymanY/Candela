@@ -310,15 +310,12 @@ public enum DisplayArrangementControl {
     /// This is primarily the recovery path for launching while a mirror slave
     /// is already hidden from the normal display catalog.
     @discardableResult
-    public static func stopBuiltInMirroring(
+    public static func stopMirroring(
         keysByDisplayID: [CGDirectDisplayID: String]
     ) -> Bool {
         let targets = currentTargets(keysByDisplayID: keysByDisplayID)
-        let builtinIDs = Set(targets.filter(\.isBuiltin).map(\.displayID))
         let slaves = targets.compactMap { target -> CGDirectDisplayID? in
-            guard target.mirrorsDisplayID != 0,
-                  builtinIDs.contains(target.mirrorsDisplayID)
-            else {
+            guard target.mirrorsDisplayID != 0 else {
                 return nil
             }
             return target.displayID

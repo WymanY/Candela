@@ -40,7 +40,17 @@ final class DisplayArrangementTests: XCTestCase {
                 targets: [builtin, target(id: 2, key: "desk", mirrors: 1)],
                 savedArrangement: nil
             ),
-            .mirroringBuiltIn
+            .mirroring
+        )
+        XCTAssertEqual(
+            DisplayArrangementPlanning.availability(
+                targets: [
+                    target(id: 1, key: "builtin", builtin: true, mirrors: 2),
+                    target(id: 2, key: "desk", main: true),
+                ],
+                savedArrangement: nil
+            ),
+            .mirroring
         )
         let saved = DisplayArrangementSnapshot(slots: [
             DisplayArrangementSlot(
