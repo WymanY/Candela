@@ -21,7 +21,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
     private let preview = PictureInPicturePreviewView()
     private let placeholder = CandelaChrome.makeCaption(localizedText("Waiting for display…"))
     private let permissionOverlay = ScreenRecordingPermissionOverlay()
-    private let chrome = NSStackView()
+    private let chrome = PictureInPictureChromeBar()
     private let sourceRow = NSStackView()
     private var stream: SCStream?
     private let streamQueue = DispatchQueue(label: "candela.pip.stream")
@@ -622,7 +622,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         chrome.spacing = 6
         chrome.translatesAutoresizingMaskIntoConstraints = false
         chrome.addArrangedSubview(titleLabel)
-        chrome.addArrangedSubview(NSView())
+        chrome.addArrangedSubview(PictureInPictureDragHandleView())
         chrome.addArrangedSubview(opacitySlider)
         chrome.addArrangedSubview(clickThroughButton)
         chrome.addArrangedSubview(controlButton)
@@ -637,7 +637,7 @@ final class PictureInPictureWindowController: NSWindowController, NSWindowDelega
         sourceRow.addArrangedSubview(windowPopup)
         sourceRow.addArrangedSubview(zoomPopup)
         sourceRow.addArrangedSubview(mirrorButton)
-        sourceRow.addArrangedSubview(NSView())
+        sourceRow.addArrangedSubview(PictureInPictureDragHandleView())
 
         preview.translatesAutoresizingMaskIntoConstraints = false
         preview.wantsLayer = true
@@ -1576,6 +1576,10 @@ final class PictureInPictureRootView: NSView {
     override var acceptsFirstResponder: Bool { true }
     override var mouseDownCanMoveWindow: Bool { allowsWindowDrag }
 
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
+    }
+
     var swallowScrollForCanvasPan = false
 
     override func scrollWheel(with event: NSEvent) {
@@ -1591,6 +1595,13 @@ final class PictureInPictureRootView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         if onMouseDown?(event) == true { return }
+        if PictureInPictureInteraction.shouldDragOverlayWindow(
+            allowsWindowDrag: allowsWindowDrag,
+            eventHandled: false
+        ) {
+            PictureInPictureWindowMoving.drag(window, with: event)
+            return
+        }
         super.mouseDown(with: event)
     }
 
@@ -1622,7 +1633,7 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
     override var mouseDownCanMoveWindow: Bool { allowsWindowDrag }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        controlActive
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
     }
 
     override init(frame frameRect: NSRect) {
@@ -1714,6 +1725,13 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
 
     override func mouseDown(with event: NSEvent) {
         if onControlEvent?(event) == true { return }
+        if PictureInPictureInteraction.shouldDragOverlayWindow(
+            allowsWindowDrag: allowsWindowDrag,
+            eventHandled: false
+        ) {
+            PictureInPictureWindowMoving.drag(window, with: event)
+            return
+        }
         super.mouseDown(with: event)
     }
 
@@ -1806,5 +1824,82 @@ final class PictureInPicturePreviewView: NSView, SCStreamOutput, SCStreamDelegat
         layer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
         layer.anchorPoint = CGPoint(x: 0, y: 0)
         layer.setAffineTransform(.identity)
+    }
+}
+
+
+enum PictureInPictureWindowMoving {
+    /// Borderless nonactivating overlays cannot rely on AppKit window-drag APIs
+    /// that are either macOS 15+ or missing on NSWindow in this SDK.
+    static func drag(_ window: NSWindow?, with event: NSEvent) {
+        guard let window else { return }
+        let startMouse = NSEvent.mouseLocation
+        let startOrigin = window.frame.origin
+        while true {
+            guard let next = NSApp.nextEvent(
+                matching: [.leftMouseDragged, .leftMouseUp],
+                until: .distantFuture,
+                inMode: .eventTracking,
+                dequeue: true
+            ) else {
+                break
+            }
+            if next.type == .leftMouseUp {
+                break
+            }
+            let mouse = NSEvent.mouseLocation
+            window.setFrameOrigin(
+                NSPoint(
+                    x: startOrigin.x + mouse.x - startMouse.x,
+                    y: startOrigin.y + mouse.y - startMouse.y
+                )
+            )
+        }
+    }
+}
+
+final class PictureInPictureDragHandleView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        PictureInPictureWindowMoving.drag(window, with: event)
+    }
+}
+
+final class PictureInPictureChromeBar: NSStackView {
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard let hit = super.hitTest(point) else { return nil }
+        if Self.isInteractiveControl(hit) {
+            return hit
+        }
+        return self
+    }
+
+    private static func isInteractiveControl(_ view: NSView) -> Bool {
+        var current: NSView? = view
+        while let node = current {
+            if node is PictureInPictureChromeBar {
+                break
+            }
+            if node is NSButton || node is NSSlider || node is NSPopUpButton {
+                return true
+            }
+            current = node.superview
+        }
+        return false
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        PictureInPictureWindowMoving.drag(window, with: event)
     }
 }

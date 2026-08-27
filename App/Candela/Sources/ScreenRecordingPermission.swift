@@ -92,12 +92,35 @@ final class ScreenRecordingPermissionOverlay: NSView {
         onOpenSettings?()
     }
 
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
+    }
+
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        if hit === openButton || hit?.isDescendant(of: openButton) == true {
+            return hit
+        }
+        if hit === card || hit?.isDescendant(of: card) == true {
+            return self
+        }
+        return self
+    }
+
     override func mouseDown(with event: NSEvent) {
-        openSettings()
+        let point = convert(event.locationInWindow, from: nil)
+        if card.frame.contains(point) {
+            openSettings()
+            return
+        }
+        PictureInPictureWindowMoving.drag(window, with: event)
     }
 
     override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .pointingHand)
+        addCursorRect(bounds, cursor: .arrow)
+        addCursorRect(card.frame, cursor: .pointingHand)
     }
 
     private func configureCard() {

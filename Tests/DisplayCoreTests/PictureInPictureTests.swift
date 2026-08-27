@@ -957,6 +957,28 @@ final class PictureInPictureTests: XCTestCase {
         XCTAssertEqual(centered.tx, 0, accuracy: 0.0001)
         XCTAssertEqual(centered.ty, 0, accuracy: 0.0001)
     }
+
+    func testOverlayPreviewAcceptsFirstMouseAndDragsTheWindow() {
+        XCTAssertTrue(PictureInPictureInteraction.overlayAcceptsFirstMouse())
+        XCTAssertTrue(
+            PictureInPictureInteraction.shouldDragOverlayWindow(
+                allowsWindowDrag: true,
+                eventHandled: false
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureInteraction.shouldDragOverlayWindow(
+                allowsWindowDrag: true,
+                eventHandled: true
+            )
+        )
+        XCTAssertFalse(
+            PictureInPictureInteraction.shouldDragOverlayWindow(
+                allowsWindowDrag: false,
+                eventHandled: false
+            )
+        )
+    }
 }
 
     func testScreenRecordingSettingsTriesPrivacyPaneFirst() {

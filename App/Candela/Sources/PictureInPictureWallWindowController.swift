@@ -16,7 +16,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         title: localizedText("Show Hidden"),
         symbolName: "eye"
     )
-    private let chrome = NSStackView()
+    private let chrome = PictureInPictureChromeBar()
     private let tilesHost = WallTilesHost()
     private let permissionOverlay = ScreenRecordingPermissionOverlay()
     private var tiles: [WallTile] = []
@@ -245,7 +245,7 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
         chrome.translatesAutoresizingMaskIntoConstraints = false
         chrome.addArrangedSubview(titleLabel)
         chrome.addArrangedSubview(restoreHiddenButton)
-        chrome.addArrangedSubview(NSView())
+        chrome.addArrangedSubview(PictureInPictureDragHandleView())
         chrome.addArrangedSubview(opacitySlider)
         chrome.addArrangedSubview(clickThroughButton)
         chrome.addArrangedSubview(pinControl)
@@ -639,9 +639,39 @@ final class PictureInPictureWallWindowController: NSWindowController, NSWindowDe
     }
 }
 
+private final class WallTileView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard let hit = super.hitTest(point) else { return nil }
+        if hit is NSButton {
+            return hit
+        }
+        return self
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        PictureInPictureWindowMoving.drag(window, with: event)
+    }
+}
+
 private final class WallTilesHost: NSView {
     var tileViews: [NSView] = [] {
         didSet { needsLayout = true }
+    }
+
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        PictureInPictureInteraction.overlayAcceptsFirstMouse()
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        PictureInPictureWindowMoving.drag(window, with: event)
     }
 
     override func layout() {
@@ -659,7 +689,7 @@ private final class WallTilesHost: NSView {
 
 @MainActor
 private final class WallTile: NSObject {
-    let view = NSView()
+    let view = WallTileView()
     var persistentKey: String { snapshot.id.persistentKey }
     var onHide: (() -> Void)?
     private let preview = PictureInPicturePreviewView()
