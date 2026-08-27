@@ -161,4 +161,20 @@ public enum PictureInPictureInteraction {
         }
         return .none
     }
+
+    /// Display Overview and Picture in Picture stay on nonactivating panels.
+    /// AppKit otherwise drops the first mouse-down on an inactive window, so
+    /// dragging from the preview never starts.
+    public static func overlayAcceptsFirstMouse() -> Bool {
+        true
+    }
+
+    /// Move the overlay from the preview or empty chrome unless a control
+    /// already consumed the click.
+    public static func shouldDragOverlayWindow(
+        allowsWindowDrag: Bool,
+        eventHandled: Bool
+    ) -> Bool {
+        allowsWindowDrag && !eventHandled
+    }
 }
